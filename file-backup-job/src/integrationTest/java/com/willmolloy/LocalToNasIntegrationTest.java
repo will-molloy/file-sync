@@ -5,6 +5,7 @@ import static com.google.common.truth.Truth8.assertThat;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
  */
 public class LocalToNasIntegrationTest {
 
+  @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
   private FileSystem fileSystem;
 
   @BeforeEach

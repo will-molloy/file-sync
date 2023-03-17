@@ -14,9 +14,27 @@ import org.apache.logging.log4j.Logger;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 // TODO rename? It could be same PC to same PC (e.g. HDD) not necessarily a NAS.
-public record LocalToNasJob(Path sourceRoot, Path destinationRoot) implements Job {
+public class LocalToNasJob implements Job {
 
   private static final Logger log = LogManager.getLogger();
+
+  private final Path sourceRoot;
+  private final Path destinationRoot;
+
+  public LocalToNasJob(Path sourceRoot, Path destinationRoot) {
+    this.sourceRoot = sourceRoot;
+    this.destinationRoot = destinationRoot;
+  }
+
+  @Override
+  public Path sourceRoot() {
+    return sourceRoot;
+  }
+
+  @Override
+  public Path destinationRoot() {
+    return destinationRoot;
+  }
 
   @Override
   public List<Path> scanSource() {
