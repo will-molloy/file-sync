@@ -1,6 +1,10 @@
 package com.willmolloy;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -27,8 +31,9 @@ public class JobRunner {
     toCopy.addAll(sourceFiles);
     toCopy.removeAll(destinationFiles);
     log.debug("Copy to dest: {}", toCopy);
-    for (Path sourcePath : toCopy) {
-      Path destinationPath = job.destinationRoot().resolve(job.sourceRoot().relativize(sourcePath));
+    for (Path path : toCopy) {
+      Path sourcePath = job.sourceRoot().resolve(path);
+      Path destinationPath = job.destinationRoot().resolve(path);
       job.copyToDestination(sourcePath, destinationPath);
     }
 
@@ -38,9 +43,28 @@ public class JobRunner {
     toDelete.removeAll(sourceFiles);
     log.debug("Delete from dest: {}", toDelete);
     for (Path path : toDelete) {
-      job.deleteFromDestination(path);
+      Path destinationPath = job.destinationRoot().resolve(path);
+      job.deleteFromDestination(destinationPath);
     }
 
-    // if file/directory on src AND dest, update dest
+    // if file/directory on src AND dest, update dest - if src newer
+    HashSet<Path> toUpdate = new HashSet<>();
+    toUpdate.addAll(sourceFiles);
+    toUpdate.retainAll(destinationFiles);
+    log.debug("Update on dest: {}", toUpdate);
+    for (Path path : toUpdate) {
+      Path sourcePath = job.sourceRoot().resolve(path);
+      Path destinationPath = job.destinationRoot().resolve(path);
+      try {
+        FileTime sourceLastModified = Files.getLastModifiedTime(sourcePath);
+        FileTime destLastModified = Files.getLastModifiedTime(destinationPath);
+        if (sourceLastModified.compareTo(destLastModified) > 0) {
+          job.copyToDestination(sourcePath, destinationPath);
+        }
+      } catch (IOException e) {
+        log.error("Error getting last modified attribute", e);
+        throw new UncheckedIOException(e);
+      }
+    }
   }
 }

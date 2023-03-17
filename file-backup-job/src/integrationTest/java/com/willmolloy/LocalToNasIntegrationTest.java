@@ -82,6 +82,35 @@ public class LocalToNasIntegrationTest {
     assertThatFileSystem().isEmpty();
   }
 
+  @Test
+  // TODO test the last modified part?
+  //  Even better to put some contents in the files and ensure it gets updated.
+  //  Last-Modified is a performance improvement, cover with performance test instead?
+  void whenFilesOnSourceAndDestination_updatesFilesOnDestination() throws IOException {
+    // Given
+    Files.createFile(sourceRoot.resolve("X"));
+    Files.createFile(sourceRoot.resolve("Y"));
+    Files.createFile(sourceRoot.resolve("Z"));
+    Files.createFile(destinationRoot.resolve("X"));
+    Files.createFile(destinationRoot.resolve("Y"));
+    Files.createFile(destinationRoot.resolve("Z"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(
+            sourceRoot.resolve("X"),
+            sourceRoot.resolve("Y"),
+            sourceRoot.resolve("Z"),
+            destinationRoot.resolve("X"),
+            destinationRoot.resolve("Y"),
+            destinationRoot.resolve("Z"));
+  }
+
   private StreamSubject assertThatFileSystem() throws IOException {
     try (Stream<Path> testFiles = Files.walk(fileSystem.getPath("/"))) {
       return assertThat(testFiles.filter(Files::isRegularFile));
