@@ -5,8 +5,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,10 +28,7 @@ public class JobRunner {
     log.debug("Dest: {}", destinationFiles);
 
     // if file/directory on src AND not on dest, copy to dest
-    HashSet<Path> toCopy = new HashSet<>();
-    // TODO not gonna work if files are absolute
-    toCopy.addAll(sourceFiles);
-    toCopy.removeAll(destinationFiles);
+    Set<Path> toCopy = difference(sourceFiles, destinationFiles);
     log.debug("Copy to dest: {}", toCopy);
     for (Path path : toCopy) {
       Path sourcePath = job.sourceRoot().resolve(path);
@@ -38,9 +37,7 @@ public class JobRunner {
     }
 
     // if file/directory not on src AND on dest, delete from dest
-    HashSet<Path> toDelete = new HashSet<>();
-    toDelete.addAll(destinationFiles);
-    toDelete.removeAll(sourceFiles);
+    Set<Path> toDelete = difference(destinationFiles, sourceFiles);
     log.debug("Delete from dest: {}", toDelete);
     for (Path path : toDelete) {
       Path destinationPath = job.destinationRoot().resolve(path);
@@ -48,23 +45,42 @@ public class JobRunner {
     }
 
     // if file/directory on src AND dest, update dest - if src newer
-    HashSet<Path> toUpdate = new HashSet<>();
-    toUpdate.addAll(sourceFiles);
-    toUpdate.retainAll(destinationFiles);
+    List<Path> toUpdate =
+        intersection(sourceFiles, destinationFiles).stream()
+            .filter(
+                path -> {
+                  Path sourcePath = job.sourceRoot().resolve(path);
+                  Path destinationPath = job.destinationRoot().resolve(path);
+                  try {
+                    FileTime sourceLastModified = Files.getLastModifiedTime(sourcePath);
+                    FileTime destLastModified = Files.getLastModifiedTime(destinationPath);
+                    return sourceLastModified.compareTo(destLastModified) > 0;
+                  } catch (IOException e) {
+                    log.error("Error getting last modified attribute", e);
+                    throw new UncheckedIOException(e);
+                  }
+                })
+            .toList();
+
     log.debug("Update on dest: {}", toUpdate);
     for (Path path : toUpdate) {
       Path sourcePath = job.sourceRoot().resolve(path);
       Path destinationPath = job.destinationRoot().resolve(path);
-      try {
-        FileTime sourceLastModified = Files.getLastModifiedTime(sourcePath);
-        FileTime destLastModified = Files.getLastModifiedTime(destinationPath);
-        if (sourceLastModified.compareTo(destLastModified) > 0) {
-          job.copyToDestination(sourcePath, destinationPath);
-        }
-      } catch (IOException e) {
-        log.error("Error getting last modified attribute", e);
-        throw new UncheckedIOException(e);
-      }
+      job.copyToDestination(sourcePath, destinationPath);
     }
+  }
+
+  private static <T> Set<T> difference(Collection<T> collA, Collection<T> collB) {
+    Set<T> set = new HashSet<>();
+    set.addAll(collA);
+    set.removeAll(collB);
+    return set;
+  }
+
+  private static <T> Set<T> intersection(Collection<T> collA, Collection<T> collB) {
+    Set<T> set = new HashSet<>();
+    set.addAll(collA);
+    set.retainAll(collB);
+    return set;
   }
 }
