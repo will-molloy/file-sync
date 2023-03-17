@@ -1,6 +1,5 @@
 package com.willmolloy;
 
-import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -10,15 +9,13 @@ import java.util.List;
  */
 public interface Job {
 
-  Path sourceRoot();
+  List<String> scanSource();
 
-  Path destinationRoot();
+  List<String> scanDestination();
 
-  List<Path> scanSource();
+  void copyToDestination(String file);
 
-  List<Path> scanDestination();
+  void deleteFromDestination(String file);
 
-  void copyToDestination(Path sourceFile, Path destinationLocation);
-
-  void deleteFromDestination(Path destinationFile);
+  boolean isNewerOnSource(String file);
 }
