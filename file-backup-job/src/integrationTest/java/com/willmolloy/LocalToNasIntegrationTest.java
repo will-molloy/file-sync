@@ -111,6 +111,44 @@ public class LocalToNasIntegrationTest {
             destinationRoot.resolve("Z"));
   }
 
+  @Test
+  void allThreeConditionsAtOnce() throws IOException {
+    // Given
+    Files.createFile(sourceRoot.resolve("A"));
+    Files.createFile(sourceRoot.resolve("B"));
+    Files.createFile(sourceRoot.resolve("C"));
+    Files.createFile(destinationRoot.resolve("D"));
+    Files.createFile(destinationRoot.resolve("E"));
+    Files.createFile(destinationRoot.resolve("F"));
+    Files.createFile(sourceRoot.resolve("X"));
+    Files.createFile(sourceRoot.resolve("Y"));
+    Files.createFile(sourceRoot.resolve("Z"));
+    Files.createFile(destinationRoot.resolve("X"));
+    Files.createFile(destinationRoot.resolve("Y"));
+    Files.createFile(destinationRoot.resolve("Z"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(
+            sourceRoot.resolve("A"),
+            sourceRoot.resolve("B"),
+            sourceRoot.resolve("C"),
+            destinationRoot.resolve("A"),
+            destinationRoot.resolve("B"),
+            destinationRoot.resolve("C"),
+            sourceRoot.resolve("X"),
+            sourceRoot.resolve("Y"),
+            sourceRoot.resolve("Z"),
+            destinationRoot.resolve("X"),
+            destinationRoot.resolve("Y"),
+            destinationRoot.resolve("Z"));
+  }
+
   private StreamSubject assertThatFileSystem() throws IOException {
     try (Stream<Path> testFiles = Files.walk(fileSystem.getPath("/"))) {
       return assertThat(testFiles.filter(Files::isRegularFile));

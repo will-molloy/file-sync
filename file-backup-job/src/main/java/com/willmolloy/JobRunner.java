@@ -61,7 +61,6 @@ public class JobRunner {
                   }
                 })
             .toList();
-
     log.debug("Update on dest: {}", toUpdate);
     for (Path path : toUpdate) {
       Path sourcePath = job.sourceRoot().resolve(path);
