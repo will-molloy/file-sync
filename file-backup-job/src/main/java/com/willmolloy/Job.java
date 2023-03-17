@@ -1,21 +1,24 @@
 package com.willmolloy;
 
+import java.nio.file.Path;
 import java.util.List;
 
 /**
  * Job definition.
  *
- * @param <SourceT> source file type.
- * @param <DestinationT> destination file type.
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Job<SourceT, DestinationT> {
+public interface Job {
 
-  List<SourceT> scanSource();
+  Path sourceRoot();
 
-  List<DestinationT> scanDestination();
+  Path destinationRoot();
 
-  void copyToDestination(SourceT sourceFile, DestinationT destinationFile);
+  List<Path> scanSource();
 
-  void deleteFromDestination(DestinationT destinationFile);
+  List<Path> scanDestination();
+
+  void copyToDestination(Path sourceFile, Path destinationLocation);
+
+  void deleteFromDestination(Path destinationFile);
 }
