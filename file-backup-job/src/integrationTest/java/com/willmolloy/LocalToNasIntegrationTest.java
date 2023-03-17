@@ -20,14 +20,22 @@ import org.junit.jupiter.api.Test;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
+@SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 public class LocalToNasIntegrationTest {
 
-  @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
   private FileSystem fileSystem;
+  private Path sourceRoot;
+  private Path destinationRoot;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     fileSystem = Jimfs.newFileSystem(Configuration.unix());
+
+    sourceRoot = fileSystem.getPath("/source");
+    Files.createDirectory(sourceRoot);
+
+    destinationRoot = fileSystem.getPath("/dest");
+    Files.createDirectory(destinationRoot);
   }
 
   @AfterEach
@@ -36,13 +44,8 @@ public class LocalToNasIntegrationTest {
   }
 
   @Test
-  void copiesFilesFromSourceToDestination() throws IOException {
+  void whenFilesOnlyOnSource_copiesFilesToDestination() throws IOException {
     // Given
-    Path sourceRoot = fileSystem.getPath("/source");
-    Files.createDirectory(sourceRoot);
-    Path destinationRoot = fileSystem.getPath("/dest");
-    Files.createDirectory(destinationRoot);
-
     Files.createFile(sourceRoot.resolve("A"));
     Files.createFile(sourceRoot.resolve("B"));
     Files.createFile(sourceRoot.resolve("C"));
@@ -61,6 +64,22 @@ public class LocalToNasIntegrationTest {
             destinationRoot.resolve("A"),
             destinationRoot.resolve("B"),
             destinationRoot.resolve("C"));
+  }
+
+  @Test
+  void whenFilesOnlyOnDestination_deletesFilesFromDestination() throws IOException {
+    // Given
+    Files.createFile(destinationRoot.resolve("D"));
+    Files.createFile(destinationRoot.resolve("E"));
+    Files.createFile(destinationRoot.resolve("F"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem().isEmpty();
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {
