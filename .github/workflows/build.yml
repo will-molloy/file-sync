@@ -26,10 +26,10 @@ jobs:
 
       - name: Build
         run: ./gradlew projects clean build --no-daemon --refresh-dependencies
-
-      - name: Upload coverage to Codecov (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v3
-        with:
-          flags: unit-tests
-          fail_ci_if_error: true
+#
+#      - name: Upload coverage to Codecov (Linux only)
+#        if: matrix.os == 'ubuntu-latest'
+#        uses: codecov/codecov-action@v3
+#        with:
+#          flags: unit-tests
+#          fail_ci_if_error: true
