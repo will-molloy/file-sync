@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
-import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,17 +30,14 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public List<String> scanSource() {
+  public Stream<Path> scanSource() {
     log.debug("scanSource({})", sourceRoot);
     try {
       return Files.walk(sourceRoot)
           // skip self
           .skip(1)
           // strip prefix so can compare with destination
-          .map(sourceRoot::relativize)
-          .map(Path::toString)
-          // TODO return stream? Will need some kind of producer-consumer setup at some point...
-          .toList();
+          .map(sourceRoot::relativize);
     } catch (IOException e) {
       log.error("Error scanning source", e);
       throw new UncheckedIOException(e);
@@ -48,14 +45,10 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public List<String> scanDestination() {
+  public Stream<Path> scanDestination() {
     log.debug("scanDestination({})", destinationRoot);
     try {
-      return Files.walk(destinationRoot)
-          .skip(1)
-          .map(destinationRoot::relativize)
-          .map(Path::toString)
-          .toList();
+      return Files.walk(destinationRoot).skip(1).map(destinationRoot::relativize);
     } catch (IOException e) {
       log.error("Error scanning destination", e);
       throw new UncheckedIOException(e);
@@ -63,7 +56,7 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public void copyToDestination(String file) {
+  public void copyToDestination(Path file) {
     log.debug("copyToDestination({})", file);
     Path sourceFile = sourceRoot.resolve(file);
     Path destinationFile = destinationRoot.resolve(file);
@@ -80,7 +73,7 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public void deleteFromDestination(String file) {
+  public void deleteFromDestination(Path file) {
     log.debug("deleteFromDestination({})", file);
     Path destinationFile = destinationRoot.resolve(file);
     try {
@@ -92,7 +85,7 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public boolean isNewerOnSource(String file) {
+  public boolean isNewerOnSource(Path file) {
     log.debug("isNewerOnSource({})", file);
     Path sourcePath = sourceRoot.resolve(file);
     Path destinationPath = destinationRoot.resolve(file);

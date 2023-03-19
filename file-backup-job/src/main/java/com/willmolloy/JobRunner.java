@@ -1,5 +1,6 @@
 package com.willmolloy;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -17,30 +18,30 @@ public class JobRunner {
   private static final Logger log = LogManager.getLogger();
 
   void run(Job job) {
-    List<String> sourceFiles = job.scanSource();
+    List<Path> sourceFiles = job.scanSource().toList();
     log.debug("Source: {}", sourceFiles);
-    List<String> destinationFiles = job.scanDestination();
+    List<Path> destinationFiles = job.scanDestination().toList();
     log.debug("Dest: {}", destinationFiles);
 
     // if file/directory on src AND not on dest, copy to dest
-    Set<String> toCopy = difference(sourceFiles, destinationFiles);
+    Set<Path> toCopy = difference(sourceFiles, destinationFiles);
     log.debug("Copy to dest: {}", toCopy);
-    for (String file : toCopy) {
+    for (Path file : toCopy) {
       job.copyToDestination(file);
     }
 
     // if file/directory not on src AND on dest, delete from dest
-    Set<String> toDelete = difference(destinationFiles, sourceFiles);
+    Set<Path> toDelete = difference(destinationFiles, sourceFiles);
     log.debug("Delete from dest: {}", toDelete);
-    for (String file : toDelete) {
+    for (Path file : toDelete) {
       job.deleteFromDestination(file);
     }
 
     // if file/directory on src AND dest, update dest - if src newer
-    List<String> toUpdate =
+    List<Path> toUpdate =
         intersection(sourceFiles, destinationFiles).stream().filter(job::isNewerOnSource).toList();
     log.debug("Update on dest: {}", toUpdate);
-    for (String file : toUpdate) {
+    for (Path file : toUpdate) {
       job.copyToDestination(file);
     }
   }

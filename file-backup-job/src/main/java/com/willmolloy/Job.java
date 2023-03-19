@@ -1,6 +1,7 @@
 package com.willmolloy;
 
-import java.util.List;
+import java.nio.file.Path;
+import java.util.stream.Stream;
 
 /**
  * Job definition.
@@ -9,13 +10,13 @@ import java.util.List;
  */
 public interface Job {
 
-  List<String> scanSource();
+  Stream<Path> scanSource();
 
-  List<String> scanDestination();
+  Stream<Path> scanDestination();
 
-  void copyToDestination(String file);
+  void copyToDestination(Path file);
 
-  void deleteFromDestination(String file);
+  void deleteFromDestination(Path file);
 
-  boolean isNewerOnSource(String file);
+  boolean isNewerOnSource(Path file);
 }

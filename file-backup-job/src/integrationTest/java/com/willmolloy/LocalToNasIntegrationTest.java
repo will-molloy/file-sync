@@ -199,7 +199,8 @@ public class LocalToNasIntegrationTest {
   }
 
   @Test
-  void whenDirectoryOnSourceAndParentDirectoryOnDestination_copiesChildDirectoryToDestination() throws IOException {
+  void whenDirectoryOnSourceAndParentDirectoryOnDestination_copiesChildDirectoryToDestination()
+      throws IOException {
     // Given
     Files.createDirectories(sourceRoot.resolve("A/B/C"));
     Files.createDirectories(destinationRoot.resolve("A/B/C"));
