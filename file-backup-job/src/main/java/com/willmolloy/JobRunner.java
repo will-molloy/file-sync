@@ -47,15 +47,19 @@ public class JobRunner {
     // 2.) if file/directory not on src AND on dest, delete from dest
     List<Path> toDelete =
         destFiles.stream()
+            .peek(p -> log.debug("1 {}", p))
             // exclude parent directories where children would've been copied from source to dest -
             // e.g. A/B/C copied. Don't delete A/B.
             // TODO O(N^2) quite bad - trie structure solves this?
             .filter(dest -> sourceFileLeaves.stream().noneMatch(source -> source.startsWith(dest)))
+            .peek(p -> log.debug("2 {}", p))
             // To minimise deletes, parents only, e.g. e.g. A, A/B, A/B/C - Just A
             .filter(
                 dest1 ->
+                    // TODO bug is that we compare with the original list, not what remains after above filter
                     destFiles.stream()
                         .noneMatch(dest2 -> dest1 != dest2 && dest1.startsWith(dest2)))
+            .peek(p -> log.debug("3 {}", p))
             .toList();
     log.debug("Delete from dest: {}", toDelete);
     for (Path file : toDelete) {
