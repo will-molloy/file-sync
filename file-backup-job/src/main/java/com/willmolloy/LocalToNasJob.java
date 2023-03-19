@@ -5,7 +5,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileTime;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -85,16 +84,18 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public boolean isNewerOnSource(Path file) {
-    log.debug("isNewerOnSource({})", file);
+  public boolean sourceNotEqualDestination(Path file) {
+    log.debug("sourceNotEqualDestination({})", file);
     Path sourcePath = sourceRoot.resolve(file);
     Path destinationPath = destinationRoot.resolve(file);
     try {
-      FileTime sourceLastModified = Files.getLastModifiedTime(sourcePath);
-      FileTime destLastModified = Files.getLastModifiedTime(destinationPath);
-      return sourceLastModified.compareTo(destLastModified) > 0;
+      // this is sufficient? Files.mismatch is quite expensive.
+      return Files.size(sourcePath) != Files.size(destinationPath)
+          || Files.getLastModifiedTime(sourcePath)
+                  .compareTo(Files.getLastModifiedTime(destinationPath))
+              != 0;
     } catch (IOException e) {
-      log.error("Error getting last modified attribute", e);
+      log.error("Error comparing source/dest", e);
       throw new UncheckedIOException(e);
     }
   }

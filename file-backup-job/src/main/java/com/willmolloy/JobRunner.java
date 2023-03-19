@@ -37,9 +37,11 @@ public class JobRunner {
       job.deleteFromDestination(file);
     }
 
-    // if file/directory on src AND dest, update dest - if src newer
+    // if file/directory on src AND dest, update dest
     List<Path> toUpdate =
-        intersection(sourceFiles, destinationFiles).stream().filter(job::isNewerOnSource).toList();
+        intersection(sourceFiles, destinationFiles).stream()
+            .filter(job::sourceNotEqualDestination)
+            .toList();
     log.debug("Update on dest: {}", toUpdate);
     for (Path file : toUpdate) {
       job.copyToDestination(file);

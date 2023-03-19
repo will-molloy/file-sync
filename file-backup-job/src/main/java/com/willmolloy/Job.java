@@ -18,5 +18,5 @@ public interface Job {
 
   void deleteFromDestination(Path file);
 
-  boolean isNewerOnSource(Path file);
+  boolean sourceNotEqualDestination(Path file);
 }
