@@ -149,6 +149,73 @@ public class LocalToNasIntegrationTest {
             destinationRoot.resolve("Z"));
   }
 
+  @Test
+  void whenDirectoryOnlyOnSource_copiesDirectoryToDestination() throws IOException {
+    // Given
+    Files.createDirectories(sourceRoot.resolve("A/B/C"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(
+            sourceRoot.resolve("A").resolve("B").resolve("C"),
+            destinationRoot.resolve("A").resolve("B").resolve("C"));
+  }
+
+  @Test
+  void whenDirectoryOnlyOnDestination_deletesDirectoryFromDestination() throws IOException {
+    // Given
+    Files.createDirectories(destinationRoot.resolve("A/B/C"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem().isEmpty();
+  }
+
+  @Test
+  void whenDirectoryOnSourceAndDestination_updatesDirectoryOnDestination() throws IOException {
+    // Given
+    Files.createDirectories(sourceRoot.resolve("A/B/C"));
+    Files.createDirectories(destinationRoot.resolve("A/B/C"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(
+            sourceRoot.resolve("A").resolve("B").resolve("C"),
+            destinationRoot.resolve("A").resolve("B").resolve("C"));
+  }
+
+  @Test
+  void whenDirectoryOnSourceAndParentDirectoryOnDestination_copiesChildDirectoryToDestination() throws IOException {
+    // Given
+    Files.createDirectories(sourceRoot.resolve("A/B/C"));
+    Files.createDirectories(destinationRoot.resolve("A/B/C"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    JobRunner jobRunner = new JobRunner();
+    jobRunner.run(job);
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(
+            sourceRoot.resolve("A").resolve("B").resolve("C"),
+            destinationRoot.resolve("A").resolve("B").resolve("C"));
+  }
+
   private StreamSubject assertThatFileSystem() throws IOException {
     try (Stream<Path> testFiles = Files.walk(fileSystem.getPath("/"))) {
       return assertThat(testFiles.filter(Files::isRegularFile));
