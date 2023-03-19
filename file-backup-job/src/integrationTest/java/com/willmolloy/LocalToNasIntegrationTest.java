@@ -218,8 +218,10 @@ public class LocalToNasIntegrationTest {
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {
-    try (Stream<Path> testFiles = Files.walk(fileSystem.getPath("/"))) {
-      return assertThat(testFiles.filter(Files::isRegularFile));
+    try (Stream<Path> sourceFiles = Files.walk(sourceRoot).skip(1)) {
+      try (Stream<Path> destinationFiles = Files.walk(destinationRoot).skip(1)) {
+        return assertThat(Stream.concat(sourceFiles, destinationFiles).filter(Helpers::isLeaf));
+      }
     }
   }
 }

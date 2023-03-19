@@ -35,6 +35,8 @@ public class LocalToNasJob implements Job {
       return Files.walk(sourceRoot)
           // skip self
           .skip(1)
+          // leaves only - copy method will create parent directories as required
+          .filter(Helpers::isLeaf)
           // strip prefix so can compare with destination
           .map(sourceRoot::relativize);
     } catch (IOException e) {
@@ -60,6 +62,10 @@ public class LocalToNasJob implements Job {
     Path sourceFile = sourceRoot.resolve(file);
     Path destinationFile = destinationRoot.resolve(file);
     try {
+      Path destinationParent = destinationFile.getParent();
+      if (destinationParent != null) {
+        Files.createDirectories(destinationParent);
+      }
       Files.copy(
           sourceFile,
           destinationFile,
