@@ -20,18 +20,29 @@ public class JobRunner {
   void run(Job job) {
     List<Path> sourceFiles = job.scanSource().toList();
     log.debug("Source: {}", sourceFiles);
-    List<Path> destinationFiles = job.scanDestination().toList();
-    log.debug("Dest: {}", destinationFiles);
+    List<Path> destFiles = job.scanDestination().toList();
+    log.debug("Dest: {}", destFiles);
 
     // if file/directory on src AND not on dest, copy to dest
-    Set<Path> toCopy = difference(sourceFiles, destinationFiles);
+    Set<Path> toCopy = difference(sourceFiles, destFiles);
     log.debug("Copy to dest: {}", toCopy);
     for (Path file : toCopy) {
       job.copyToDestination(file);
     }
 
     // if file/directory not on src AND on dest, delete from dest
-    Set<Path> toDelete = difference(destinationFiles, sourceFiles);
+    List<Path> toDelete =
+        destFiles.stream()
+            // exclude parent directories where children would've been copied from source to dest -
+            // e.g. A/B/C copied. Don't delete A/B.
+            // TODO O(N^2) quite bad - trie structure solves this?
+            .filter(dest -> sourceFiles.stream().noneMatch(source -> source.startsWith(dest)))
+            // minimise deletes by taking out entire directories - e.g. A, A/B, A/B/C -> just del A.
+            .filter(
+                dest1 ->
+                    destFiles.stream()
+                        .noneMatch(dest2 -> dest1 != dest2 && dest1.startsWith(dest2)))
+            .toList();
     log.debug("Delete from dest: {}", toDelete);
     for (Path file : toDelete) {
       job.deleteFromDestination(file);
@@ -39,7 +50,7 @@ public class JobRunner {
 
     // if file/directory on src AND dest, update dest
     List<Path> toUpdate =
-        intersection(sourceFiles, destinationFiles).stream()
+        intersection(sourceFiles, destFiles).stream()
             .filter(job::sourceNotEqualDestination)
             .toList();
     log.debug("Update on dest: {}", toUpdate);

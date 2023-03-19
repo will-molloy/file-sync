@@ -20,12 +20,12 @@ public class LocalToNasJob implements Job {
   private static final Logger log = LogManager.getLogger();
 
   private final Path sourceRoot;
-  private final Path destinationRoot;
+  private final Path destRoot;
 
-  public LocalToNasJob(Path sourceRoot, Path destinationRoot) {
-    log.debug("LocalToNasJob({}, {})", sourceRoot, destinationRoot);
+  public LocalToNasJob(Path sourceRoot, Path destRoot) {
+    log.debug("LocalToNasJob({}, {})", sourceRoot, destRoot);
     this.sourceRoot = sourceRoot;
-    this.destinationRoot = destinationRoot;
+    this.destRoot = destRoot;
   }
 
   @Override
@@ -47,9 +47,9 @@ public class LocalToNasJob implements Job {
 
   @Override
   public Stream<Path> scanDestination() {
-    log.debug("scanDestination({})", destinationRoot);
+    log.debug("scanDestination({})", destRoot);
     try {
-      return Files.walk(destinationRoot).skip(1).map(destinationRoot::relativize);
+      return Files.walk(destRoot).skip(1).map(destRoot::relativize);
     } catch (IOException e) {
       log.error("Error scanning destination", e);
       throw new UncheckedIOException(e);
@@ -60,7 +60,7 @@ public class LocalToNasJob implements Job {
   public void copyToDestination(Path file) {
     log.debug("copyToDestination({})", file);
     Path sourceFile = sourceRoot.resolve(file);
-    Path destinationFile = destinationRoot.resolve(file);
+    Path destinationFile = destRoot.resolve(file);
     try {
       Path destinationParent = destinationFile.getParent();
       if (destinationParent != null) {
@@ -80,20 +80,29 @@ public class LocalToNasJob implements Job {
   @Override
   public void deleteFromDestination(Path file) {
     log.debug("deleteFromDestination({})", file);
-    Path destinationFile = destinationRoot.resolve(file);
+    Path destinationFile = destRoot.resolve(file);
     try {
-      Files.delete(destinationFile);
+      delete(destinationFile);
     } catch (IOException e) {
       log.error("Error deleting from destination", e);
       throw new UncheckedIOException(e);
     }
   }
 
+  private void delete(Path path) throws IOException {
+    if (Files.isDirectory(path)) {
+      for (Path child : Files.list(path).toList()) {
+        delete(child);
+      }
+    }
+    Files.deleteIfExists(path);
+  }
+
   @Override
   public boolean sourceNotEqualDestination(Path file) {
     log.debug("sourceNotEqualDestination({})", file);
     Path sourcePath = sourceRoot.resolve(file);
-    Path destinationPath = destinationRoot.resolve(file);
+    Path destinationPath = destRoot.resolve(file);
     try {
       // this is sufficient? Files.mismatch is quite expensive.
       return Files.size(sourcePath) != Files.size(destinationPath)
