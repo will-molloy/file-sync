@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
-public class LocalToNasIntegrationTest {
+class LocalToNasIntegrationTest {
 
   private FileSystem fileSystem;
   private Path sourceRoot;
@@ -52,8 +52,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem()
@@ -75,8 +74,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -97,8 +95,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem()
@@ -129,8 +126,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem()
@@ -156,8 +152,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem()
@@ -173,8 +168,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -188,8 +182,7 @@ public class LocalToNasIntegrationTest {
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem()
@@ -203,18 +196,34 @@ public class LocalToNasIntegrationTest {
       throws IOException {
     // Given
     Files.createDirectories(sourceRoot.resolve("A/B/C"));
-    Files.createDirectories(destinationRoot.resolve("A/B/C"));
+    Files.createDirectories(destinationRoot.resolve("A/B"));
 
     // When
     LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
-    JobRunner jobRunner = new JobRunner();
-    jobRunner.run(job);
+    new JobRunner(job).run();
 
     // Then
     assertThatFileSystem()
         .containsExactly(
             sourceRoot.resolve("A").resolve("B").resolve("C"),
             destinationRoot.resolve("A").resolve("B").resolve("C"));
+  }
+
+  @Test
+  void whenDirectoryOnSourceAndChildDirectoryOnDestination_deletesChildDirectoryFromDestination()
+      throws IOException {
+    // Given
+    Files.createDirectories(sourceRoot.resolve("A/B"));
+    Files.createDirectories(destinationRoot.resolve("A/B/C"));
+
+    // When
+    LocalToNasJob job = new LocalToNasJob(sourceRoot, destinationRoot);
+    new JobRunner(job).run();
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(
+            sourceRoot.resolve("A").resolve("B"), destinationRoot.resolve("A").resolve("B"));
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {

@@ -17,27 +17,41 @@ public class JobRunner {
 
   private static final Logger log = LogManager.getLogger();
 
-  void run(Job job) {
+  private final Job job;
+
+  public JobRunner(Job job) {
+    this.job = job;
+  }
+
+  void run() {
     List<Path> sourceFiles = job.scanSource().toList();
     log.debug("Source: {}", sourceFiles);
     List<Path> destFiles = job.scanDestination().toList();
     log.debug("Dest: {}", destFiles);
 
-    // if file/directory on src AND not on dest, copy to dest
-    Set<Path> toCopy = difference(sourceFiles, destFiles);
+    // 1.) if file/directory on src AND not on dest, copy to dest
+    List<Path> sourceFileLeaves =
+        sourceFiles.stream()
+            // To minimise copies, leaves only, e.g. A, A/B, A/B/C - Just A/B/C
+            .filter(
+                path1 ->
+                    sourceFiles.stream()
+                        .noneMatch(path2 -> path1 != path2 && path2.startsWith(path1)))
+            .toList();
+    Set<Path> toCopy = difference(sourceFileLeaves, destFiles);
     log.debug("Copy to dest: {}", toCopy);
     for (Path file : toCopy) {
       job.copyToDestination(file);
     }
 
-    // if file/directory not on src AND on dest, delete from dest
+    // 2.) if file/directory not on src AND on dest, delete from dest
     List<Path> toDelete =
         destFiles.stream()
             // exclude parent directories where children would've been copied from source to dest -
             // e.g. A/B/C copied. Don't delete A/B.
             // TODO O(N^2) quite bad - trie structure solves this?
-            .filter(dest -> sourceFiles.stream().noneMatch(source -> source.startsWith(dest)))
-            // minimise deletes by taking out entire directories - e.g. A, A/B, A/B/C -> just del A.
+            .filter(dest -> sourceFileLeaves.stream().noneMatch(source -> source.startsWith(dest)))
+            // To minimise deletes, parents only, e.g. e.g. A, A/B, A/B/C - Just A
             .filter(
                 dest1 ->
                     destFiles.stream()
@@ -48,9 +62,9 @@ public class JobRunner {
       job.deleteFromDestination(file);
     }
 
-    // if file/directory on src AND dest, update dest
+    // 3.) if file/directory on src AND dest, update dest
     List<Path> toUpdate =
-        intersection(sourceFiles, destFiles).stream()
+        intersection(sourceFileLeaves, destFiles).stream()
             .filter(job::sourceNotEqualDestination)
             .toList();
     log.debug("Update on dest: {}", toUpdate);

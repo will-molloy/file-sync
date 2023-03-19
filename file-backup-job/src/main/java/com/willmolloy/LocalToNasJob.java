@@ -30,28 +30,24 @@ public class LocalToNasJob implements Job {
 
   @Override
   public Stream<Path> scanSource() {
-    log.debug("scanSource({})", sourceRoot);
-    try {
-      return Files.walk(sourceRoot)
-          // skip self
-          .skip(1)
-          // leaves only - copy method will create parent directories as required
-          .filter(Helpers::isLeaf)
-          // strip prefix so can compare with destination
-          .map(sourceRoot::relativize);
-    } catch (IOException e) {
-      log.error("Error scanning source", e);
-      throw new UncheckedIOException(e);
-    }
+    return scan(sourceRoot);
   }
 
   @Override
   public Stream<Path> scanDestination() {
-    log.debug("scanDestination({})", destRoot);
+    return scan(destRoot);
+  }
+
+  private static Stream<Path> scan(Path root) {
+    log.debug("scan({})", root);
     try {
-      return Files.walk(destRoot).skip(1).map(destRoot::relativize);
+      return Files.walk(root)
+          // skip self
+          .skip(1)
+          // strip prefix so can compare with destination
+          .map(root::relativize);
     } catch (IOException e) {
-      log.error("Error scanning destination", e);
+      log.error("Error scanning", e);
       throw new UncheckedIOException(e);
     }
   }
