@@ -23,6 +23,10 @@ import org.junit.jupiter.api.Test;
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 class LocalToNasIntegrationTest {
 
+  // TODO basically copy paste of unit test atm
+  //  need to test with real file contents & file system...
+  // TODO also need performance tests... (millions of files)
+
   private FileSystem fileSystem;
   private Path sourceRoot;
   private Path destinationRoot;

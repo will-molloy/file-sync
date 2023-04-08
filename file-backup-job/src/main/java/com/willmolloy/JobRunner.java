@@ -1,9 +1,11 @@
 package com.willmolloy;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,75 +21,80 @@ public class JobRunner {
 
   private final Job job;
 
+  @SuppressFBWarnings(
+      value = "EI_EXPOSE_REP2",
+      justification = "False positive? Job is not mutable")
   public JobRunner(Job job) {
-    this.job = job;
+    this.job = requireNonNull(job);
   }
 
   void run() {
-    List<Path> sourceFiles = job.scanSource().toList();
+    Set<Path> sourceFiles = job.scanSource().collect(toSet());
     log.debug("Source: {}", sourceFiles);
-    List<Path> destFiles = job.scanDestination().toList();
+    Set<Path> destFiles = job.scanDestination().collect(toSet());
     log.debug("Dest: {}", destFiles);
 
     // 1.) if file/directory on src AND not on dest, copy to dest
-    List<Path> sourceFileLeaves =
-        sourceFiles.stream()
-            // To minimise copies, leaves only, e.g. A, A/B, A/B/C - Just A/B/C
-            .filter(
-                path1 ->
-                    sourceFiles.stream()
-                        .noneMatch(path2 -> path1 != path2 && path2.startsWith(path1)))
-            .toList();
-    Set<Path> toCopy = difference(sourceFileLeaves, destFiles);
-    log.debug("Copy to dest: {}", toCopy);
-    for (Path file : toCopy) {
+    Set<Path> toCopy = difference(sourceFiles, destFiles);
+    log.debug("toCopy: {}", toCopy);
+    // To minimise copies, leaves only, e.g. A, A/B, A/B/C - Just A/B/C
+    Set<Path> toCopyMinimal = leaves(toCopy);
+    log.debug("toCopyMinimal: {}", toCopyMinimal);
+    for (Path file : toCopyMinimal) {
       job.copyToDestination(file);
     }
 
     // 2.) if file/directory not on src AND on dest, delete from dest
-    List<Path> toDelete =
-        destFiles.stream()
-            .peek(p -> log.debug("1 {}", p))
-            // exclude parent directories where children would've been copied from source to dest -
-            // e.g. A/B/C copied. Don't delete A/B.
-            // TODO O(N^2) quite bad - trie structure solves this?
-            .filter(dest -> sourceFileLeaves.stream().noneMatch(source -> source.startsWith(dest)))
-            .peek(p -> log.debug("2 {}", p))
-            // To minimise deletes, parents only, e.g. e.g. A, A/B, A/B/C - Just A
-            .filter(
-                dest1 ->
-                    // TODO bug is that we compare with the original list, not what remains after above filter
-                    destFiles.stream()
-                        .noneMatch(dest2 -> dest1 != dest2 && dest1.startsWith(dest2)))
-            .peek(p -> log.debug("3 {}", p))
-            .toList();
-    log.debug("Delete from dest: {}", toDelete);
-    for (Path file : toDelete) {
+    Set<Path> toDelete = difference(destFiles, sourceFiles);
+    log.debug("toDelete: {}", toDelete);
+    // To minimise deletes, parents only, e.g. e.g. A, A/B, A/B/C - Just A
+    Set<Path> toDeleteMinimal = parents(toDelete);
+    log.debug("toDeleteMinimal: {}", toDeleteMinimal);
+    for (Path file : toDeleteMinimal) {
       job.deleteFromDestination(file);
     }
 
     // 3.) if file/directory on src AND dest, update dest
-    List<Path> toUpdate =
-        intersection(sourceFileLeaves, destFiles).stream()
+    Set<Path> toUpdate =
+        // TODO only needs to run on leaves (and just files, not directories??)
+        //  what if entire directory structure is mirrored... need to update attributes??
+        intersection(leaves(sourceFiles), leaves(destFiles)).stream()
             .filter(job::sourceNotEqualDestination)
-            .toList();
-    log.debug("Update on dest: {}", toUpdate);
+            .collect(toSet());
+    log.debug("toUpdate: {}", toUpdate);
     for (Path file : toUpdate) {
       job.copyToDestination(file);
     }
   }
 
-  private static <T> Set<T> difference(Collection<T> collA, Collection<T> collB) {
+  private static <T> Set<T> difference(Set<T> set1, Set<T> set2) {
     Set<T> set = new HashSet<>();
-    set.addAll(collA);
-    set.removeAll(collB);
+    set.addAll(set1);
+    set.removeAll(set2);
     return set;
   }
 
-  private static <T> Set<T> intersection(Collection<T> collA, Collection<T> collB) {
+  private static <T> Set<T> intersection(Set<T> set1, Set<T> set2) {
     Set<T> set = new HashSet<>();
-    set.addAll(collA);
-    set.retainAll(collB);
+    set.addAll(set1);
+    set.retainAll(set2);
     return set;
+  }
+
+  // TODO O(n^2) not good
+  private static Set<Path> leaves(Set<Path> paths) {
+    return paths.stream()
+        .filter(
+            path1 -> paths.stream().noneMatch(path2 -> path1 != path2 && path2.startsWith(path1)))
+        .collect(toSet());
+  }
+
+  // TODO name is right? What exactly is this method doing haha... wrote it and forgot.
+  //  It's just an inverse of the above?
+  private static Set<Path> parents(Set<Path> paths) {
+    return paths.stream()
+        .filter(
+            path1 -> paths.stream().noneMatch(path2 -> path1 != path2 && path1.startsWith(path2)))
+        .collect(toSet());
   }
 }

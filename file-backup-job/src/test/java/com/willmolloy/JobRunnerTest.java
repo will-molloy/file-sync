@@ -1,6 +1,5 @@
 package com.willmolloy;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -67,7 +66,7 @@ class JobRunnerTest {
   void whenFilesOnSourceAndDestination_updatesFilesOnDestination() {
     // Given
     when(mockJob.scanSource()).thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("Z")));
-    when(mockJob.scanDestination()).thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("X")));
+    when(mockJob.scanDestination()).thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("Z")));
 
     when(mockJob.sourceNotEqualDestination(any())).thenReturn(true);
 
@@ -100,7 +99,7 @@ class JobRunnerTest {
                 Path.of("F"),
                 Path.of("X"),
                 Path.of("Y"),
-                Path.of("X")));
+                Path.of("Z")));
 
     when(mockJob.sourceNotEqualDestination(any())).thenReturn(true);
 
