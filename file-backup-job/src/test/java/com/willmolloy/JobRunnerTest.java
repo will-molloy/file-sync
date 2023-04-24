@@ -80,7 +80,7 @@ class JobRunnerTest {
   }
 
   @Test
-  void allThreeConditionsAtOnce() {
+  void copyDeleteAndUpdate() {
     // Given
     when(mockJob.scanSource())
         .thenReturn(
