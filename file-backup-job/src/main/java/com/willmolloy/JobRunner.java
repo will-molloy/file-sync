@@ -36,31 +36,27 @@ public class JobRunner {
 
     // 1.) if file/directory on src AND not on dest, copy to dest
     Set<Path> toCopy = difference(sourceFiles, destFiles);
-    log.debug("toCopy: {}", toCopy);
     // To minimise copies, leaves only, e.g. A, A/B, A/B/C - Just A/B/C
-    Set<Path> toCopyMinimal = leaves(toCopy);
-    log.debug("toCopyMinimal: {}", toCopyMinimal);
-    for (Path file : toCopyMinimal) {
+    toCopy = leaves(toCopy);
+    log.debug("toCopy: {}", toCopy);
+    for (Path file : toCopy) {
       job.copy(file);
     }
 
     // 2.) if file/directory not on src AND on dest, delete from dest
     Set<Path> toDelete = difference(destFiles, sourceFiles);
-    log.debug("toDelete: {}", toDelete);
     // To minimise deletes, parents only, e.g. e.g. A, A/B, A/B/C - Just A
-    Set<Path> toDeleteMinimal = parents(toDelete);
-    log.debug("toDeleteMinimal: {}", toDeleteMinimal);
-    for (Path file : toDeleteMinimal) {
+    toDelete = parents(toDelete);
+    log.debug("toDelete: {}", toDelete);
+    for (Path file : toDelete) {
       job.delete(file);
     }
 
     // 3.) if file/directory on src AND dest, update dest
     Set<Path> toUpdate =
-        // TODO only needs to run on leaves (and just files, not directories??)
+        // TODO only needs to run on leaves? (and just files, not directories??)
         //  what if entire directory structure is mirrored... need to update attributes??
-        intersection(leaves(sourceFiles), leaves(destFiles)).stream()
-            .filter(job::sourceNotEqualDestination)
-            .collect(toSet());
+        intersection(leaves(sourceFiles), leaves(destFiles));
     log.debug("toUpdate: {}", toUpdate);
     for (Path file : toUpdate) {
       job.update(file);

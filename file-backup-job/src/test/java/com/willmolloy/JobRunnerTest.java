@@ -1,6 +1,5 @@
 package com.willmolloy;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -68,8 +67,6 @@ class JobRunnerTest {
     when(mockJob.scanSource()).thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("Z")));
     when(mockJob.scanDestination()).thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("Z")));
 
-    when(mockJob.sourceNotEqualDestination(any())).thenReturn(true);
-
     // When
     jobRunner.run();
 
@@ -100,8 +97,6 @@ class JobRunnerTest {
                 Path.of("X"),
                 Path.of("Y"),
                 Path.of("Z")));
-
-    when(mockJob.sourceNotEqualDestination(any())).thenReturn(true);
 
     // When
     jobRunner.run();
@@ -153,8 +148,6 @@ class JobRunnerTest {
         .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
     when(mockJob.scanDestination())
         .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
-
-    when(mockJob.sourceNotEqualDestination(any())).thenReturn(true);
 
     // When
     jobRunner.run();

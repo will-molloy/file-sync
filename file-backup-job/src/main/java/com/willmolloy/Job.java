@@ -9,6 +9,7 @@ import java.util.stream.Stream;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public interface Job {
+  // TODO quite a lot of methods... possible to split into Source & Destination interfaces?
 
   Stream<Path> scanSource();
 
@@ -19,6 +20,4 @@ public interface Job {
   void delete(Path file);
 
   void update(Path file);
-
-  boolean sourceNotEqualDestination(Path file);
 }

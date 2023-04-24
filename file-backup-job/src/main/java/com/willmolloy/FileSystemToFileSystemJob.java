@@ -97,6 +97,9 @@ public class FileSystemToFileSystemJob implements Job {
     log.debug("update({})", file);
     Path sourceFile = sourceRoot.resolve(file);
     Path destinationFile = destRoot.resolve(file);
+    if (equals(sourceFile, destinationFile)) {
+      return;
+    }
     try {
       Files.copy(
           sourceFile,
@@ -109,19 +112,16 @@ public class FileSystemToFileSystemJob implements Job {
     }
   }
 
-  @Override
-  public boolean sourceNotEqualDestination(Path file) {
-    log.debug("sourceNotEqualDestination({})", file);
-    Path sourcePath = sourceRoot.resolve(file);
-    Path destinationPath = destRoot.resolve(file);
+  private boolean equals(Path sourcePath, Path destinationPath) {
+    log.debug("equals({}, {})", sourcePath, destinationPath);
     try {
       // this is sufficient? Files.mismatch is quite expensive.
-      return Files.size(sourcePath) != Files.size(destinationPath)
-          || Files.getLastModifiedTime(sourcePath)
+      return Files.size(sourcePath) == Files.size(destinationPath)
+          && Files.getLastModifiedTime(sourcePath)
                   .compareTo(Files.getLastModifiedTime(destinationPath))
-              != 0;
+              == 0;
     } catch (IOException e) {
-      log.error("Error comparing file [%s] between source/dest".formatted(file), e);
+      log.error("Error comparing files [%s, %s]".formatted(sourcePath, destinationPath), e);
       throw new UncheckedIOException(e);
     }
   }
