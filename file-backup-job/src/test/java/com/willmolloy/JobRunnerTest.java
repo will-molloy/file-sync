@@ -42,9 +42,9 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).copyToDestination(Path.of("A"));
-    verify(mockJob).copyToDestination(Path.of("B"));
-    verify(mockJob).copyToDestination(Path.of("C"));
+    verify(mockJob).copy(Path.of("A"));
+    verify(mockJob).copy(Path.of("B"));
+    verify(mockJob).copy(Path.of("C"));
   }
 
   @Test
@@ -57,9 +57,9 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).deleteFromDestination(Path.of("D"));
-    verify(mockJob).deleteFromDestination(Path.of("E"));
-    verify(mockJob).deleteFromDestination(Path.of("F"));
+    verify(mockJob).delete(Path.of("D"));
+    verify(mockJob).delete(Path.of("E"));
+    verify(mockJob).delete(Path.of("F"));
   }
 
   @Test
@@ -74,9 +74,9 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).copyToDestination(Path.of("X"));
-    verify(mockJob).copyToDestination(Path.of("Y"));
-    verify(mockJob).copyToDestination(Path.of("Z"));
+    verify(mockJob).update(Path.of("X"));
+    verify(mockJob).update(Path.of("Y"));
+    verify(mockJob).update(Path.of("Z"));
   }
 
   @Test
@@ -107,15 +107,15 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).copyToDestination(Path.of("A"));
-    verify(mockJob).copyToDestination(Path.of("B"));
-    verify(mockJob).copyToDestination(Path.of("C"));
-    verify(mockJob).deleteFromDestination(Path.of("D"));
-    verify(mockJob).deleteFromDestination(Path.of("E"));
-    verify(mockJob).deleteFromDestination(Path.of("F"));
-    verify(mockJob).copyToDestination(Path.of("X"));
-    verify(mockJob).copyToDestination(Path.of("Y"));
-    verify(mockJob).copyToDestination(Path.of("Z"));
+    verify(mockJob).copy(Path.of("A"));
+    verify(mockJob).copy(Path.of("B"));
+    verify(mockJob).copy(Path.of("C"));
+    verify(mockJob).delete(Path.of("D"));
+    verify(mockJob).delete(Path.of("E"));
+    verify(mockJob).delete(Path.of("F"));
+    verify(mockJob).update(Path.of("X"));
+    verify(mockJob).update(Path.of("Y"));
+    verify(mockJob).update(Path.of("Z"));
   }
 
   @Test
@@ -129,7 +129,7 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).copyToDestination(Path.of("A/B/C"));
+    verify(mockJob).copy(Path.of("A/B/C"));
   }
 
   @Test
@@ -143,7 +143,7 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).deleteFromDestination(Path.of("A"));
+    verify(mockJob).delete(Path.of("A"));
   }
 
   @Test
@@ -160,7 +160,7 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).copyToDestination(Path.of("A/B/C"));
+    verify(mockJob).update(Path.of("A/B/C"));
   }
 
   @Test
@@ -174,7 +174,7 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).copyToDestination(Path.of("A/B/C"));
+    verify(mockJob).copy(Path.of("A/B/C"));
   }
 
   @Test
@@ -188,6 +188,6 @@ class JobRunnerTest {
     jobRunner.run();
 
     // Then
-    verify(mockJob).deleteFromDestination(Path.of("A/B/C"));
+    verify(mockJob).delete(Path.of("A/B/C"));
   }
 }

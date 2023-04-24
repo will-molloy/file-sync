@@ -44,7 +44,7 @@ public class LocalToNasJob implements Job {
       return Files.walk(root)
           // skip self
           .skip(1)
-          // strip prefix so can compare with destination
+          // strip prefix so can compare source & destination
           .map(root::relativize);
     } catch (IOException e) {
       log.error("Error scanning", e);
@@ -53,8 +53,8 @@ public class LocalToNasJob implements Job {
   }
 
   @Override
-  public void copyToDestination(Path file) {
-    log.debug("copyToDestination({})", file);
+  public void copy(Path file) {
+    log.debug("copy({})", file);
     Path sourceFile = sourceRoot.resolve(file);
     Path destinationFile = destRoot.resolve(file);
     try {
@@ -62,36 +62,49 @@ public class LocalToNasJob implements Job {
       if (destinationParent != null) {
         Files.createDirectories(destinationParent);
       }
+      Files.copy(sourceFile, destinationFile, StandardCopyOption.COPY_ATTRIBUTES);
+    } catch (IOException e) {
+      log.error("Error copying file [%s] to destination".formatted(file), e);
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  @Override
+  public void delete(Path file) {
+    log.debug("delete({})", file);
+    Path destinationFile = destRoot.resolve(file);
+    try {
+      deleteRecursively(destinationFile);
+    } catch (IOException e) {
+      log.error("Error deleting file [%s] from destination".formatted(file), e);
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private void deleteRecursively(Path path) throws IOException {
+    if (Files.isDirectory(path)) {
+      for (Path child : Files.list(path).toList()) {
+        deleteRecursively(child);
+      }
+    }
+    Files.deleteIfExists(path);
+  }
+
+  @Override
+  public void update(Path file) {
+    log.debug("update({})", file);
+    Path sourceFile = sourceRoot.resolve(file);
+    Path destinationFile = destRoot.resolve(file);
+    try {
       Files.copy(
           sourceFile,
           destinationFile,
           StandardCopyOption.REPLACE_EXISTING,
           StandardCopyOption.COPY_ATTRIBUTES);
     } catch (IOException e) {
-      log.error("Error copying to destination", e);
+      log.error("Error updating file [%s] on destination".formatted(file), e);
       throw new UncheckedIOException(e);
     }
-  }
-
-  @Override
-  public void deleteFromDestination(Path file) {
-    log.debug("deleteFromDestination({})", file);
-    Path destinationFile = destRoot.resolve(file);
-    try {
-      delete(destinationFile);
-    } catch (IOException e) {
-      log.error("Error deleting from destination", e);
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private void delete(Path path) throws IOException {
-    if (Files.isDirectory(path)) {
-      for (Path child : Files.list(path).toList()) {
-        delete(child);
-      }
-    }
-    Files.deleteIfExists(path);
   }
 
   @Override

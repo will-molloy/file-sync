@@ -41,7 +41,7 @@ public class JobRunner {
     Set<Path> toCopyMinimal = leaves(toCopy);
     log.debug("toCopyMinimal: {}", toCopyMinimal);
     for (Path file : toCopyMinimal) {
-      job.copyToDestination(file);
+      job.copy(file);
     }
 
     // 2.) if file/directory not on src AND on dest, delete from dest
@@ -51,7 +51,7 @@ public class JobRunner {
     Set<Path> toDeleteMinimal = parents(toDelete);
     log.debug("toDeleteMinimal: {}", toDeleteMinimal);
     for (Path file : toDeleteMinimal) {
-      job.deleteFromDestination(file);
+      job.delete(file);
     }
 
     // 3.) if file/directory on src AND dest, update dest
@@ -63,7 +63,7 @@ public class JobRunner {
             .collect(toSet());
     log.debug("toUpdate: {}", toUpdate);
     for (Path file : toUpdate) {
-      job.copyToDestination(file);
+      job.update(file);
     }
   }
 

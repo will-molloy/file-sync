@@ -14,9 +14,11 @@ public interface Job {
 
   Stream<Path> scanDestination();
 
-  void copyToDestination(Path file);
+  void copy(Path file);
 
-  void deleteFromDestination(Path file);
+  void delete(Path file);
+
+  void update(Path file);
 
   boolean sourceNotEqualDestination(Path file);
 }
