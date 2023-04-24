@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Job runner.
+ * Job runner. Main backup algorithm is defined here.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */

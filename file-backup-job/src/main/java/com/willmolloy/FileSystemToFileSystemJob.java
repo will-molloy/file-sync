@@ -1,5 +1,7 @@
 package com.willmolloy;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -10,36 +12,36 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * For backups from Local PC to NAS.
+ * For backups from a File System to another File System (represented by {@link Path}).
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-// TODO rename? It could be same PC to same PC (e.g. HDD) not necessarily a NAS.
-public class LocalToNasJob implements Job {
+public class FileSystemToFileSystemJob implements Job {
 
   private static final Logger log = LogManager.getLogger();
 
   private final Path sourceRoot;
   private final Path destRoot;
 
-  public LocalToNasJob(Path sourceRoot, Path destRoot) {
-    log.debug("LocalToNasJob({}, {})", sourceRoot, destRoot);
-    this.sourceRoot = sourceRoot;
-    this.destRoot = destRoot;
+  public FileSystemToFileSystemJob(Path sourceRoot, Path destRoot) {
+    log.debug("FileSystemToFileSystemJob({}, {})", sourceRoot, destRoot);
+    this.sourceRoot = requireNonNull(sourceRoot);
+    this.destRoot = requireNonNull(destRoot);
   }
 
   @Override
   public Stream<Path> scanSource() {
+    log.debug("scanSource({})", sourceRoot);
     return scan(sourceRoot);
   }
 
   @Override
   public Stream<Path> scanDestination() {
+    log.debug("scanDestination({})", destRoot);
     return scan(destRoot);
   }
 
   private static Stream<Path> scan(Path root) {
-    log.debug("scan({})", root);
     try {
       return Files.walk(root)
           // skip self
@@ -119,7 +121,7 @@ public class LocalToNasJob implements Job {
                   .compareTo(Files.getLastModifiedTime(destinationPath))
               != 0;
     } catch (IOException e) {
-      log.error("Error comparing source/dest", e);
+      log.error("Error comparing file [%s] between source/dest".formatted(file), e);
       throw new UncheckedIOException(e);
     }
   }

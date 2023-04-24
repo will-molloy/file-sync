@@ -15,7 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * JobRunnerTest.
+ * JobRunnerTest. Ensures only the expected operations are run.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
