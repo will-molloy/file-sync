@@ -1,2 +1,2 @@
 rootProject.name = 'file-backup'
-include 'file-backup-job'
+include 'file-backup'
