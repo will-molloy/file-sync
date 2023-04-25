@@ -20,17 +20,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * FileSystemToFileSystemJobTest.
+ * FileSystemBackupTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class FileSystemToFileSystemJobTest {
+class FileSystemBackupTest {
 
   private FileSystem fileSystem;
   private Path sourceRoot;
   private Path destinationRoot;
 
-  private FileSystemToFileSystemJob sut;
+  private FileSystemBackup sut;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -42,7 +42,7 @@ class FileSystemToFileSystemJobTest {
     destinationRoot = fileSystem.getPath("/dest");
     Files.createDirectory(destinationRoot);
 
-    sut = new FileSystemToFileSystemJob(sourceRoot, destinationRoot);
+    sut = new FileSystemBackup(sourceRoot, destinationRoot);
   }
 
   @AfterEach

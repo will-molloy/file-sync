@@ -16,15 +16,15 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class FileSystemToFileSystemJob implements Job {
+public class FileSystemBackup implements Backup {
 
   private static final Logger log = LogManager.getLogger();
 
   private final Path sourceRoot;
   private final Path destRoot;
 
-  public FileSystemToFileSystemJob(Path sourceRoot, Path destRoot) {
-    log.debug("FileSystemToFileSystemJob(sourceRoot={}, destRoot={})", sourceRoot, destRoot);
+  public FileSystemBackup(Path sourceRoot, Path destRoot) {
+    log.debug("FileSystemBackup(sourceRoot={}, destRoot={})", sourceRoot, destRoot);
     this.sourceRoot = requireNonNull(sourceRoot);
     this.destRoot = requireNonNull(destRoot);
   }

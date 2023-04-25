@@ -19,7 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * FileSystemToFileSystemIntegrationTest.
+ * FileSystemBackupPerformanceTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
@@ -66,7 +66,7 @@ class FileSystemBackupPerformanceTest {
             .toList();
 
     // When
-    new JobRunner(new FileSystemToFileSystemJob(sourceRoot, destinationRoot)).run();
+    new BackupAlgorithm(new FileSystemBackup(sourceRoot, destinationRoot)).run();
 
     // Then
     assertThat(Files.list(sourceRoot))
@@ -81,20 +81,18 @@ class FileSystemBackupPerformanceTest {
   void delete_files(int count) throws IOException {
     // Given
     IntStream.range(0, count)
-        .mapToObj(
+        .forEach(
             i -> {
               try {
                 Path relativeFile = fileSystem.getPath("File-%d".formatted(i));
                 Files.createFile(destinationRoot.resolve(relativeFile));
-                return relativeFile;
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
               }
-            })
-        .toList();
+            });
 
     // When
-    new JobRunner(new FileSystemToFileSystemJob(sourceRoot, destinationRoot)).run();
+    new BackupAlgorithm(new FileSystemBackup(sourceRoot, destinationRoot)).run();
 
     // Then
     assertThat(Files.list(sourceRoot)).isEmpty();

@@ -11,27 +11,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Job runner. Main backup algorithm is defined here.
+ * Main backup algorithm is defined here.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class JobRunner {
+public class BackupAlgorithm {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final Job job;
+  private final Backup backup;
 
-  @SuppressFBWarnings(
-      value = "EI_EXPOSE_REP2",
-      justification = "False positive? Job is not mutable")
-  public JobRunner(Job job) {
-    this.job = requireNonNull(job);
+  @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "False positive?")
+  public BackupAlgorithm(Backup backup) {
+    this.backup = requireNonNull(backup);
   }
 
   void run() {
-    Set<Path> sourceFiles = job.scanSource().collect(toSet());
+    Set<Path> sourceFiles = backup.scanSource().collect(toSet());
     log.debug("Source: {}", sourceFiles);
-    Set<Path> destFiles = job.scanDestination().collect(toSet());
+    Set<Path> destFiles = backup.scanDestination().collect(toSet());
     log.debug("Dest: {}", destFiles);
 
     // 1.) if file/directory on src AND not on dest, copy to dest
@@ -40,7 +38,7 @@ public class JobRunner {
     toCopy = leaves(toCopy);
     log.debug("toCopy: {}", toCopy);
     for (Path file : toCopy) {
-      job.copy(file);
+      backup.copy(file);
     }
 
     // 2.) if file/directory not on src AND on dest, delete from dest
@@ -49,7 +47,7 @@ public class JobRunner {
     toDelete = parents(toDelete);
     log.debug("toDelete: {}", toDelete);
     for (Path file : toDelete) {
-      job.delete(file);
+      backup.delete(file);
     }
 
     // 3.) if file/directory on src AND dest, update dest
@@ -59,7 +57,7 @@ public class JobRunner {
         intersection(leaves(sourceFiles), leaves(destFiles));
     log.debug("toUpdate: {}", toUpdate);
     for (Path file : toUpdate) {
-      job.update(file);
+      backup.update(file);
     }
   }
 

@@ -19,9 +19,9 @@ public final class Main {
       Path sourceRoot = Path.of(args[0]);
       Path destRoot = Path.of(args[1]);
 
-      JobRunner backup = new JobRunner(new FileSystemToFileSystemJob(sourceRoot, destRoot));
-
-      backup.run();
+      BackupAlgorithm backupAlgorithm =
+          new BackupAlgorithm(new FileSystemBackup(sourceRoot, destRoot));
+      backupAlgorithm.run();
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);

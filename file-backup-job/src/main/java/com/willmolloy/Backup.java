@@ -4,11 +4,11 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * Job definition.
+ * Backup type definition.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Job {
+public interface Backup {
   // TODO quite a lot of methods... possible to split into Source & Destination interfaces?
 
   Stream<Path> scanSource();
