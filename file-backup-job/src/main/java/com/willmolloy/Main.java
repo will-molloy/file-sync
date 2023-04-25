@@ -15,14 +15,13 @@ public final class Main {
 
   /** Main method. */
   public static void main(String... args) {
-    JobRunner documentsBackup =
-        new JobRunner(
-            new FileSystemToFileSystemJob(
-                Path.of("C:\\Users\\Will\\Documents"),
-                Path.of("D:\\Backups\\windows_home_folder_backup\\Documents")));
-
     try {
-      documentsBackup.run();
+      Path sourceRoot = Path.of(args[0]);
+      Path destRoot = Path.of(args[1]);
+
+      JobRunner backup = new JobRunner(new FileSystemToFileSystemJob(sourceRoot, destRoot));
+
+      backup.run();
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);
