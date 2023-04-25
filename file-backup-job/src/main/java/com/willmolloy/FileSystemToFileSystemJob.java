@@ -24,33 +24,45 @@ public class FileSystemToFileSystemJob implements Job {
   private final Path destRoot;
 
   public FileSystemToFileSystemJob(Path sourceRoot, Path destRoot) {
-    log.debug("FileSystemToFileSystemJob({}, {})", sourceRoot, destRoot);
+    log.debug("FileSystemToFileSystemJob(sourceRoot={}, destRoot={})", sourceRoot, destRoot);
     this.sourceRoot = requireNonNull(sourceRoot);
     this.destRoot = requireNonNull(destRoot);
   }
 
   @Override
   public Stream<Path> scanSource() {
-    log.debug("scanSource({})", sourceRoot);
     return scan(sourceRoot);
   }
 
   @Override
   public Stream<Path> scanDestination() {
-    log.debug("scanDestination({})", destRoot);
     return scan(destRoot);
   }
 
-  private static Stream<Path> scan(Path root) {
-    try {
-      return Files.walk(root)
-          // skip self
-          .skip(1)
-          // strip prefix so can compare source & destination
-          .map(root::relativize);
-    } catch (IOException e) {
-      log.error("Error scanning", e);
-      throw new UncheckedIOException(e);
+  private Stream<Path> scan(Path root) {
+    log.debug("scan({})", root);
+    return walkReadable(root)
+        // skip self
+        .skip(1)
+        // strip prefix so can compare source & destination
+        .map(root::relativize);
+  }
+
+  // avoid AccessDeniedException
+  private Stream<Path> walkReadable(Path path) {
+    if (!Files.isReadable(path)){
+      return Stream.of();
+    }
+
+    if (Files.isDirectory(path)) {
+      try {
+        return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walkReadable));
+      } catch (IOException e) {
+        log.error("Error walking directory [%s]".formatted(path), e);
+        throw new UncheckedIOException(e);
+      }
+    } else {
+      return Stream.of(path);
     }
   }
 
