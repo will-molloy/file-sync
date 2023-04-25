@@ -50,7 +50,7 @@ public class FileSystemToFileSystemJob implements Job {
 
   // avoid AccessDeniedException
   private Stream<Path> walkReadable(Path path) {
-    if (!Files.isReadable(path)){
+    if (!Files.isReadable(path)) {
       return Stream.of();
     }
 
@@ -58,7 +58,7 @@ public class FileSystemToFileSystemJob implements Job {
       try {
         return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walkReadable));
       } catch (IOException e) {
-        log.error("Error walking directory [%s]".formatted(path), e);
+        log.error("Error listing directory [%s]".formatted(path), e);
         throw new UncheckedIOException(e);
       }
     } else {
