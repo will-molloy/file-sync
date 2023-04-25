@@ -1,4 +1,4 @@
-package com.willmolloy;
+package com.willmolloy.backup;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -8,7 +8,7 @@ import java.util.stream.Stream;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup {
+interface Backup {
   // TODO quite a lot of methods... possible to split into Source & Destination interfaces?
 
   Stream<Path> scanSource();

@@ -1,4 +1,4 @@
-package com.willmolloy;
+package com.willmolloy.backup;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
@@ -15,14 +15,14 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class BackupAlgorithm {
+class BackupAlgorithm {
 
   private static final Logger log = LogManager.getLogger();
 
   private final Backup backup;
 
   @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "False positive?")
-  public BackupAlgorithm(Backup backup) {
+  BackupAlgorithm(Backup backup) {
     this.backup = requireNonNull(backup);
   }
 

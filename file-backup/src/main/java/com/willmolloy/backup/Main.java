@@ -1,4 +1,4 @@
-package com.willmolloy;
+package com.willmolloy.backup;
 
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class Main {
+final class Main {
 
   private static final Logger log = LogManager.getLogger();
 
