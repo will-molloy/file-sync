@@ -14,7 +14,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +51,7 @@ class FileSystemBackupTest {
   }
 
   @Test
-  void scan_walksRoot_andRelativizesTheResult() throws IOException {
+  void scanSource_walksRoot_andRelativizesTheResult() throws IOException {
     // Given
     Files.createFile(sourceRoot.resolve("A"));
     Files.createFile(sourceRoot.resolve("B"));
@@ -62,35 +61,23 @@ class FileSystemBackupTest {
     Files.createDirectories(sourceRoot.resolve("X/Y/Z"));
 
     // When
-    FileTree fileTree = sut.scanSource();
+    Stream<Path> paths = sut.scanSource();
 
     // Then
-    assertThat(fileTree)
-        .isEqualTo(
-            new FileTree(
-                Map.of(
-                    fileSystem.getPath("A"), new FileTree.Node(),
-                    fileSystem.getPath("B"), new FileTree.Node(),
-                    fileSystem.getPath("C"),
-                        new FileTree.Node(Map.of(fileSystem.getPath("C/D"), new FileTree.Node())),
-                    fileSystem.getPath("E"), new FileTree.Node(),
-                    fileSystem.getPath("F"),
-                        new FileTree.Node(
-                            Map.of(
-                                fileSystem.getPath("F/G"),
-                                new FileTree.Node(
-                                    Map.of(
-                                        fileSystem.getPath("F/G/H"),
-                                        new FileTree.Node(
-                                            Map.of(
-                                                fileSystem.getPath("F/G/H/I"),
-                                                new FileTree.Node())))))),
-                    fileSystem.getPath("X"),
-                        new FileTree.Node(
-                            Map.of(
-                                fileSystem.getPath("X/Y"),
-                                new FileTree.Node(
-                                    Map.of(fileSystem.getPath("X/Y/Z"), new FileTree.Node())))))));
+    assertThat(paths)
+        .containsExactly(
+            fileSystem.getPath("A"),
+            fileSystem.getPath("B"),
+            fileSystem.getPath("C"),
+            fileSystem.getPath("C/D"),
+            fileSystem.getPath("E"),
+            fileSystem.getPath("F"),
+            fileSystem.getPath("F/G"),
+            fileSystem.getPath("F/G/H"),
+            fileSystem.getPath("F/G/H/I"),
+            fileSystem.getPath("X"),
+            fileSystem.getPath("X/Y"),
+            fileSystem.getPath("X/Y/Z"));
   }
 
   @Test
@@ -104,38 +91,23 @@ class FileSystemBackupTest {
     Files.createDirectories(destinationRoot.resolve("X/Y/Z"));
 
     // When
-    FileTree fileTree = sut.scanDestination();
+    Stream<Path> paths = sut.scanDestination();
 
     // Then
-    assertThat(fileTree)
-        .isEqualTo(
-            new FileTree(
-                Map.of(
-                    fileSystem.getPath("A"),
-                    new FileTree.Node(),
-                    fileSystem.getPath("B"),
-                    new FileTree.Node(),
-                    fileSystem.getPath("C"),
-                    new FileTree.Node(Map.of(fileSystem.getPath("C/D"), new FileTree.Node())),
-                    fileSystem.getPath("E"),
-                    new FileTree.Node(),
-                    fileSystem.getPath("F"),
-                    new FileTree.Node(
-                        Map.of(
-                            fileSystem.getPath("F/G"),
-                            new FileTree.Node(
-                                Map.of(
-                                    fileSystem.getPath("F/G/H"),
-                                    new FileTree.Node(
-                                        Map.of(
-                                            fileSystem.getPath("F/G/H/I"),
-                                            new FileTree.Node())))))),
-                    fileSystem.getPath("X"),
-                    new FileTree.Node(
-                        Map.of(
-                            fileSystem.getPath("X/Y"),
-                            new FileTree.Node(
-                                Map.of(fileSystem.getPath("X/Y/Z"), new FileTree.Node())))))));
+    assertThat(paths)
+        .containsExactly(
+            fileSystem.getPath("A"),
+            fileSystem.getPath("B"),
+            fileSystem.getPath("C"),
+            fileSystem.getPath("C/D"),
+            fileSystem.getPath("E"),
+            fileSystem.getPath("F"),
+            fileSystem.getPath("F/G"),
+            fileSystem.getPath("F/G/H"),
+            fileSystem.getPath("F/G/H/I"),
+            fileSystem.getPath("X"),
+            fileSystem.getPath("X/Y"),
+            fileSystem.getPath("X/Y/Z"));
   }
 
   @Test

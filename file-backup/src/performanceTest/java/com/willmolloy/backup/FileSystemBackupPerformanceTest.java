@@ -69,12 +69,10 @@ class FileSystemBackupPerformanceTest {
     new BackupAlgorithm(new FileSystemBackup(sourceRoot, destinationRoot)).run();
 
     // Then
-    if (count < 100_000) {
-      assertThat(Files.list(sourceRoot))
-          .containsExactlyElementsIn(files.stream().map(sourceRoot::resolve).toList());
-      assertThat(Files.list(destinationRoot))
-          .containsExactlyElementsIn(files.stream().map(destinationRoot::resolve).toList());
-    }
+    assertThat(Files.list(sourceRoot))
+        .containsExactlyElementsIn(files.stream().map(sourceRoot::resolve).toList());
+    assertThat(Files.list(destinationRoot))
+        .containsExactlyElementsIn(files.stream().map(destinationRoot::resolve).toList());
   }
 
   @Disabled

@@ -1,14 +1,13 @@
 package com.willmolloy.backup;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,40 +30,39 @@ class FileSystemBackup implements Backup {
   }
 
   @Override
-  public FileTree scanSource() {
+  public Stream<Path> scanSource() {
     return scan(sourceRoot);
   }
 
   @Override
-  public FileTree scanDestination() {
+  public Stream<Path> scanDestination() {
     return scan(destRoot);
   }
 
-  private static FileTree scan(Path root) {
+  private Stream<Path> scan(Path root) {
     log.debug("scan({})", root);
-    return scan(root, root);
+    return walkReadable(root)
+        // skip self
+        .skip(1)
+        // strip prefix so can compare source & destination
+        .map(root::relativize);
   }
 
-  private static FileTree scan(Path path, Path root) {
-    if (Files.isRegularFile(path)) {
-      return new FileTree();
+  // avoid AccessDeniedException
+  private Stream<Path> walkReadable(Path path) {
+    if (!Files.isReadable(path)) {
+      return Stream.of();
     }
 
-    // bfs
-    try {
-      Map<Path, FileTree.Node> map =
-          Files.list(path)
-              // avoid AccessDeniedException
-              .filter(Files::isReadable)
-              .collect(
-                  toMap(
-                      // strip prefix so can compare source & destination
-                      child -> root.relativize(child),
-                      child -> scan(child, root).root()));
-      return new FileTree(map);
-    } catch (IOException e) {
-      log.error("Error listing directory [%s]".formatted(path), e);
-      throw new UncheckedIOException(e);
+    if (Files.isDirectory(path)) {
+      try {
+        return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walkReadable));
+      } catch (IOException e) {
+        log.error("Error listing directory [%s]".formatted(path), e);
+        throw new UncheckedIOException(e);
+      }
+    } else {
+      return Stream.of(path);
     }
   }
 

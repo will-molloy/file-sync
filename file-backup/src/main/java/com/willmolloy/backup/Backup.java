@@ -1,6 +1,7 @@
 package com.willmolloy.backup;
 
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 /**
  * Backup type definition.
@@ -10,9 +11,9 @@ import java.nio.file.Path;
 interface Backup {
   // TODO quite a lot of methods... possible to split into Source & Destination interfaces?
 
-  FileTree scanSource();
+  Stream<Path> scanSource();
 
-  FileTree scanDestination();
+  Stream<Path> scanDestination();
 
   void copy(Path file);
 
