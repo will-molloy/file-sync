@@ -19,9 +19,8 @@ final class Main {
       Path sourceRoot = Path.of(args[0]);
       Path destRoot = Path.of(args[1]);
 
-      BackupAlgorithm backupAlgorithm =
-          new BackupAlgorithm(new FileSystemBackup(sourceRoot, destRoot));
-      backupAlgorithm.run();
+      BackupRunner backupRunner = new BackupRunner(new FileSystemBackup(sourceRoot, destRoot));
+      backupRunner.run();
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);

@@ -9,15 +9,13 @@ import java.util.stream.Stream;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 interface Backup {
-  // TODO quite a lot of methods... possible to split into Source & Destination interfaces?
+  // TODO possible to split into Source & Destination interfaces?
 
   Stream<Path> scanSource();
 
   Stream<Path> scanDestination();
 
-  void copy(Path file);
+  void copyOrUpdate(Path file);
 
   void delete(Path file);
-
-  void update(Path file);
 }

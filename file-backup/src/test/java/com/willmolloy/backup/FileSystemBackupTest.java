@@ -2,17 +2,14 @@ package com.willmolloy.backup;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -117,7 +114,7 @@ class FileSystemBackupTest {
     Files.createFile(sourceRoot.resolve(relativeFile));
 
     // When
-    sut.copy(relativeFile);
+    sut.copyOrUpdate(relativeFile);
 
     // Then
     assertThatFileSystem()
@@ -131,7 +128,7 @@ class FileSystemBackupTest {
     Files.createDirectories(sourceRoot.resolve(relativeFile));
 
     // When
-    sut.copy(relativeFile);
+    sut.copyOrUpdate(relativeFile);
 
     // Then
     assertThatFileSystem()
@@ -139,31 +136,58 @@ class FileSystemBackupTest {
   }
 
   @Test
-  void copy_whenFileDoesntExistOnSource_failsToCopy() {
+  void copy_whenFileDoesntExistOnSource_failsGracefully() throws IOException {
     // Given
     Path relativeFile = fileSystem.getPath("A");
 
     // When
-    UncheckedIOException thrown =
-        assertThrows(UncheckedIOException.class, () -> sut.copy(relativeFile));
+    sut.copyOrUpdate(relativeFile);
 
     // Then
-    assertThat(thrown).hasCauseThat().isInstanceOf(NoSuchFileException.class);
+    assertThatFileSystem().isEmpty();
   }
 
   @Test
-  void copy_whenFileExistsOnDestination_failsToCopy() throws IOException {
+  void update_updatesFileOnDestination() throws IOException {
     // Given
     Path relativeFile = fileSystem.getPath("A");
     Files.createFile(sourceRoot.resolve(relativeFile));
     Files.createFile(destinationRoot.resolve(relativeFile));
 
     // When
-    UncheckedIOException thrown =
-        assertThrows(UncheckedIOException.class, () -> sut.copy(relativeFile));
+    sut.copyOrUpdate(relativeFile);
 
     // Then
-    assertThat(thrown).hasCauseThat().isInstanceOf(FileAlreadyExistsException.class);
+    assertThatFileSystem()
+        .containsExactly(sourceRoot.resolve(relativeFile), destinationRoot.resolve(relativeFile));
+  }
+
+  @Test
+  void update_updatesDirectoryOnDestination() throws IOException {
+    // Given
+    Path relativeFile = fileSystem.getPath("A/B/C");
+    Files.createDirectories(sourceRoot.resolve(relativeFile));
+    Files.createDirectories(destinationRoot.resolve(relativeFile));
+
+    // When
+    sut.copyOrUpdate(relativeFile);
+
+    // Then
+    assertThatFileSystem()
+        .containsExactly(sourceRoot.resolve(relativeFile), destinationRoot.resolve(relativeFile));
+  }
+
+  @Test
+  void update_whenFileDoesntExistOnSource_failsGracefully() throws IOException {
+    // Given
+    Path relativeFile = fileSystem.getPath("A");
+    Files.createFile(destinationRoot.resolve(relativeFile));
+
+    // When
+    sut.copyOrUpdate(relativeFile);
+
+    // Then
+    assertThatFileSystem().containsExactly(destinationRoot.resolve(relativeFile));
   }
 
   @Test
@@ -192,63 +216,16 @@ class FileSystemBackupTest {
     assertThatFileSystem().isEmpty();
   }
 
-  // TODO how to test the equals call? Need to mock Files.copy such that it can be verified.
   @Test
-  void update_updatesFileOnDestination() throws IOException {
+  void delete_whenFileDoesntExistOnDestination_failsGracefully() throws IOException {
     // Given
     Path relativeFile = fileSystem.getPath("A");
-    Files.createFile(sourceRoot.resolve(relativeFile));
-    Files.createFile(destinationRoot.resolve(relativeFile));
 
     // When
-    sut.update(relativeFile);
+    sut.delete(relativeFile);
 
     // Then
-    assertThatFileSystem()
-        .containsExactly(sourceRoot.resolve(relativeFile), destinationRoot.resolve(relativeFile));
-  }
-
-  @Test
-  void update_updatesDirectoryOnDestination() throws IOException {
-    // Given
-    Path relativeFile = fileSystem.getPath("A/B/C");
-    Files.createDirectories(sourceRoot.resolve(relativeFile));
-    Files.createDirectories(destinationRoot.resolve(relativeFile));
-
-    // When
-    sut.update(relativeFile);
-
-    // Then
-    assertThatFileSystem()
-        .containsExactly(sourceRoot.resolve(relativeFile), destinationRoot.resolve(relativeFile));
-  }
-
-  @Test
-  void update_whenFileDoesntExistOnSource_failsToUpdate() throws IOException {
-    // Given
-    Path relativeFile = fileSystem.getPath("A");
-    Files.createFile(sourceRoot.resolve(relativeFile));
-
-    // When
-    UncheckedIOException thrown =
-        assertThrows(UncheckedIOException.class, () -> sut.update(relativeFile));
-
-    // Then
-    assertThat(thrown).hasCauseThat().isInstanceOf(NoSuchFileException.class);
-  }
-
-  @Test
-  void update_whenFileDoesntExistOnDestination_failsToUpdate() throws IOException {
-    // Given
-    Path relativeFile = fileSystem.getPath("A");
-    Files.createFile(destinationRoot.resolve(relativeFile));
-
-    // When
-    UncheckedIOException thrown =
-        assertThrows(UncheckedIOException.class, () -> sut.update(relativeFile));
-
-    // Then
-    assertThat(thrown).hasCauseThat().isInstanceOf(NoSuchFileException.class);
+    assertThatFileSystem().isEmpty();
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {

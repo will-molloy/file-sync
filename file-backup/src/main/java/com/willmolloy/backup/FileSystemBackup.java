@@ -3,7 +3,6 @@ package com.willmolloy.backup;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -48,8 +47,8 @@ class FileSystemBackup implements Backup {
         .map(root::relativize);
   }
 
-  // avoid AccessDeniedException
   private Stream<Path> walkReadable(Path path) {
+    // avoid AccessDeniedException
     if (!Files.isReadable(path)) {
       return Stream.of();
     }
@@ -59,7 +58,7 @@ class FileSystemBackup implements Backup {
         return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walkReadable));
       } catch (IOException e) {
         log.error("Error listing directory [%s]".formatted(path), e);
-        throw new UncheckedIOException(e);
+        return Stream.of();
       }
     } else {
       return Stream.of(path);
@@ -67,10 +66,19 @@ class FileSystemBackup implements Backup {
   }
 
   @Override
-  public void copy(Path file) {
-    log.debug("copy({})", file);
+  public void copyOrUpdate(Path file) {
     Path sourceFile = sourceRoot.resolve(file);
     Path destinationFile = destRoot.resolve(file);
+
+    if (!Files.exists(destinationFile)) {
+      copy(sourceFile, destinationFile);
+    } else if (!equals(sourceFile, destinationFile)) {
+      update(sourceFile, destinationFile);
+    }
+  }
+
+  private void copy(Path sourceFile, Path destinationFile) {
+    log.debug("copy({} -> {})", sourceFile, destinationFile);
     try {
       Path destinationParent = destinationFile.getParent();
       if (destinationParent != null) {
@@ -78,49 +86,20 @@ class FileSystemBackup implements Backup {
       }
       Files.copy(sourceFile, destinationFile, StandardCopyOption.COPY_ATTRIBUTES);
     } catch (IOException e) {
-      log.error("Error copying file [%s] to destination".formatted(file), e);
-      throw new UncheckedIOException(e);
+      log.error("Error copying(%s -> %s)".formatted(sourceFile, destinationFile), e);
     }
   }
 
-  @Override
-  public void delete(Path file) {
-    log.debug("delete({})", file);
-    Path destinationFile = destRoot.resolve(file);
-    try {
-      deleteRecursively(destinationFile);
-    } catch (IOException e) {
-      log.error("Error deleting file [%s] from destination".formatted(file), e);
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private void deleteRecursively(Path path) throws IOException {
-    if (Files.isDirectory(path)) {
-      for (Path child : Files.list(path).toList()) {
-        deleteRecursively(child);
-      }
-    }
-    Files.deleteIfExists(path);
-  }
-
-  @Override
-  public void update(Path file) {
-    log.debug("update({})", file);
-    Path sourceFile = sourceRoot.resolve(file);
-    Path destinationFile = destRoot.resolve(file);
-    if (equals(sourceFile, destinationFile)) {
-      return;
-    }
+  private void update(Path sourceFile, Path destinationFile) {
+    log.debug("update({} -> {})", sourceFile, destinationFile);
     try {
       Files.copy(
           sourceFile,
           destinationFile,
-          StandardCopyOption.REPLACE_EXISTING,
-          StandardCopyOption.COPY_ATTRIBUTES);
+          StandardCopyOption.COPY_ATTRIBUTES,
+          StandardCopyOption.REPLACE_EXISTING);
     } catch (IOException e) {
-      log.error("Error updating file [%s] on destination".formatted(file), e);
-      throw new UncheckedIOException(e);
+      log.error("Error updating(%s -> %s)".formatted(sourceFile, destinationFile), e);
     }
   }
 
@@ -133,8 +112,30 @@ class FileSystemBackup implements Backup {
                   .compareTo(Files.getLastModifiedTime(destinationPath))
               == 0;
     } catch (IOException e) {
-      log.error("Error comparing files [%s, %s]".formatted(sourcePath, destinationPath), e);
-      throw new UncheckedIOException(e);
+      log.error("Error comparing(%s, %s)".formatted(sourcePath, destinationPath), e);
+      return false;
+    }
+  }
+
+  @Override
+  public void delete(Path file) {
+    Path sourceFile = sourceRoot.resolve(file);
+    Path destinationFile = destRoot.resolve(file);
+
+    if (!Files.exists(sourceFile)) {
+      deleteRecursively(destinationFile);
+    }
+  }
+
+  private void deleteRecursively(Path destinationFile) {
+    log.debug("delete({})", destinationFile);
+    try {
+      if (Files.isDirectory(destinationFile)) {
+        Files.list(destinationFile).forEach(this::deleteRecursively);
+      }
+      Files.deleteIfExists(destinationFile);
+    } catch (IOException e) {
+      log.error("Error deleting(%s)".formatted(destinationFile), e);
     }
   }
 }

@@ -66,7 +66,7 @@ class FileSystemBackupPerformanceTest {
             .toList();
 
     // When
-    new BackupAlgorithm(new FileSystemBackup(sourceRoot, destinationRoot)).run();
+    new BackupRunner(new FileSystemBackup(sourceRoot, destinationRoot)).run();
 
     // Then
     assertThat(Files.list(sourceRoot))
@@ -92,7 +92,7 @@ class FileSystemBackupPerformanceTest {
             });
 
     // When
-    new BackupAlgorithm(new FileSystemBackup(sourceRoot, destinationRoot)).run();
+    new BackupRunner(new FileSystemBackup(sourceRoot, destinationRoot)).run();
 
     // Then
     assertThat(Files.list(sourceRoot)).isEmpty();
