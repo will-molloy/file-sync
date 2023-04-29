@@ -43,7 +43,7 @@ class FileSystemBackup implements Backup {
     return walkReadable(root)
         // skip self
         .skip(1)
-        // strip prefix so can compare source & destination
+        // strip prefix so can compare source & dest paths
         .map(root::relativize);
   }
 
@@ -66,76 +66,84 @@ class FileSystemBackup implements Backup {
   }
 
   @Override
-  public void copyOrUpdate(Path file) {
-    Path sourceFile = sourceRoot.resolve(file);
-    Path destinationFile = destRoot.resolve(file);
+  public void tryCopyOrUpdate(Path path) {
+    Path sourcePath = sourceRoot.resolve(path);
+    Path destPath = destRoot.resolve(path);
 
-    if (!Files.exists(destinationFile)) {
-      copy(sourceFile, destinationFile);
-    } else if (!equals(sourceFile, destinationFile)) {
-      update(sourceFile, destinationFile);
-    }
-  }
-
-  private void copy(Path sourceFile, Path destinationFile) {
-    log.debug("copy({} -> {})", sourceFile, destinationFile);
-    try {
-      Path destinationParent = destinationFile.getParent();
-      if (destinationParent != null) {
-        Files.createDirectories(destinationParent);
+    if (!Files.exists(destPath)) {
+      copy(sourcePath, destPath);
+    } else {
+      // only update files
+      if (Files.isRegularFile(sourcePath)) {
+        // if the file is a directory on dest, need to delete it first
+        if (Files.isDirectory(destPath)) {
+          deleteRecursively(destPath);
+          copy(sourcePath, destPath);
+        } else if (!equals(sourcePath, destPath)) {
+          update(sourcePath, destPath);
+        }
       }
-      Files.copy(sourceFile, destinationFile, StandardCopyOption.COPY_ATTRIBUTES);
-    } catch (IOException e) {
-      log.error("Error copying(%s -> %s)".formatted(sourceFile, destinationFile), e);
     }
   }
 
-  private void update(Path sourceFile, Path destinationFile) {
-    log.debug("update({} -> {})", sourceFile, destinationFile);
+  private void copy(Path sourcePath, Path destPath) {
+    log.debug("copy({} -> {})", sourcePath, destPath);
+    try {
+      Path destParent = destPath.getParent();
+      if (destParent != null) {
+        Files.createDirectories(destParent);
+      }
+      Files.copy(sourcePath, destPath, StandardCopyOption.COPY_ATTRIBUTES);
+    } catch (IOException e) {
+      log.error("Error copying(%s -> %s)".formatted(sourcePath, destPath), e);
+    }
+  }
+
+  private void update(Path sourcePath, Path destPath) {
+    log.debug("update({} -> {})", sourcePath, destPath);
     try {
       Files.copy(
-          sourceFile,
-          destinationFile,
+          sourcePath,
+          destPath,
           StandardCopyOption.COPY_ATTRIBUTES,
           StandardCopyOption.REPLACE_EXISTING);
     } catch (IOException e) {
-      log.error("Error updating(%s -> %s)".formatted(sourceFile, destinationFile), e);
+      log.error("Error updating(%s -> %s)".formatted(sourcePath, destPath), e);
     }
   }
 
-  private boolean equals(Path sourcePath, Path destinationPath) {
-    log.debug("equals({}, {})", sourcePath, destinationPath);
+  private boolean equals(Path sourcePath, Path destPath) {
+    log.debug("equals({}, {})", sourcePath, destPath);
     try {
       // this is sufficient? Files.mismatch is quite expensive.
-      return Files.size(sourcePath) == Files.size(destinationPath)
-          && Files.getLastModifiedTime(sourcePath)
-                  .compareTo(Files.getLastModifiedTime(destinationPath))
+      return Files.size(sourcePath) == Files.size(destPath)
+          && Files.getLastModifiedTime(sourcePath).compareTo(Files.getLastModifiedTime(destPath))
               == 0;
     } catch (IOException e) {
-      log.error("Error comparing(%s, %s)".formatted(sourcePath, destinationPath), e);
+      log.error("Error comparing(%s, %s)".formatted(sourcePath, destPath), e);
       return false;
     }
   }
 
   @Override
-  public void delete(Path file) {
-    Path sourceFile = sourceRoot.resolve(file);
-    Path destinationFile = destRoot.resolve(file);
+  public void tryDelete(Path path) {
+    Path sourcePath = sourceRoot.resolve(path);
+    Path destPath = destRoot.resolve(path);
 
-    if (!Files.exists(sourceFile)) {
-      deleteRecursively(destinationFile);
+    if (!Files.exists(sourcePath)) {
+      deleteRecursively(destPath);
     }
   }
 
-  private void deleteRecursively(Path destinationFile) {
-    log.debug("delete({})", destinationFile);
+  private void deleteRecursively(Path destPath) {
+    log.debug("delete({})", destPath);
     try {
-      if (Files.isDirectory(destinationFile)) {
-        Files.list(destinationFile).forEach(this::deleteRecursively);
+      if (Files.isDirectory(destPath)) {
+        Files.list(destPath).forEach(this::deleteRecursively);
       }
-      Files.delete(destinationFile);
+      Files.delete(destPath);
     } catch (IOException e) {
-      log.error("Error deleting(%s)".formatted(destinationFile), e);
+      log.error("Error deleting(%s)".formatted(destPath), e);
     }
   }
 }

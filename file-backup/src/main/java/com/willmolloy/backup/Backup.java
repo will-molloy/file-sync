@@ -15,7 +15,7 @@ interface Backup {
 
   Stream<Path> scanDestination();
 
-  void copyOrUpdate(Path file);
+  void tryCopyOrUpdate(Path path);
 
-  void delete(Path file);
+  void tryDelete(Path path);
 }

@@ -5,8 +5,6 @@ import static java.util.Objects.requireNonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,19 +25,20 @@ class BackupRunner {
   }
 
   void run() {
-    try (ExecutorService executorService = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 0).factory())) {
+    try (ExecutorService executorService =
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 0).factory())) {
       backup
           .scanSource()
           .forEach(
               path -> {
-                executorService.execute(() -> backup.copyOrUpdate(path));
+                executorService.execute(() -> backup.tryCopyOrUpdate(path));
               });
 
       backup
           .scanDestination()
           .forEach(
               path -> {
-                executorService.execute(() -> backup.delete(path));
+                executorService.execute(() -> backup.tryDelete(path));
               });
     }
   }

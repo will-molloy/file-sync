@@ -41,9 +41,9 @@ class BackupRunnerTest {
     backupRunner.run();
 
     // Then
-    verify(mockBackup).copyOrUpdate(Path.of("A"));
-    verify(mockBackup).copyOrUpdate(Path.of("B"));
-    verify(mockBackup).copyOrUpdate(Path.of("C"));
+    verify(mockBackup).tryCopyOrUpdate(Path.of("A"));
+    verify(mockBackup).tryCopyOrUpdate(Path.of("B"));
+    verify(mockBackup).tryCopyOrUpdate(Path.of("C"));
   }
 
   @Test
@@ -57,8 +57,8 @@ class BackupRunnerTest {
     backupRunner.run();
 
     // Then
-    verify(mockBackup).delete(Path.of("D"));
-    verify(mockBackup).delete(Path.of("E"));
-    verify(mockBackup).delete(Path.of("F"));
+    verify(mockBackup).tryDelete(Path.of("D"));
+    verify(mockBackup).tryDelete(Path.of("E"));
+    verify(mockBackup).tryDelete(Path.of("F"));
   }
 }

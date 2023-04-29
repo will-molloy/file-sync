@@ -25,25 +25,25 @@ import org.junit.jupiter.params.provider.ValueSource;
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 class FileSystemBackupPerformanceTest {
 
-  private Path fileSystem;
+  private Path fs;
   private Path sourceRoot;
-  private Path destinationRoot;
+  private Path destRoot;
 
   @BeforeEach
   void setUp() throws IOException {
-    fileSystem = Path.of("build").resolve(FileSystemBackupPerformanceTest.class.getSimpleName());
-    delete(fileSystem);
+    fs = Path.of("build").resolve(FileSystemBackupPerformanceTest.class.getSimpleName());
+    delete(fs);
 
-    sourceRoot = fileSystem.resolve("source");
+    sourceRoot = fs.resolve("source");
     Files.createDirectories(sourceRoot);
 
-    destinationRoot = fileSystem.resolve("dest");
-    Files.createDirectories(destinationRoot);
+    destRoot = fs.resolve("dest");
+    Files.createDirectories(destRoot);
   }
 
   @AfterEach
   void tearDown() {
-    delete(fileSystem);
+    delete(fs);
   }
 
   private void delete(Path path) {
@@ -80,14 +80,14 @@ class FileSystemBackupPerformanceTest {
             .toList();
 
     // When
-    Main.main(sourceRoot.toString(), destinationRoot.toString());
+    Main.main(sourceRoot.toString(), destRoot.toString());
 
     // Then
     // single assert (e.g. containsExactlyElementsIn) is more correct, but too slow here.
     files.forEach(
         file -> {
           assertThat(Files.exists(sourceRoot.resolve(file))).isTrue();
-          assertThat(Files.exists(destinationRoot.resolve(file))).isTrue();
+          assertThat(Files.exists(destRoot.resolve(file))).isTrue();
         });
   }
 
@@ -101,17 +101,17 @@ class FileSystemBackupPerformanceTest {
             i -> {
               try {
                 Path relativeFile = Path.of("File-%d".formatted(i));
-                Files.createFile(destinationRoot.resolve(relativeFile));
+                Files.createFile(destRoot.resolve(relativeFile));
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
               }
             });
 
     // When
-    Main.main(sourceRoot.toString(), destinationRoot.toString());
+    Main.main(sourceRoot.toString(), destRoot.toString());
 
     // Then
     assertThat(Files.list(sourceRoot)).isEmpty();
-    assertThat(Files.list(destinationRoot)).isEmpty();
+    assertThat(Files.list(destRoot)).isEmpty();
   }
 }
