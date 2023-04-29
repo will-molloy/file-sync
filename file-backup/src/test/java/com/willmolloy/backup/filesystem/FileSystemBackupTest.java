@@ -1,5 +1,6 @@
 package com.willmolloy.backup.filesystem;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.jimfs.Configuration;
@@ -205,6 +206,13 @@ class FileSystemBackupTest {
     // Then
     assertThatFileSystem()
         .containsExactly(sourceRoot.resolve(fs.getPath("A")), destRoot.resolve(fs.getPath("A")));
+  }
+
+  @Test
+  void toString_includesClassNamesAndRootPaths() {
+    assertThat(sut.toString())
+        .isEqualTo(
+            "FileSystemBackup[source=FileSystem[root=/source], destination=FileSystem[root=/dest]]");
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {
