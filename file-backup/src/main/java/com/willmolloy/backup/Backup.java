@@ -8,15 +8,29 @@ import java.util.stream.Stream;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-interface Backup {
-  // TODO possible to split into Source & Destination interfaces?
-  //  only part where they overlap is the copy call - could have a separate COPY interface?
+public interface Backup {
 
-  Stream<Path> scanSource();
+  Source source();
 
-  Stream<Path> scanDestination();
+  Destination destination();
 
   void tryCopyOrUpdate(Path path);
 
   void tryDelete(Path path);
+
+  /** Backup source. */
+  interface Source {
+
+    Path root();
+
+    Stream<Path> scan();
+  }
+
+  /** Backup destination. */
+  interface Destination {
+
+    Path root();
+
+    Stream<Path> scan();
+  }
 }

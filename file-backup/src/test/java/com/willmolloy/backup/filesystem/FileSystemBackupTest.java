@@ -1,4 +1,4 @@
-package com.willmolloy.backup;
+package com.willmolloy.backup.filesystem;
 
 import static com.google.common.truth.Truth8.assertThat;
 
@@ -7,7 +7,6 @@ import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -22,10 +21,9 @@ import org.junit.jupiter.api.Test;
  */
 class FileSystemBackupTest {
 
-  private FileSystem fs;
+  private java.nio.file.FileSystem fs;
   private Path sourceRoot;
   private Path destRoot;
-
   private FileSystemBackup sut;
 
   @BeforeEach
@@ -38,72 +36,12 @@ class FileSystemBackupTest {
     destRoot = fs.getPath("/dest");
     Files.createDirectory(destRoot);
 
-    sut = new FileSystemBackup(sourceRoot, destRoot);
+    sut = new FileSystemBackup(new FileSystem(sourceRoot), new FileSystem(destRoot));
   }
 
   @AfterEach
   void tearDown() throws IOException {
     fs.close();
-  }
-
-  @Test
-  void scanSource_walksRoot_andRelativizesTheResult() throws IOException {
-    // Given
-    Files.createFile(sourceRoot.resolve("A"));
-    Files.createFile(sourceRoot.resolve("B"));
-    Files.createDirectories(sourceRoot.resolve("C/D"));
-    Files.createFile(sourceRoot.resolve("E"));
-    Files.createDirectories(sourceRoot.resolve("F/G/H/I"));
-    Files.createDirectories(sourceRoot.resolve("X/Y/Z"));
-
-    // When
-    Stream<Path> paths = sut.scanSource();
-
-    // Then
-    assertThat(paths)
-        .containsExactly(
-            fs.getPath("A"),
-            fs.getPath("B"),
-            fs.getPath("C"),
-            fs.getPath("C/D"),
-            fs.getPath("E"),
-            fs.getPath("F"),
-            fs.getPath("F/G"),
-            fs.getPath("F/G/H"),
-            fs.getPath("F/G/H/I"),
-            fs.getPath("X"),
-            fs.getPath("X/Y"),
-            fs.getPath("X/Y/Z"));
-  }
-
-  @Test
-  void scanDestination_walksRoot_andRelativizesTheResult() throws IOException {
-    // Given
-    Files.createFile(destRoot.resolve("A"));
-    Files.createFile(destRoot.resolve("B"));
-    Files.createDirectories(destRoot.resolve("C/D"));
-    Files.createFile(destRoot.resolve("E"));
-    Files.createDirectories(destRoot.resolve("F/G/H/I"));
-    Files.createDirectories(destRoot.resolve("X/Y/Z"));
-
-    // When
-    Stream<Path> paths = sut.scanDestination();
-
-    // Then
-    assertThat(paths)
-        .containsExactly(
-            fs.getPath("A"),
-            fs.getPath("B"),
-            fs.getPath("C"),
-            fs.getPath("C/D"),
-            fs.getPath("E"),
-            fs.getPath("F"),
-            fs.getPath("F/G"),
-            fs.getPath("F/G/H"),
-            fs.getPath("F/G/H/I"),
-            fs.getPath("X"),
-            fs.getPath("X/Y"),
-            fs.getPath("X/Y/Z"));
   }
 
   @Test

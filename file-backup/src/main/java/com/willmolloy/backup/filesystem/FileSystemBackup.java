@@ -1,75 +1,35 @@
-package com.willmolloy.backup;
+package com.willmolloy.backup.filesystem;
 
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.Backup;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * For backups from a File System to another File System (represented by {@link Path}).
+ * For backups to/from a File System (represented by {@link Path}).
  *
+ * @param source source file system
+ * @param destination destination file system
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class FileSystemBackup implements Backup {
+public record FileSystemBackup(FileSystem source, FileSystem destination) implements Backup {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final Path sourceRoot;
-  private final Path destRoot;
-
-  FileSystemBackup(Path sourceRoot, Path destRoot) {
-    log.info("{}(sourceRoot={}, destRoot={})", getClass().getSimpleName(), sourceRoot, destRoot);
-    this.sourceRoot = requireNonNull(sourceRoot);
-    this.destRoot = requireNonNull(destRoot);
-  }
-
-  @Override
-  public Stream<Path> scanSource() {
-    return scan(sourceRoot);
-  }
-
-  @Override
-  public Stream<Path> scanDestination() {
-    return scan(destRoot);
-  }
-
-  private Stream<Path> scan(Path root) {
-    log.info("scan({})", root);
-    return walk(root)
-        // skip self
-        .skip(1)
-        // strip prefix so can compare source & dest paths
-        .map(root::relativize);
-  }
-
-  private Stream<Path> walk(Path path) {
-    log.debug("walk({})", path);
-    // avoid AccessDeniedException
-    if (!Files.isReadable(path)) {
-      return Stream.of();
-    }
-
-    if (Files.isDirectory(path)) {
-      try {
-        return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walk));
-      } catch (IOException e) {
-        log.error("Error listing directory [%s]".formatted(path), e);
-        return Stream.of();
-      }
-    } else {
-      return Stream.of(path);
-    }
+  public FileSystemBackup {
+    requireNonNull(source);
+    requireNonNull(destination);
   }
 
   @Override
   public void tryCopyOrUpdate(Path path) {
-    Path sourcePath = sourceRoot.resolve(path);
-    Path destPath = destRoot.resolve(path);
+    Path sourcePath = source.root().resolve(path);
+    Path destPath = destination.root().resolve(path);
 
     if (!Files.exists(destPath)) {
       copy(sourcePath, destPath);
@@ -128,8 +88,8 @@ class FileSystemBackup implements Backup {
 
   @Override
   public void tryDelete(Path path) {
-    Path sourcePath = sourceRoot.resolve(path);
-    Path destPath = destRoot.resolve(path);
+    Path sourcePath = source.root().resolve(path);
+    Path destPath = destination.root().resolve(path);
 
     if (!Files.exists(sourcePath)) {
       deleteRecursively(destPath);

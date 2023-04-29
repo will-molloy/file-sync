@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,28 +15,38 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * BackupAlgorithmTest.
+ * BackupRunnerTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @ExtendWith(MockitoExtension.class)
 class BackupRunnerTest {
 
+  @Mock private Backup.Source mockSource;
+  @Mock private Backup.Destination mockDestination;
   @Mock private Backup mockBackup;
   @InjectMocks private BackupRunner backupRunner;
 
+  @BeforeEach
+  void setUp() {
+    when(mockBackup.source()).thenReturn(mockSource);
+    when(mockBackup.destination()).thenReturn(mockDestination);
+  }
+
   @AfterEach
   void tearDown() {
-    verify(mockBackup).scanSource();
-    verify(mockBackup).scanDestination();
+    verify(mockSource).scan();
+    verify(mockDestination).scan();
+    verifyNoMoreInteractions(mockSource);
+    verifyNoMoreInteractions(mockDestination);
     verifyNoMoreInteractions(mockBackup);
   }
 
   @Test
   void copiesOrUpdatesSourceFiles() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of(Path.of("A"), Path.of("B"), Path.of("C")));
-    when(mockBackup.scanDestination()).thenReturn(Stream.of());
+    when(mockSource.scan()).thenReturn(Stream.of(Path.of("A"), Path.of("B"), Path.of("C")));
+    when(mockDestination.scan()).thenReturn(Stream.of());
 
     // When
     backupRunner.run();
@@ -49,9 +60,8 @@ class BackupRunnerTest {
   @Test
   void deletesDestinationFiles() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of());
-    when(mockBackup.scanDestination())
-        .thenReturn(Stream.of(Path.of("D"), Path.of("E"), Path.of("F")));
+    when(mockSource.scan()).thenReturn(Stream.of());
+    when(mockDestination.scan()).thenReturn(Stream.of(Path.of("D"), Path.of("E"), Path.of("F")));
 
     // When
     backupRunner.run();

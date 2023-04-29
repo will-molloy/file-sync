@@ -1,5 +1,7 @@
 package com.willmolloy.backup;
 
+import com.willmolloy.backup.filesystem.FileSystem;
+import com.willmolloy.backup.filesystem.FileSystemBackup;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
@@ -17,18 +19,21 @@ final class Main {
   /** Main method. */
   public static void main(String... args) {
     log.debug("main({})", (Object) args);
-    long start = System.nanoTime();
+    long startNanos = System.nanoTime();
     try {
       Path sourceRoot = Path.of(args[0]);
       Path destRoot = Path.of(args[1]);
 
-      BackupRunner backupRunner = new BackupRunner(new FileSystemBackup(sourceRoot, destRoot));
+      FileSystem source = new FileSystem(sourceRoot);
+      FileSystem destination = new FileSystem(destRoot);
+      FileSystemBackup backup = new FileSystemBackup(source, destination);
+      BackupRunner backupRunner = new BackupRunner(backup);
       backupRunner.run();
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);
     } finally {
-      Duration elapsed = Duration.ofNanos(System.nanoTime() - start);
+      Duration elapsed = Duration.ofNanos(System.nanoTime() - startNanos);
       log.info("Elapsed: {}", elapsed);
     }
   }
