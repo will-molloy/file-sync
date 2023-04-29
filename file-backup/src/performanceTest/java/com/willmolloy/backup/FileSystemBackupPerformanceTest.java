@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -32,7 +31,7 @@ class FileSystemBackupPerformanceTest {
 
   @BeforeEach
   void setUp() throws IOException {
-    fileSystem = Path.of(FileSystemBackupPerformanceTest.class.getSimpleName());
+    fileSystem = Path.of("build").resolve(FileSystemBackupPerformanceTest.class.getSimpleName());
     delete(fileSystem);
 
     sourceRoot = fileSystem.resolve("source");
@@ -47,23 +46,23 @@ class FileSystemBackupPerformanceTest {
     delete(fileSystem);
   }
 
-  private void delete(Path path){
+  private void delete(Path path) {
     try {
-      if (Files.isDirectory(path)){
+      if (Files.isDirectory(path)) {
         Files.list(path).forEach(this::delete);
       }
       Files.deleteIfExists(path);
-    } catch (IOException ignored) {
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
   // TODO files with random contents
   // TODO random directory structure
 
-  @Disabled
   @Timeout(value = 1, unit = TimeUnit.MINUTES)
   @ParameterizedTest
-  @ValueSource(ints = {1_000, 10_000, 100_000, 1_000_000})
+  @ValueSource(ints = {1_000, 10_000, 100_000})
   void copy_files(int count) {
     // Given
     List<Path> files =
@@ -92,10 +91,9 @@ class FileSystemBackupPerformanceTest {
         });
   }
 
-  @Disabled
   @Timeout(value = 1, unit = TimeUnit.MINUTES)
   @ParameterizedTest
-  @ValueSource(ints = {1_000, 10_000, 100_000, 1_000_000})
+  @ValueSource(ints = {1_000, 10_000, 100_000})
   void delete_files(int count) throws IOException {
     // Given
     IntStream.range(0, count)

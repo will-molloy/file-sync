@@ -1,6 +1,8 @@
 package com.willmolloy.backup;
 
 import java.nio.file.Path;
+import java.time.Duration;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,6 +17,8 @@ final class Main {
 
   /** Main method. */
   public static void main(String... args) {
+    log.debug("main({})", (Object[]) args);
+    long start = System.nanoTime();
     try {
       Path sourceRoot = Path.of(args[0]);
       Path destRoot = Path.of(args[1]);
@@ -24,6 +28,9 @@ final class Main {
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);
+    } finally {
+      Duration elapsed = Duration.ofNanos(System.nanoTime() - start);
+      log.info("Elapsed: {}", elapsed);
     }
   }
 
