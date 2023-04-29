@@ -5,7 +5,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,8 +34,14 @@ class BackupAlgorithmTest {
   @Test
   void whenFilesOnlyOnSource_copiesFilesToDestination() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of(Path.of("A"), Path.of("B"), Path.of("C")));
-    when(mockBackup.scanDestination()).thenReturn(Stream.of());
+    when(mockBackup.scanSource())
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"), new FileTree.Node(),
+                    Path.of("B"), new FileTree.Node(),
+                    Path.of("C"), new FileTree.Node())));
+    when(mockBackup.scanDestination()).thenReturn(new FileTree());
 
     // When
     backupAlgorithm.run();
@@ -49,9 +55,14 @@ class BackupAlgorithmTest {
   @Test
   void whenFilesOnlyOnDestination_deletesFilesFromDestination() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of());
+    when(mockBackup.scanSource()).thenReturn(new FileTree());
     when(mockBackup.scanDestination())
-        .thenReturn(Stream.of(Path.of("D"), Path.of("E"), Path.of("F")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("D"), new FileTree.Node(),
+                    Path.of("E"), new FileTree.Node(),
+                    Path.of("F"), new FileTree.Node())));
 
     // When
     backupAlgorithm.run();
@@ -65,9 +76,20 @@ class BackupAlgorithmTest {
   @Test
   void whenFilesOnSourceAndDestination_updatesFilesOnDestination() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("Z")));
+    when(mockBackup.scanSource())
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("X"), new FileTree.Node(),
+                    Path.of("Y"), new FileTree.Node(),
+                    Path.of("Z"), new FileTree.Node())));
     when(mockBackup.scanDestination())
-        .thenReturn(Stream.of(Path.of("X"), Path.of("Y"), Path.of("Z")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("X"), new FileTree.Node(),
+                    Path.of("Y"), new FileTree.Node(),
+                    Path.of("Z"), new FileTree.Node())));
 
     // When
     backupAlgorithm.run();
@@ -83,22 +105,24 @@ class BackupAlgorithmTest {
     // Given
     when(mockBackup.scanSource())
         .thenReturn(
-            Stream.of(
-                Path.of("A"),
-                Path.of("B"),
-                Path.of("C"),
-                Path.of("X"),
-                Path.of("Y"),
-                Path.of("Z")));
+            new FileTree(
+                Map.of(
+                    Path.of("A"), new FileTree.Node(),
+                    Path.of("B"), new FileTree.Node(),
+                    Path.of("C"), new FileTree.Node(),
+                    Path.of("X"), new FileTree.Node(),
+                    Path.of("Y"), new FileTree.Node(),
+                    Path.of("Z"), new FileTree.Node())));
     when(mockBackup.scanDestination())
         .thenReturn(
-            Stream.of(
-                Path.of("D"),
-                Path.of("E"),
-                Path.of("F"),
-                Path.of("X"),
-                Path.of("Y"),
-                Path.of("Z")));
+            new FileTree(
+                Map.of(
+                    Path.of("D"), new FileTree.Node(),
+                    Path.of("E"), new FileTree.Node(),
+                    Path.of("F"), new FileTree.Node(),
+                    Path.of("X"), new FileTree.Node(),
+                    Path.of("Y"), new FileTree.Node(),
+                    Path.of("Z"), new FileTree.Node())));
 
     // When
     backupAlgorithm.run();
@@ -119,8 +143,15 @@ class BackupAlgorithmTest {
   void whenDirectoryOnlyOnSource_copiesDirectoryToDestination() {
     // Given
     when(mockBackup.scanSource())
-        .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
-    when(mockBackup.scanDestination()).thenReturn(Stream.of());
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"),
+                    new FileTree.Node(
+                        Map.of(
+                            Path.of("A/B"),
+                            new FileTree.Node(Map.of(Path.of("A/B/C"), new FileTree.Node())))))));
+    when(mockBackup.scanDestination()).thenReturn(new FileTree());
 
     // When
     backupAlgorithm.run();
@@ -132,9 +163,16 @@ class BackupAlgorithmTest {
   @Test
   void whenDirectoryOnlyOnDestination_deletesDirectoryFromDestination() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of());
+    when(mockBackup.scanSource()).thenReturn(new FileTree());
     when(mockBackup.scanDestination())
-        .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"),
+                    new FileTree.Node(
+                        Map.of(
+                            Path.of("A/B"),
+                            new FileTree.Node(Map.of(Path.of("A/B/C"), new FileTree.Node())))))));
 
     // When
     backupAlgorithm.run();
@@ -147,9 +185,23 @@ class BackupAlgorithmTest {
   void whenDirectoryOnSourceAndDestination_updatesDirectoryOnDestination() {
     // Given
     when(mockBackup.scanSource())
-        .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"),
+                    new FileTree.Node(
+                        Map.of(
+                            Path.of("A/B"),
+                            new FileTree.Node(Map.of(Path.of("A/B/C"), new FileTree.Node())))))));
     when(mockBackup.scanDestination())
-        .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"),
+                    new FileTree.Node(
+                        Map.of(
+                            Path.of("A/B"),
+                            new FileTree.Node(Map.of(Path.of("A/B/C"), new FileTree.Node())))))));
 
     // When
     backupAlgorithm.run();
@@ -162,8 +214,19 @@ class BackupAlgorithmTest {
   void whenDirectoryOnSourceAndParentDirectoryOnDestination_copiesChildDirectoryToDestination() {
     // Given
     when(mockBackup.scanSource())
-        .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
-    when(mockBackup.scanDestination()).thenReturn(Stream.of(Path.of("A"), Path.of("A/B")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"),
+                    new FileTree.Node(
+                        Map.of(
+                            Path.of("A/B"),
+                            new FileTree.Node(Map.of(Path.of("A/B/C"), new FileTree.Node())))))));
+    when(mockBackup.scanDestination())
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"), new FileTree.Node(Map.of(Path.of("A/B"), new FileTree.Node())))));
 
     // When
     backupAlgorithm.run();
@@ -175,9 +238,20 @@ class BackupAlgorithmTest {
   @Test
   void whenDirectoryOnSourceAndChildDirectoryOnDestination_deletesChildDirectoryFromDestination() {
     // Given
-    when(mockBackup.scanSource()).thenReturn(Stream.of(Path.of("A"), Path.of("A/B")));
+    when(mockBackup.scanSource())
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"), new FileTree.Node(Map.of(Path.of("A/B"), new FileTree.Node())))));
     when(mockBackup.scanDestination())
-        .thenReturn(Stream.of(Path.of("A"), Path.of("A/B"), Path.of("A/B/C")));
+        .thenReturn(
+            new FileTree(
+                Map.of(
+                    Path.of("A"),
+                    new FileTree.Node(
+                        Map.of(
+                            Path.of("A/B"),
+                            new FileTree.Node(Map.of(Path.of("A/B/C"), new FileTree.Node())))))));
 
     // When
     backupAlgorithm.run();

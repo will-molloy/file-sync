@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 class BackupAlgorithm {
 
   private static final Logger log = LogManager.getLogger();
+  private static final boolean DRY_RUN = true;
 
   private final Backup backup;
 
@@ -27,13 +28,18 @@ class BackupAlgorithm {
   }
 
   void run() {
-    Set<Path> sourceFiles = backup.scanSource().collect(toSet());
-    log.debug("Source: {}", sourceFiles);
-    Set<Path> destFiles = backup.scanDestination().collect(toSet());
-    log.debug("Dest: {}", destFiles);
+    FileTree sourceTree = backup.scanSource();
+    log.debug("Source ({} nodes): {}", sourceTree.root().count(), sourceTree);
+    FileTree destTree = backup.scanDestination();
+    log.debug("Dest ({} nodes): {}", destTree.root().count(), destTree);
+
+    if (DRY_RUN){
+      return;
+    }
 
     // 1.) if file/directory on src AND not on dest, copy to dest
-    Set<Path> toCopy = difference(sourceFiles, destFiles);
+    FileTree newToCopy = sourceTree.difference(destTree);
+    Set<Path> toCopy = new HashSet<>();
     // To minimise copies, leaves only, e.g. A, A/B, A/B/C - Just A/B/C
     toCopy = leaves(toCopy);
     log.debug("toCopy: {}", toCopy);
@@ -42,7 +48,8 @@ class BackupAlgorithm {
     }
 
     // 2.) if file/directory not on src AND on dest, delete from dest
-    Set<Path> toDelete = difference(destFiles, sourceFiles);
+    FileTree newToDelete = destTree.difference(sourceTree);
+    Set<Path> toDelete = new HashSet<>();
     // To minimise deletes, parents only, e.g. e.g. A, A/B, A/B/C - Just A
     toDelete = parents(toDelete);
     log.debug("toDelete: {}", toDelete);
@@ -51,28 +58,12 @@ class BackupAlgorithm {
     }
 
     // 3.) if file/directory on src AND dest, update dest
-    Set<Path> toUpdate =
-        // TODO only needs to run on leaves? (and just files, not directories??)
-        //  what if entire directory structure is mirrored... need to update attributes??
-        intersection(leaves(sourceFiles), leaves(destFiles));
+    FileTree newToUpdate = sourceTree.intersection(destTree);
+    Set<Path> toUpdate = new HashSet<>();
     log.debug("toUpdate: {}", toUpdate);
     for (Path file : toUpdate) {
       backup.update(file);
     }
-  }
-
-  private static <T> Set<T> difference(Set<T> set1, Set<T> set2) {
-    Set<T> set = new HashSet<>();
-    set.addAll(set1);
-    set.removeAll(set2);
-    return set;
-  }
-
-  private static <T> Set<T> intersection(Set<T> set1, Set<T> set2) {
-    Set<T> set = new HashSet<>();
-    set.addAll(set1);
-    set.retainAll(set2);
-    return set;
   }
 
   // TODO O(n^2) not good
