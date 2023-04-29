@@ -23,7 +23,7 @@ class FileSystemBackup implements Backup {
   private final Path destRoot;
 
   FileSystemBackup(Path sourceRoot, Path destRoot) {
-    log.debug("FileSystemBackup(sourceRoot={}, destRoot={})", sourceRoot, destRoot);
+    log.info("{}(sourceRoot={}, destRoot={})", getClass().getSimpleName(), sourceRoot, destRoot);
     this.sourceRoot = requireNonNull(sourceRoot);
     this.destRoot = requireNonNull(destRoot);
   }
@@ -39,15 +39,16 @@ class FileSystemBackup implements Backup {
   }
 
   private Stream<Path> scan(Path root) {
-    log.debug("scan({})", root);
-    return walkReadable(root)
+    log.info("scan({})", root);
+    return walk(root)
         // skip self
         .skip(1)
         // strip prefix so can compare source & dest paths
         .map(root::relativize);
   }
 
-  private Stream<Path> walkReadable(Path path) {
+  private Stream<Path> walk(Path path) {
+    log.debug("walk({})", path);
     // avoid AccessDeniedException
     if (!Files.isReadable(path)) {
       return Stream.of();
@@ -55,7 +56,7 @@ class FileSystemBackup implements Backup {
 
     if (Files.isDirectory(path)) {
       try {
-        return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walkReadable));
+        return Stream.concat(Stream.of(path), Files.list(path).flatMap(this::walk));
       } catch (IOException e) {
         log.error("Error listing directory [%s]".formatted(path), e);
         return Stream.of();
@@ -87,7 +88,7 @@ class FileSystemBackup implements Backup {
   }
 
   private void copy(Path sourcePath, Path destPath) {
-    log.debug("copy({} -> {})", sourcePath, destPath);
+    log.info("copy({} -> {})", sourcePath, destPath);
     try {
       Path destParent = destPath.getParent();
       if (destParent != null) {
@@ -100,7 +101,7 @@ class FileSystemBackup implements Backup {
   }
 
   private void update(Path sourcePath, Path destPath) {
-    log.debug("update({} -> {})", sourcePath, destPath);
+    log.info("update({} -> {})", sourcePath, destPath);
     try {
       Files.copy(
           sourcePath,
@@ -136,7 +137,7 @@ class FileSystemBackup implements Backup {
   }
 
   private void deleteRecursively(Path destPath) {
-    log.debug("delete({})", destPath);
+    log.info("delete({})", destPath);
     try {
       if (Files.isDirectory(destPath)) {
         Files.list(destPath).forEach(this::deleteRecursively);

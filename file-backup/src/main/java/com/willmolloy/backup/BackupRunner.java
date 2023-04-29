@@ -31,14 +31,20 @@ class BackupRunner {
           .scanSource()
           .forEach(
               path -> {
-                executorService.execute(() -> backup.tryCopyOrUpdate(path));
+                executorService.execute(
+                    () -> {
+                      backup.tryCopyOrUpdate(path);
+                    });
               });
 
       backup
           .scanDestination()
           .forEach(
               path -> {
-                executorService.execute(() -> backup.tryDelete(path));
+                executorService.execute(
+                    () -> {
+                      backup.tryDelete(path);
+                    });
               });
     }
   }

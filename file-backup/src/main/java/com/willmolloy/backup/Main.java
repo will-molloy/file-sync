@@ -16,7 +16,7 @@ final class Main {
 
   /** Main method. */
   public static void main(String... args) {
-    log.debug("main({})", (Object[]) args);
+    log.debug("main({})", (Object) args);
     long start = System.nanoTime();
     try {
       Path sourceRoot = Path.of(args[0]);
