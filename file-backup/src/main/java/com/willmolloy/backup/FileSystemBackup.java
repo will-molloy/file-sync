@@ -133,7 +133,7 @@ class FileSystemBackup implements Backup {
       if (Files.isDirectory(destinationFile)) {
         Files.list(destinationFile).forEach(this::deleteRecursively);
       }
-      Files.deleteIfExists(destinationFile);
+      Files.delete(destinationFile);
     } catch (IOException e) {
       log.error("Error deleting(%s)".formatted(destinationFile), e);
     }

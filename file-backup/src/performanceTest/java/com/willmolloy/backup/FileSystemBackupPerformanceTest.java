@@ -1,20 +1,20 @@
 package com.willmolloy.backup;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -26,37 +26,52 @@ import org.junit.jupiter.params.provider.ValueSource;
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 class FileSystemBackupPerformanceTest {
 
-  private FileSystem fileSystem;
+  private Path fileSystem;
   private Path sourceRoot;
   private Path destinationRoot;
 
   @BeforeEach
   void setUp() throws IOException {
-    fileSystem = Jimfs.newFileSystem(Configuration.unix());
+    fileSystem = Path.of(FileSystemBackupPerformanceTest.class.getSimpleName());
+    delete(fileSystem);
 
-    sourceRoot = fileSystem.getPath("/source");
-    Files.createDirectory(sourceRoot);
+    sourceRoot = fileSystem.resolve("source");
+    Files.createDirectories(sourceRoot);
 
-    destinationRoot = fileSystem.getPath("/dest");
-    Files.createDirectory(destinationRoot);
+    destinationRoot = fileSystem.resolve("dest");
+    Files.createDirectories(destinationRoot);
   }
 
   @AfterEach
-  void tearDown() throws IOException {
-    fileSystem.close();
+  void tearDown() {
+    delete(fileSystem);
   }
 
+  private void delete(Path path){
+    try {
+      if (Files.isDirectory(path)){
+        Files.list(path).forEach(this::delete);
+      }
+      Files.deleteIfExists(path);
+    } catch (IOException ignored) {
+    }
+  }
+
+  // TODO files with random contents
+  // TODO random directory structure
+
   @Disabled
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   @ParameterizedTest
   @ValueSource(ints = {1_000, 10_000, 100_000, 1_000_000})
-  void copy_files(int count) throws IOException {
+  void copy_files(int count) {
     // Given
     List<Path> files =
         IntStream.range(0, count)
             .mapToObj(
                 i -> {
                   try {
-                    Path relativeFile = fileSystem.getPath("File-%d".formatted(i));
+                    Path relativeFile = Path.of("File-%d".formatted(i));
                     Files.createFile(sourceRoot.resolve(relativeFile));
                     return relativeFile;
                   } catch (IOException e) {
@@ -66,16 +81,19 @@ class FileSystemBackupPerformanceTest {
             .toList();
 
     // When
-    new BackupRunner(new FileSystemBackup(sourceRoot, destinationRoot)).run();
+    Main.main(sourceRoot.toString(), destinationRoot.toString());
 
     // Then
-    assertThat(Files.list(sourceRoot))
-        .containsExactlyElementsIn(files.stream().map(sourceRoot::resolve).toList());
-    assertThat(Files.list(destinationRoot))
-        .containsExactlyElementsIn(files.stream().map(destinationRoot::resolve).toList());
+    // single assert (e.g. containsExactlyElementsIn) is more correct, but too slow here.
+    files.forEach(
+        file -> {
+          assertThat(Files.exists(sourceRoot.resolve(file))).isTrue();
+          assertThat(Files.exists(destinationRoot.resolve(file))).isTrue();
+        });
   }
 
   @Disabled
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   @ParameterizedTest
   @ValueSource(ints = {1_000, 10_000, 100_000, 1_000_000})
   void delete_files(int count) throws IOException {
@@ -84,7 +102,7 @@ class FileSystemBackupPerformanceTest {
         .forEach(
             i -> {
               try {
-                Path relativeFile = fileSystem.getPath("File-%d".formatted(i));
+                Path relativeFile = Path.of("File-%d".formatted(i));
                 Files.createFile(destinationRoot.resolve(relativeFile));
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -92,7 +110,7 @@ class FileSystemBackupPerformanceTest {
             });
 
     // When
-    new BackupRunner(new FileSystemBackup(sourceRoot, destinationRoot)).run();
+    Main.main(sourceRoot.toString(), destinationRoot.toString());
 
     // Then
     assertThat(Files.list(sourceRoot)).isEmpty();
