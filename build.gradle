@@ -154,6 +154,7 @@ subprojects {
     testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: "$mockitoVersion"
     testImplementation group: 'org.mockito', name: 'mockito-inline', version: "$mockitoVersion"
     testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.2'
+    testImplementation group: 'com.github.javafaker', name: 'javafaker', version: '1.0.2'
   }
 
   // dependency cleanup, exclusions and resolutions
