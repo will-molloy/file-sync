@@ -7,23 +7,39 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * For backups to/from a File System (represented by {@link Path}).
  *
- * @param source source file system
- * @param destination destination file system
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record FileSystemBackup(FileSystem source, FileSystem destination) implements Backup {
+public class FileSystemBackup implements Backup {
 
   private static final Logger log = LogManager.getLogger();
 
-  public FileSystemBackup {
-    requireNonNull(source);
-    requireNonNull(destination);
+  private final AtomicLong copyCount = new AtomicLong();
+  private final AtomicLong updateCount = new AtomicLong();
+  private final AtomicLong deleteCount = new AtomicLong();
+
+  private final Backup.Location source;
+  private final Backup.Location destination;
+
+  public FileSystemBackup(Location source, Location destination) {
+    this.source = requireNonNull(source);
+    this.destination = requireNonNull(destination);
+  }
+
+  @Override
+  public Location source() {
+    return source;
+  }
+
+  @Override
+  public Location destination() {
+    return destination;
   }
 
   @Override
@@ -31,6 +47,7 @@ public record FileSystemBackup(FileSystem source, FileSystem destination) implem
     Path sourcePath = source.root().resolve(relativePath);
     Path destPath = destination.root().resolve(relativePath);
     log.info("copy({} -> {})", sourcePath, destPath);
+    copyCount.incrementAndGet();
     try {
       copyOrUpdate(sourcePath, destPath);
     } catch (IOException e) {
@@ -43,6 +60,7 @@ public record FileSystemBackup(FileSystem source, FileSystem destination) implem
     Path sourcePath = source.root().resolve(relativePath);
     Path destPath = destination.root().resolve(relativePath);
     log.info("update({} -> {})", sourcePath, destPath);
+    updateCount.incrementAndGet();
     try {
       copyOrUpdate(sourcePath, destPath);
     } catch (IOException e) {
@@ -52,7 +70,7 @@ public record FileSystemBackup(FileSystem source, FileSystem destination) implem
 
   private void copyOrUpdate(Path sourcePath, Path destPath) throws IOException {
     Path destParent = destPath.getParent();
-    if (destParent != null && Files.exists(sourcePath)){
+    if (destParent != null && Files.exists(sourcePath)) {
       Files.createDirectories(destParent);
     }
     Files.copy(
@@ -66,6 +84,7 @@ public record FileSystemBackup(FileSystem source, FileSystem destination) implem
   public void delete(Path relativePath) {
     Path destPath = destination.root().resolve(relativePath);
     log.info("delete({})", destPath);
+    deleteCount.incrementAndGet();
     deleteRecursively(destPath);
   }
 
@@ -78,5 +97,16 @@ public record FileSystemBackup(FileSystem source, FileSystem destination) implem
     } catch (IOException e) {
       log.error("Error deleting(%s)".formatted(destPath), e);
     }
+  }
+
+  @Override
+  public Statistics statistics() {
+    return new Statistics(copyCount.get(), updateCount.get(), deleteCount.get());
+  }
+
+  @Override
+  public String toString() {
+    return "%s[source=%s, destination=%s]"
+        .formatted(getClass().getSimpleName(), source, destination);
   }
 }

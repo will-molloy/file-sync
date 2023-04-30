@@ -186,8 +186,6 @@ class FileSystemTest {
 
   @Test
   void toString_includesClassNameAndRootPath() {
-    assertThat(sut.toString())
-        .isEqualTo(
-            "FileSystem[root=/root]");
+    assertThat(sut.toString()).isEqualTo("FileSystem[root=/root]");
   }
 }

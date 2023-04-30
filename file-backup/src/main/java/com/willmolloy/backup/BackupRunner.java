@@ -29,11 +29,12 @@ class BackupRunner {
   }
 
   void run() {
-    log.info("running {}", backup);
+    log.info("Running: {}", backup);
     try (ExecutorService executorService =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
       ops().forEach(executorService::submit);
     }
+    log.info("Finished: {}, {}", backup, backup.statistics());
   }
 
   private Stream<Runnable> ops() {

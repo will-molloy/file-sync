@@ -38,6 +38,7 @@ class BackupRunnerTest {
   void tearDown() {
     verify(mockSource).scan();
     verify(mockDestination).scan();
+    verify(mockBackup).statistics();
     verifyNoMoreInteractions(mockSource);
     verifyNoMoreInteractions(mockDestination);
     verifyNoMoreInteractions(mockBackup);

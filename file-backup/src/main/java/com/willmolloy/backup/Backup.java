@@ -20,6 +20,8 @@ public interface Backup {
 
   void delete(Path relativePath);
 
+  Statistics statistics();
+
   /** Backup location (source or destination). */
   interface Location {
 
@@ -36,4 +38,13 @@ public interface Backup {
 
     long lastModified(Path relativePath);
   }
+
+  /**
+   * Backup statistics.
+   *
+   * @param copies copy count
+   * @param updates update count
+   * @param deletes delete count
+   */
+  record Statistics(long copies, long updates, long deletes) {}
 }
