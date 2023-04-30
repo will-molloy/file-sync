@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
  * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record FileSystem(Path root) implements Backup.Source, Backup.Destination {
+public record FileSystem(Path root) implements Backup.Location {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -54,6 +54,38 @@ public record FileSystem(Path root) implements Backup.Source, Backup.Destination
       }
     } else {
       return Stream.of(path);
+    }
+  }
+
+  @Override
+  public boolean exists(Path relativePath) {
+    return Files.exists(root.resolve(relativePath));
+  }
+
+  @Override
+  public boolean isDirectory(Path relativePath) {
+    return Files.isDirectory(root.resolve(relativePath));
+  }
+
+  @Override
+  public long size(Path relativePath) {
+    Path path = root.resolve(relativePath);
+    try {
+      return Files.size(path);
+    } catch (IOException e) {
+      log.error("Error getting size of file: [{}]", path);
+      return -1;
+    }
+  }
+
+  @Override
+  public long lastModified(Path relativePath) {
+    Path path = root.resolve(relativePath);
+    try {
+      return Files.getLastModifiedTime(path).toMillis();
+    } catch (IOException e) {
+      log.error("Error getting last modified time of file: [{}]", path);
+      return -1;
     }
   }
 }

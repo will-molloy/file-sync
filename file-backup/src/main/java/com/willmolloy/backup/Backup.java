@@ -10,27 +10,30 @@ import java.util.stream.Stream;
  */
 public interface Backup {
 
-  Source source();
+  Location source();
 
-  Destination destination();
+  Location destination();
 
-  void tryCopyOrUpdate(Path path);
+  void copy(Path relativePath);
 
-  void tryDelete(Path path);
+  void update(Path relativePath);
 
-  /** Backup source. */
-  interface Source {
+  void delete(Path relativePath);
 
+  /** Backup location (source or destination). */
+  interface Location {
+
+    // TODO hide this?
     Path root();
 
     Stream<Path> scan();
-  }
 
-  /** Backup destination. */
-  interface Destination {
+    boolean exists(Path relativePath);
 
-    Path root();
+    boolean isDirectory(Path relativePath);
 
-    Stream<Path> scan();
+    long size(Path relativePath);
+
+    long lastModified(Path relativePath);
   }
 }

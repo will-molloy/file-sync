@@ -1,7 +1,9 @@
 package com.willmolloy.backup.filesystem;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
+import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -12,6 +14,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * FileSystemTest.
@@ -41,7 +46,12 @@ class FileSystemTest {
   }
 
   @Test
-  void scan_walksRoot_andRelativizesTheResult() throws IOException {
+  void root_returnsRootDir() {
+    assertThat(sut.root()).isSameInstanceAs(root);
+  }
+
+  @Test
+  void scan_walksRoot_andRelativizesThePaths() throws IOException {
     // Given
     Files.createFile(root.resolve("A"));
     Files.createFile(root.resolve("B"));
@@ -68,5 +78,116 @@ class FileSystemTest {
             fs.getPath("X"),
             fs.getPath("X/Y"),
             fs.getPath("X/Y/Z"));
+  }
+
+  @Test
+  void exists_whenPathExists_returnsTrue() throws IOException {
+    // Given
+    Files.createFile(root.resolve("A"));
+
+    // When
+    boolean result = sut.exists(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void exists_whenPathDoesntExist_returnsFalse() {
+    // When
+    boolean result = sut.exists(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void isDirectory_whenPathIsDirectory_returnsTrue() throws IOException {
+    // Given
+    Files.createDirectory(root.resolve("A"));
+
+    // When
+    boolean result = sut.isDirectory(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void isDirectory_whenPathIsFile_returnsFalse() throws IOException {
+    // Given
+    Files.createFile(root.resolve("A"));
+
+    // When
+    boolean result = sut.isDirectory(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void isDirectory_whenPathDoesntExist_failsGracefully() {
+    // When
+    boolean result = sut.isDirectory(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isFalse();
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  void size_returnsSizeOfFileInBytes(String contents, int size) throws IOException {
+    // Given
+    Path file = Files.createFile(root.resolve("A"));
+    Files.writeString(file, contents);
+
+    // When
+    long result = sut.size(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isEqualTo(size);
+  }
+
+  static Stream<Arguments> size_returnsSizeOfFileInBytes() {
+    return Stream.of(Arguments.of("", 0), Arguments.of("Hello world", 11));
+  }
+
+  @Test
+  void size_whenPathDoesntExist_failsGracefully() {
+    // When
+    long result = sut.size(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isEqualTo(-1);
+  }
+
+  @Test
+  void lastModified_returnsLastModifiedTimeInMillis() throws IOException {
+    // Given
+    Files.createFile(root.resolve("A"));
+
+    // When
+    long result = sut.lastModified(fs.getPath("A"));
+
+    // Then
+    long currentMillis = System.currentTimeMillis();
+    long tolerance = 100;
+    assertThat(result).isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
+  }
+
+  @Test
+  void lastModified_whenPathDoesntExist_failsGracefully() {
+    // When
+    long result = sut.lastModified(fs.getPath("A"));
+
+    // Then
+    assertThat(result).isEqualTo(-1);
+  }
+
+  @Test
+  void toString_includesClassNameAndRootPath() {
+    assertThat(sut.toString())
+        .isEqualTo(
+            "FileSystem[root=/root]");
   }
 }
