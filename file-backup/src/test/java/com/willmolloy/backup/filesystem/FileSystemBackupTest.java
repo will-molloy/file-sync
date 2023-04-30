@@ -140,6 +140,8 @@ class FileSystemBackupTest {
     assertThat(Files.isDirectory(destDir)).isTrue();
   }
 
+  // TODO cases like file on source but directory on dest?
+
   @Test
   void update_updatesFileFromSourceToDestination() throws IOException {
     // Given
