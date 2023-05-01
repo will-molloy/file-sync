@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.willmolloy.backup.Backup.Location;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,47 +26,60 @@ public class FileSystemBackup implements Backup {
   private final AtomicLong updateCount = new AtomicLong();
   private final AtomicLong deleteCount = new AtomicLong();
 
-  private final Backup.Location source;
-  private final Backup.Location destination;
+  private final FileSystem source;
+  private final FileSystem destination;
 
-  public FileSystemBackup(Location source, Location destination) {
+  public FileSystemBackup(FileSystem source, FileSystem destination) {
     this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
   }
 
   @Override
-  public Location source() {
+  public FileSystem source() {
     return source;
   }
 
   @Override
-  public Location destination() {
+  public FileSystem destination() {
     return destination;
   }
 
   @Override
-  public void copy(Path relativePath) {
-    Path sourcePath = source.root().resolve(relativePath);
-    Path destPath = destination.root().resolve(relativePath);
-    log.info("copy({} -> {})", sourcePath, destPath);
+  public void copy(Path sourceFile) {
+    log.info("copy({} -> {})", sourceFile, destPath);
     copyCount.incrementAndGet();
     try {
-      copyOrUpdate(sourcePath, destPath);
+      copyOrUpdate(sourceFile, destPath);
     } catch (IOException e) {
-      log.error("Error copying(%s -> %s)".formatted(sourcePath, destPath), e);
+      log.error("Error copying(%s -> %s)".formatted(sourceFile, destPath), e);
     }
   }
 
   @Override
-  public void update(Path relativePath) {
-    Path sourcePath = source.root().resolve(relativePath);
-    Path destPath = destination.root().resolve(relativePath);
-    log.info("update({} -> {})", sourcePath, destPath);
+  public void update(Path sourceFile, Path destFile) {
     updateCount.incrementAndGet();
     try {
-      copyOrUpdate(sourcePath, destPath);
+      copyOrUpdate(sourceFile, destFile);
     } catch (IOException e) {
-      log.error("Error updating(%s -> %s)".formatted(sourcePath, destPath), e);
+      log.error("Error updating(%s -> %s)".formatted(sourceFile, destFile), e);
+    }
+  }
+
+  @Override
+  public void delete(Path destFile) {
+    log.info("delete({})", destFile);
+    deleteCount.incrementAndGet();
+    deleteRecursively(destFile);
+  }
+
+  private void deleteRecursively(Path destPath) {
+    try {
+      if (Files.isDirectory(destPath)) {
+        Files.list(destPath).forEach(this::deleteRecursively);
+      }
+      Files.deleteIfExists(destPath);
+    } catch (IOException e) {
+      log.error("Error deleting(%s)".formatted(destPath), e);
     }
   }
 
@@ -78,25 +93,6 @@ public class FileSystemBackup implements Backup {
         destPath,
         StandardCopyOption.COPY_ATTRIBUTES,
         StandardCopyOption.REPLACE_EXISTING);
-  }
-
-  @Override
-  public void delete(Path relativePath) {
-    Path destPath = destination.root().resolve(relativePath);
-    log.info("delete({})", destPath);
-    deleteCount.incrementAndGet();
-    deleteRecursively(destPath);
-  }
-
-  private void deleteRecursively(Path destPath) {
-    try {
-      if (Files.isDirectory(destPath)) {
-        Files.list(destPath).forEach(this::deleteRecursively);
-      }
-      Files.deleteIfExists(destPath);
-    } catch (IOException e) {
-      log.error("Error deleting(%s)".formatted(destPath), e);
-    }
   }
 
   @Override

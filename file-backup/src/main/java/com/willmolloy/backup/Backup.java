@@ -1,7 +1,8 @@
 package com.willmolloy.backup;
 
 import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.time.Instant;
+import java.util.Map;
 
 /**
  * Backup type definition.
@@ -10,41 +11,41 @@ import java.util.stream.Stream;
  */
 public interface Backup {
 
-  Location source();
+  Source source();
 
-  Location destination();
-
-  void copy(Path relativePath);
-
-  void update(Path relativePath);
-
-  void delete(Path relativePath);
-
-  Statistics statistics();
+  Destination destination();
 
   /** Backup location (source or destination). */
   interface Location {
 
-    // TODO hide this?
-    Path root();
-
-    Stream<Path> scan();
-
-    boolean exists(Path relativePath);
-
-    boolean isDirectory(Path relativePath);
-
-    long size(Path relativePath);
-
-    long lastModified(Path relativePath);
+    /**
+     * Scans the location.
+     * @return map of relativized key (i.e. file name) to file
+     */
+    Map<String, File> scan();
   }
 
-  /**
-   * Backup statistics.
-   *
-   * @param copies copy count
-   * @param updates update count
-   * @param deletes delete count
-   */
-  record Statistics(long copies, long updates, long deletes) {}
+  interface Source extends Location {
+
+    /**
+     * Gets the file, at the given path, downloaded to disk!
+     */
+    // TODO Path can't be abstracted, right?? We need something concrete eventually...
+    //  Just strange how we have this AND File... merge them?
+    Path get(String key);
+  }
+
+  interface Destination extends Location {
+
+    void put(String key, Path sourceFile);
+
+    void delete(String key);
+  }
+
+  interface File {
+
+    long sizeInBytes();
+
+    Instant lastModified();
+  }
 }

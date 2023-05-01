@@ -6,10 +6,12 @@ import static com.google.common.truth.Truth8.assertThat;
 import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,12 +63,12 @@ class FileSystemTest {
     Files.createDirectories(root.resolve("X/Y/Z"));
 
     // When
-    Stream<Path> paths = sut.scan();
+    Map<String, Backup.File> scan = sut.scan();
 
     // Then
-    assertThat(paths)
+    assertThat(scan)
         .containsExactly(
-            fs.getPath("A"),
+            "A", root.resolve("A"),
             fs.getPath("B"),
             fs.getPath("C"),
             fs.getPath("C/D"),
@@ -78,60 +80,6 @@ class FileSystemTest {
             fs.getPath("X"),
             fs.getPath("X/Y"),
             fs.getPath("X/Y/Z"));
-  }
-
-  @Test
-  void exists_whenPathExists_returnsTrue() throws IOException {
-    // Given
-    Files.createFile(root.resolve("A"));
-
-    // When
-    boolean result = sut.exists(fs.getPath("A"));
-
-    // Then
-    assertThat(result).isTrue();
-  }
-
-  @Test
-  void exists_whenPathDoesntExist_returnsFalse() {
-    // When
-    boolean result = sut.exists(fs.getPath("A"));
-
-    // Then
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  void isDirectory_whenPathIsDirectory_returnsTrue() throws IOException {
-    // Given
-    Files.createDirectory(root.resolve("A"));
-
-    // When
-    boolean result = sut.isDirectory(fs.getPath("A"));
-
-    // Then
-    assertThat(result).isTrue();
-  }
-
-  @Test
-  void isDirectory_whenPathIsFile_returnsFalse() throws IOException {
-    // Given
-    Files.createFile(root.resolve("A"));
-
-    // When
-    boolean result = sut.isDirectory(fs.getPath("A"));
-
-    // Then
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  void isDirectory_whenPathDoesntExist_failsGracefully() {
-    // When
-    boolean result = sut.isDirectory(fs.getPath("A"));
-
-    // Then
-    assertThat(result).isFalse();
   }
 
   @ParameterizedTest
