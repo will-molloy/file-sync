@@ -3,12 +3,9 @@ package com.willmolloy.backup;
 import static java.util.Objects.requireNonNull;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
-
-import com.willmolloy.backup.Backup.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,8 +19,8 @@ class BackupRunner {
   private static final Logger log = LogManager.getLogger();
 
   private final Backup backup;
-  private final Backup.Source source;
-  private final Backup.Destination destination;
+  private final Backup.Location source;
+  private final Backup.Location destination;
 
   BackupRunner(Backup backup) {
     this.backup = requireNonNull(backup);
@@ -37,41 +34,45 @@ class BackupRunner {
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
       ops().forEach(executorService::submit);
     }
-    log.info("Finished: {}", backup);
+    log.info("Finished: {}, {}", backup, backup.statistics());
   }
 
   private Stream<Runnable> ops() {
-    Map<String, File> sourceFiles = source.scan();
-    Map<String, File> destFiles = destination.scan();
+    Stream<Runnable> copiesAndUpdates =
+        backup.source().scan().map(relativePath -> () -> tryCopyOrUpdate(relativePath));
 
-    Stream<Runnable> copiesOrUpdates = sourceFiles.entrySet().stream().map(e -> () -> {
-      String key = e.getKey();
+    Stream<Runnable> deletes =
+        backup.destination().scan().map(relativePath -> () -> tryDelete(relativePath));
 
-      File sourceFile = e.getValue();
-      File destFile = destFiles.get(key);
-
-      Path sourcePath = source.get(key);
-
-      if (destFile == null) {
-        destination.put(key, sourcePath);
-      } else if (!equals(sourceFile, destFile)) {
-        destination.put(key, sourcePath);
-      }
-    });
-
-    Stream<Runnable> deletes = destFiles.keySet().stream().map(key -> () -> {
-      if (!sourceFiles.containsKey(key)) {
-        destination.delete(key);
-      }
-    });
-
-    return Stream.concat(copiesOrUpdates, deletes);
+    return Stream.concat(copiesAndUpdates, deletes);
   }
 
-  private boolean equals(File sourceFile, File destFile) {
-    return sourceFile.sizeInBytes() == destFile.sizeInBytes()
-        && sourceFile.lastModified().equals(destFile.lastModified());
+  private void tryCopyOrUpdate(Path relativePath) {
+    if (!destination.exists(relativePath)) {
+      backup.copy(relativePath);
+    } else {
+      boolean sourceIsDirectory = source.isDirectory(relativePath);
+      boolean destIsDirectory = destination.isDirectory(relativePath);
+      if (sourceIsDirectory && destIsDirectory) {
+        return;
+      } else if (sourceIsDirectory != destIsDirectory) {
+        // if the file is a directory on dest, need to delete it first
+        backup.delete(relativePath);
+        backup.copy(relativePath);
+      } else if (!equals(relativePath)) {
+        backup.update(relativePath);
+      }
+    }
   }
 
-  private record Statistics(long copies, long updates, long deletes) {}
+  private void tryDelete(Path relativePath) {
+    if (!source.exists(relativePath)) {
+      backup.delete(relativePath);
+    }
+  }
+
+  private boolean equals(Path relativePath) {
+    return source.size(relativePath) == destination.size(relativePath)
+        && source.lastModified(relativePath) == destination.lastModified(relativePath);
+  }
 }
