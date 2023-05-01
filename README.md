@@ -37,6 +37,9 @@ AWS-S3 job
   - login to AWS/assume role
   - how to scan S3 bucket
   - how to copy/delete etc.
+  - Also need RESTORE i.e. download from S3
+    - Path -> Path can easily be reversed (just swap source/dest)
+      - but S3 requires GET instead of PUT (i.e. it's not symmetrical)
 
 profile
   - src
@@ -56,3 +59,4 @@ scheduler
 Other
 - Dockerise?
 - Logging, record time etc.
+
