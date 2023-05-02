@@ -1,4 +1,4 @@
-package com.willmolloy.backup.filesystem;
+package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -7,6 +7,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -26,7 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 class LocalFileTest {
 
-  private java.nio.file.FileSystem fs;
+  private FileSystem fs;
   private Path root;
 
   @BeforeEach

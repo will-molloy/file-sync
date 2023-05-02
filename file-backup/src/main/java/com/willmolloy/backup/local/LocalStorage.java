@@ -13,16 +13,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * For backups to/from a File System (represented by {@link Path}).
+ * Represents a local storage location.
  *
  * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalDisk(Path root) implements Backup.Location {
+public record LocalStorage(Path root) implements Backup.Location {
 
   private static final Logger log = LogManager.getLogger();
 
-  public LocalDisk {
+  public LocalStorage {
     requireNonNull(root);
   }
 

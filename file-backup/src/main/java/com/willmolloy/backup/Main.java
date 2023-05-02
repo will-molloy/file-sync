@@ -1,7 +1,7 @@
 package com.willmolloy.backup;
 
-import com.willmolloy.backup.filesystem.FileSystem;
-import com.willmolloy.backup.filesystem.FileSystemBackup;
+import com.willmolloy.backup.local.LocalBackup;
+import com.willmolloy.backup.local.LocalStorage;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
@@ -24,11 +24,10 @@ final class Main {
       Path sourceRoot = Path.of(args[0]);
       Path destRoot = Path.of(args[1]);
 
-      FileSystem source = new FileSystem(sourceRoot);
-      FileSystem destination = new FileSystem(destRoot);
-      FileSystemBackup backup = new FileSystemBackup(source, destination);
-      BackupRunner backupRunner = new BackupRunner(backup);
-      backupRunner.run();
+      LocalStorage source = new LocalStorage(sourceRoot);
+      LocalStorage destination = new LocalStorage(destRoot);
+      LocalBackup backup = new LocalBackup(source, destination);
+      new BackupRunner(backup).run();
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);

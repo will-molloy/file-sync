@@ -23,12 +23,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * FileSystemBackupPerformanceTest.
+ * LocalBackupPerformanceTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
-class FileSystemBackupPerformanceTest {
+class LocalBackupPerformanceTest {
 
   private static final Logger log = LogManager.getLogger();
 

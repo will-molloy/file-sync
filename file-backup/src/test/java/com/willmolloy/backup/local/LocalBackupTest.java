@@ -1,4 +1,4 @@
-package com.willmolloy.backup.filesystem;
+package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
@@ -8,6 +8,7 @@ import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -16,18 +17,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * FileSystemBackupTest.
+ * LocalBackupTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class FileSystemBackupTest {
+class LocalBackupTest {
 
-  private java.nio.file.FileSystem fs;
-  private FileSystem source;
+  private FileSystem fs;
+  private LocalStorage source;
   private Path sourceRoot;
-  private FileSystem destination;
+  private LocalStorage destination;
   private Path destRoot;
-  private FileSystemBackup sut;
+  private LocalBackup sut;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -39,9 +40,9 @@ class FileSystemBackupTest {
     destRoot = fs.getPath("/dest");
     Files.createDirectory(destRoot);
 
-    source = new FileSystem(sourceRoot);
-    destination = new FileSystem(destRoot);
-    sut = new FileSystemBackup(source, destination);
+    source = new LocalStorage(sourceRoot);
+    destination = new LocalStorage(destRoot);
+    sut = new LocalBackup(source, destination);
   }
 
   @AfterEach
@@ -260,7 +261,7 @@ class FileSystemBackupTest {
   void toString_includesClassNamesAndRootPaths() {
     assertThat(sut.toString())
         .isEqualTo(
-            "FileSystemBackup[source=FileSystem[root=/source], destination=FileSystem[root=/dest]]");
+            "LocalBackup[source=LocalStorage[root=/source], destination=LocalStorage[root=/dest]]");
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {

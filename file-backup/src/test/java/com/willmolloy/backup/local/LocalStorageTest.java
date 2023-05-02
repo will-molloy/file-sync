@@ -8,6 +8,7 @@ import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -16,16 +17,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * LocalDiskTest.
+ * LocalStorageTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
-class LocalDiskTest {
+class LocalStorageTest {
 
-  private java.nio.file.FileSystem fs;
+  private FileSystem fs;
   private Path root;
-  private LocalDisk sut;
+  private LocalStorage sut;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -34,7 +35,7 @@ class LocalDiskTest {
     root = fs.getPath("/root");
     Files.createDirectory(root);
 
-    sut = new LocalDisk(root);
+    sut = new LocalStorage(root);
   }
 
   @AfterEach
@@ -74,6 +75,6 @@ class LocalDiskTest {
 
   @Test
   void toString_includesClassNameAndRootPath() {
-    assertThat(sut.toString()).isEqualTo("FileSystem[root=/root]");
+    assertThat(sut.toString()).isEqualTo("LocalStorage[root=/root]");
   }
 }

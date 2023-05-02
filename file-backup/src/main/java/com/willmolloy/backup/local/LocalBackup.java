@@ -1,4 +1,4 @@
-package com.willmolloy.backup.filesystem;
+package com.willmolloy.backup.local;
 
 import static java.util.Objects.requireNonNull;
 
@@ -11,18 +11,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * For backups to/from a File System (represented by {@link Path}).
+ * For backups to/from locally mounted storage. Either local disk, or mounted NAS, etc.
  *
  * @param source source
  * @param destination destination
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-// TODO rename to LocalBackup?
-public record FileSystemBackup(Location source, Location destination) implements Backup {
+public record LocalBackup(LocalStorage source, LocalStorage destination) implements Backup {
 
   private static final Logger log = LogManager.getLogger();
 
-  public FileSystemBackup(Location source, Location destination) {
+  public LocalBackup(LocalStorage source, LocalStorage destination) {
     this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
   }

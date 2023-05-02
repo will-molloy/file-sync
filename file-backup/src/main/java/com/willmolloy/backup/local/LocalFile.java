@@ -1,4 +1,4 @@
-package com.willmolloy.backup.filesystem;
+package com.willmolloy.backup.local;
 
 import static java.util.Objects.requireNonNull;
 

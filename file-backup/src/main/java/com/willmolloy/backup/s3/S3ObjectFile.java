@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 /**
  * A file in S3.
  *
- * @param s3Object the object in S3
+ * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 record S3ObjectFile(S3Object s3Object) implements Backup.File {
