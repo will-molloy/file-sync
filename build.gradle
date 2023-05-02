@@ -116,10 +116,8 @@ subprojects {
   apply plugin: 'org.unbroken-dome.test-sets'
   testSets {
     integrationTest
-    performanceTest
   }
   integrationTest.finalizedBy jacocoIntegrationTestReport
-  performanceTest.finalizedBy jacocoIntegrationTestReport
 
   // enable preview features
   tasks.withType(JavaCompile) {

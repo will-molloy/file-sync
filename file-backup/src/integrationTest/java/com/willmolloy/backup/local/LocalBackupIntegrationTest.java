@@ -1,8 +1,9 @@
-package com.willmolloy.backup;
+package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.github.javafaker.Faker;
+import com.willmolloy.backup.Main;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -23,12 +24,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * LocalBackupPerformanceTest.
+ * LocalBackupIntegrationTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
-class LocalBackupPerformanceTest {
+class LocalBackupIntegrationTest {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -71,7 +72,7 @@ class LocalBackupPerformanceTest {
   @ParameterizedTest
   @ValueSource(ints = {100, 1_000})
   @Timeout(value = 1, unit = TimeUnit.MINUTES)
-  void performanceTest(int count) throws IOException {
+  void test(int count) throws IOException {
     // Given
     List<Path> sourceFiles = createRandomFilesIn(sourceRoot, count).toList();
     createRandomFilesIn(destRoot, count).forEach(p -> {});

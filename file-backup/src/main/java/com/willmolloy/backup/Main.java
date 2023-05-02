@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class Main {
+public final class Main {
 
   private static final Logger log = LogManager.getLogger();
 
