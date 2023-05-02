@@ -7,7 +7,7 @@ import java.time.Instant;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
- * A file in S3.
+ * A file in AWS S3.
  *
  * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>

@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.toMap;
 
 import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.nio.file.Path;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +14,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 /**
- * For backups to an AWS S3 Bucket.
+ * AWS S3 Bucket.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
@@ -35,13 +34,8 @@ public class S3Bucket implements Backup.Location {
   }
 
   @Override
-  public Path root() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public Map<String, Backup.File> scan() {
-    log.info("scan({})", bucketName);
+    log.info("Scanning bucket: {}", bucketName);
     ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);
 

@@ -28,7 +28,7 @@ public record LocalStorage(Path root) implements Backup.Location {
 
   @Override
   public Map<String, Backup.File> scan() {
-    log.info("scan({})", root);
+    log.info("Scanning directory: {}", root);
     return walk(root)
         // strip prefix so can compare source & dest paths
         .collect(toMap(path -> root.relativize(path).toString(), LocalFile::new));

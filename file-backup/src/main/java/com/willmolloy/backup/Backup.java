@@ -1,6 +1,5 @@
 package com.willmolloy.backup;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
 
@@ -23,9 +22,6 @@ public interface Backup {
 
   /** Backup location (source or destination). */
   interface Location {
-
-    // TODO need to hide this - S3 has no way of implementing a 'resolve'
-    Path root();
 
     Map<String, File> scan();
   }
