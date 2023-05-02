@@ -66,7 +66,7 @@ class FileSystemBackupTest {
     Files.writeString(sourceFile, "source");
 
     // When
-    sut.copy(fs.getPath("A"));
+    sut.copy("A");
 
     // Then
     Path destFile = destRoot.resolve(fs.getPath("A"));
@@ -81,7 +81,7 @@ class FileSystemBackupTest {
     Path sourceDir = Files.createDirectories(sourceRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    sut.copy(fs.getPath("A/B/C"));
+    sut.copy("A/B/C");
 
     // Then
     Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
@@ -93,7 +93,7 @@ class FileSystemBackupTest {
   @Test
   void copy_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.copy(fs.getPath("A"));
+    sut.copy("A");
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -102,7 +102,7 @@ class FileSystemBackupTest {
   @Test
   void copy_whenDirectoryNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.copy(fs.getPath("A/B/C"));
+    sut.copy("A/B/C");
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -117,7 +117,7 @@ class FileSystemBackupTest {
     Files.writeString(destFile, "dest");
 
     // When
-    sut.copy(fs.getPath("A"));
+    sut.copy("A");
 
     // Then
     assertThatFileSystem().containsExactly(sourceFile, destFile);
@@ -132,7 +132,7 @@ class FileSystemBackupTest {
     Path destDir = Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    sut.copy(fs.getPath("A/B/C"));
+    sut.copy("A/B/C");
 
     // Then
     assertThatFileSystem().containsExactly(sourceDir, destDir);
@@ -151,7 +151,7 @@ class FileSystemBackupTest {
     Files.writeString(destFile, "dest");
 
     // When
-    sut.update(fs.getPath("A"));
+    sut.update("A");
 
     // Then
     assertThatFileSystem().containsExactly(sourceFile, destFile);
@@ -166,7 +166,7 @@ class FileSystemBackupTest {
     Path destDir = Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    sut.update(fs.getPath("A/B/C"));
+    sut.update("A/B/C");
 
     // Then
     assertThatFileSystem().containsExactly(sourceDir, destDir);
@@ -177,7 +177,7 @@ class FileSystemBackupTest {
   @Test
   void update_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.update(fs.getPath("A"));
+    sut.update("A");
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -186,7 +186,7 @@ class FileSystemBackupTest {
   @Test
   void update_whenDirectoryNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.update(fs.getPath("A/B/C"));
+    sut.update("A/B/C");
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -199,7 +199,7 @@ class FileSystemBackupTest {
     Files.writeString(sourceFile, "source");
 
     // When
-    sut.update(fs.getPath("A"));
+    sut.update("A");
 
     // Then
     Path destFile = destRoot.resolve(fs.getPath("A"));
@@ -214,7 +214,7 @@ class FileSystemBackupTest {
     Path sourceDir = Files.createDirectories(sourceRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    sut.copy(fs.getPath("A/B/C"));
+    sut.copy("A/B/C");
 
     // Then
     Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
@@ -229,7 +229,7 @@ class FileSystemBackupTest {
     Files.createFile(destRoot.resolve(fs.getPath("A")));
 
     // When
-    sut.delete(fs.getPath("A"));
+    sut.delete("A");
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -241,7 +241,7 @@ class FileSystemBackupTest {
     Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    sut.delete(fs.getPath("A"));
+    sut.delete("A");
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -250,7 +250,7 @@ class FileSystemBackupTest {
   @Test
   void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
     // When
-    sut.delete(fs.getPath("A"));
+    sut.delete("A");
 
     // Then
     assertThatFileSystem().isEmpty();

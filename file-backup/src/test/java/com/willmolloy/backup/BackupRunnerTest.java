@@ -5,8 +5,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,6 @@ class BackupRunnerTest {
   void tearDown() {
     verify(mockSource).scan();
     verify(mockDestination).scan();
-    verify(mockBackup).statistics();
     verifyNoMoreInteractions(mockSource);
     verifyNoMoreInteractions(mockDestination);
     verifyNoMoreInteractions(mockBackup);
@@ -47,179 +46,84 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndNotDestination_copiesFileFromSourceToDestination() {
     // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(false);
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile()));
+    when(mockDestination.scan()).thenReturn(Map.of());
 
     // When
     backupRunner.run();
 
     // Then
-    verify(mockBackup).copy(file);
+    verify(mockBackup).copy("A");
   }
 
   @Test
-  void whenFileOnSourceAndDestination_andDifferentFileSize_updatesFileOnDestination() {
+  void whenFileOnSourceAndDestination_andDifferentSize_updatesFileOnDestination() {
     // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(true);
-
-    when(mockSource.isDirectory(file)).thenReturn(false);
-    when(mockDestination.isDirectory(file)).thenReturn(false);
-
-    when(mockSource.size(file)).thenReturn(1L);
-    when(mockDestination.size(file)).thenReturn(2L);
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(1))));
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile(1, Instant.ofEpochSecond(1))));
 
     // When
     backupRunner.run();
 
     // Then
-    verify(mockBackup).update(file);
+    verify(mockBackup).update("A");
   }
 
   @Test
   void whenFileOnSourceAndDestination_andDifferentModifiedTime_updatesFileOnDestination() {
     // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(true);
-
-    when(mockSource.isDirectory(file)).thenReturn(false);
-    when(mockDestination.isDirectory(file)).thenReturn(false);
-
-    when(mockSource.size(file)).thenReturn(1L);
-    when(mockDestination.size(file)).thenReturn(1L);
-
-    when(mockSource.lastModified(file)).thenReturn(1L);
-    when(mockDestination.lastModified(file)).thenReturn(2L);
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(2))));
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(1))));
 
     // When
     backupRunner.run();
 
     // Then
-    verify(mockBackup).update(file);
+    verify(mockBackup).update("A");
   }
 
   @Test
   void whenFileOnSourceAndDestination_andEqual_skipsUpdate() {
     // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(true);
-
-    when(mockSource.isDirectory(file)).thenReturn(false);
-    when(mockDestination.isDirectory(file)).thenReturn(false);
-
-    when(mockSource.size(file)).thenReturn(1L);
-    when(mockDestination.size(file)).thenReturn(1L);
-
-    when(mockSource.lastModified(file)).thenReturn(1L);
-    when(mockDestination.lastModified(file)).thenReturn(1L);
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(2))));
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(2))));
 
     // When
     backupRunner.run();
 
     // Then
-    verify(mockBackup, never()).update(file);
-  }
-
-  @Test
-  void whenDirectoryOnSourceAndFileOnDestination_overwritesFileOnDestination() {
-    // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(true);
-
-    when(mockSource.isDirectory(file)).thenReturn(true);
-    when(mockDestination.isDirectory(file)).thenReturn(false);
-
-    // When
-    backupRunner.run();
-
-    // Then
-    verify(mockBackup).delete(file);
-    verify(mockBackup).copy(file);
-  }
-
-  @Test
-  void whenFileOnSourceAndDirectoryOnDestination_overwritesDirectoryOnDestination() {
-    // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(true);
-
-    when(mockSource.isDirectory(file)).thenReturn(false);
-    when(mockDestination.isDirectory(file)).thenReturn(true);
-
-    // When
-    backupRunner.run();
-
-    // Then
-    verify(mockBackup).delete(file);
-    verify(mockBackup).copy(file);
-  }
-
-  @Test
-  void whenDirectoryOnSourceAndDestination_skipsUpdate() {
-    // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of(file));
-    when(mockDestination.scan()).thenReturn(Stream.of());
-
-    when(mockDestination.exists(file)).thenReturn(true);
-
-    when(mockSource.isDirectory(file)).thenReturn(true);
-    when(mockDestination.isDirectory(file)).thenReturn(true);
-
-    // When
-    backupRunner.run();
-
-    // Then
-    verify(mockBackup, never()).update(file);
+    verify(mockBackup, never()).update("A");
   }
 
   @Test
   void whenFileOnDestinationAndNotSource_deletesFileFromDestination() {
     // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of());
-    when(mockDestination.scan()).thenReturn(Stream.of(file));
-
-    when(mockSource.exists(file)).thenReturn(false);
+    when(mockSource.scan()).thenReturn(Map.of());
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile()));
 
     // When
     backupRunner.run();
 
     // Then
-    verify(mockBackup).delete(file);
+    verify(mockBackup).delete("A");
   }
 
   @Test
   void whenFileOnDestinationAndSource_skipsDelete() {
     // Given
-    Path file = Path.of("A");
-    when(mockSource.scan()).thenReturn(Stream.of());
-    when(mockDestination.scan()).thenReturn(Stream.of(file));
-
-    when(mockSource.exists(file)).thenReturn(true);
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile()));
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile()));
 
     // When
     backupRunner.run();
 
     // Then
-    verify(mockBackup, never()).delete(file);
+    verify(mockBackup, never()).delete("A");
+  }
+
+  private record TestFile(long size, Instant lastModified) implements Backup.File {
+    private TestFile() {
+      this(0, Instant.MIN);
+    }
   }
 }

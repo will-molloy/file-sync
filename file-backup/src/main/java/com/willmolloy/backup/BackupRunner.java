@@ -2,9 +2,10 @@ package com.willmolloy.backup;
 
 import static java.util.Objects.requireNonNull;
 
-import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,49 +31,55 @@ class BackupRunner {
 
   void run() {
     log.info("Running: {}", backup);
+
+    AtomicLong copyCount = new AtomicLong();
+    AtomicLong updateCount = new AtomicLong();
+    AtomicLong deleteCount = new AtomicLong();
+
     try (ExecutorService executorService =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
-      ops().forEach(executorService::submit);
+      Map<String, Backup.File> sourceFiles = source.scan();
+      Map<String, Backup.File> destFiles = destination.scan();
+
+      Stream<Runnable> copiesAndUpdates =
+          sourceFiles.entrySet().stream()
+              .map(
+                  e ->
+                      () -> {
+                        String key = e.getKey();
+
+                        Backup.File sourceFile = e.getValue();
+                        Backup.File destFile = destFiles.get(key);
+
+                        if (destFile == null) {
+                          copyCount.incrementAndGet();
+                          backup.copy(key);
+                        } else if (sourceFile.size() != destFile.size()
+                            || !sourceFile.lastModified().equals(destFile.lastModified())) {
+                          updateCount.incrementAndGet();
+                          backup.update(key);
+                        }
+                      });
+
+      Stream<Runnable> deletes =
+          destFiles.keySet().stream()
+              .map(
+                  key ->
+                      () -> {
+                        if (!sourceFiles.containsKey(key)) {
+                          deleteCount.incrementAndGet();
+                          backup.delete(key);
+                        }
+                      });
+
+      Stream.concat(copiesAndUpdates, deletes).forEach(executorService::submit);
     }
-    log.info("Finished: {}, {}", backup, backup.statistics());
+
+    log.info(
+        "Finished: {}, {}",
+        backup,
+        new Statistics(copyCount.get(), updateCount.get(), deleteCount.get()));
   }
 
-  private Stream<Runnable> ops() {
-    Stream<Runnable> copiesAndUpdates =
-        backup.source().scan().map(relativePath -> () -> tryCopyOrUpdate(relativePath));
-
-    Stream<Runnable> deletes =
-        backup.destination().scan().map(relativePath -> () -> tryDelete(relativePath));
-
-    return Stream.concat(copiesAndUpdates, deletes);
-  }
-
-  private void tryCopyOrUpdate(Path relativePath) {
-    if (!destination.exists(relativePath)) {
-      backup.copy(relativePath);
-    } else {
-      boolean sourceIsDirectory = source.isDirectory(relativePath);
-      boolean destIsDirectory = destination.isDirectory(relativePath);
-      if (sourceIsDirectory && destIsDirectory) {
-        return;
-      } else if (sourceIsDirectory != destIsDirectory) {
-        // if the file is a directory on dest, need to delete it first
-        backup.delete(relativePath);
-        backup.copy(relativePath);
-      } else if (!equals(relativePath)) {
-        backup.update(relativePath);
-      }
-    }
-  }
-
-  private void tryDelete(Path relativePath) {
-    if (!source.exists(relativePath)) {
-      backup.delete(relativePath);
-    }
-  }
-
-  private boolean equals(Path relativePath) {
-    return source.size(relativePath) == destination.size(relativePath)
-        && source.lastModified(relativePath) == destination.lastModified(relativePath);
-  }
+  private record Statistics(long copies, long updates, long deletes) {}
 }

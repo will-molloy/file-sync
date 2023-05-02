@@ -1,7 +1,8 @@
 package com.willmolloy.backup;
 
 import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.time.Instant;
+import java.util.Map;
 
 /**
  * Backup type definition.
@@ -14,37 +15,27 @@ public interface Backup {
 
   Location destination();
 
-  void copy(Path relativePath);
+  void copy(String key);
 
-  void update(Path relativePath);
+  void update(String key);
 
-  void delete(Path relativePath);
-
-  Statistics statistics();
+  void delete(String key);
 
   /** Backup location (source or destination). */
   interface Location {
 
-    // TODO hide this?
+    // TODO need to hide this - S3 has no way of implementing a 'resolve'
     Path root();
 
-    Stream<Path> scan();
-
-    boolean exists(Path relativePath);
-
-    boolean isDirectory(Path relativePath);
-
-    long size(Path relativePath);
-
-    long lastModified(Path relativePath);
+    Map<String, File> scan();
   }
 
-  /**
-   * Backup statistics.
-   *
-   * @param copies copy count
-   * @param updates update count
-   * @param deletes delete count
-   */
-  record Statistics(long copies, long updates, long deletes) {}
+  /** Backup file. */
+  // interface rather than record so the operations can be lazy
+  interface File {
+
+    long size();
+
+    Instant lastModified();
+  }
 }
