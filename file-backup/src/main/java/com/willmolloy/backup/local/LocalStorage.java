@@ -30,6 +30,7 @@ public record LocalStorage(Path root) implements Backup.Location {
   public Map<String, Backup.File> scan() {
     log.info("Scanning directory: {}", root);
     return walk(root)
+        .parallel()
         // strip prefix so can compare source & dest paths
         .collect(toMap(path -> root.relativize(path).toString(), LocalFile::new));
   }

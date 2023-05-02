@@ -2,6 +2,7 @@ package com.willmolloy.backup;
 
 import static java.util.Objects.requireNonNull;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +32,7 @@ class BackupRunner {
 
   void run() {
     log.info("Running: {}", backup);
+    long startNanos = System.nanoTime();
 
     AtomicLong copyCount = new AtomicLong();
     AtomicLong updateCount = new AtomicLong();
@@ -40,6 +42,8 @@ class BackupRunner {
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
       Map<String, Backup.File> sourceFiles = source.scan();
       Map<String, Backup.File> destFiles = destination.scan();
+
+      log.info("Scan took: {}", elapsed(startNanos));
 
       Stream<Runnable> copiesAndUpdates =
           sourceFiles.entrySet().stream()
@@ -73,12 +77,17 @@ class BackupRunner {
                       });
 
       Stream.concat(copiesAndUpdates, deletes).forEach(executorService::submit);
+    } finally {
+      log.info(
+          "Finished: {}, with {}, in: {}",
+          backup,
+          new Statistics(copyCount.get(), updateCount.get(), deleteCount.get()),
+          elapsed(startNanos));
     }
+  }
 
-    log.info(
-        "Finished: {}, {}",
-        backup,
-        new Statistics(copyCount.get(), updateCount.get(), deleteCount.get()));
+  private Duration elapsed(long startNanos) {
+    return Duration.ofNanos(System.nanoTime() - startNanos);
   }
 
   private record Statistics(long copies, long updates, long deletes) {}
