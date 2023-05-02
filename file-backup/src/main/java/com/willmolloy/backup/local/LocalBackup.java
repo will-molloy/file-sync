@@ -17,7 +17,8 @@ import org.apache.logging.log4j.Logger;
  * @param destination destination
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalBackup(LocalStorage source, LocalStorage destination) implements Backup {
+public record LocalBackup(LocalStorage source, LocalStorage destination)
+    implements Backup<LocalStorage, LocalStorage> {
 
   private static final Logger log = LogManager.getLogger();
 

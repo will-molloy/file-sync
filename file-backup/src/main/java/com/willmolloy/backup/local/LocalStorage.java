@@ -3,7 +3,8 @@ package com.willmolloy.backup.local;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.Backup.File;
+import com.willmolloy.backup.Backup.Location;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +19,7 @@ import org.apache.logging.log4j.Logger;
  * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalStorage(Path root) implements Backup.Location {
+public record LocalStorage(Path root) implements Location {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -27,7 +28,7 @@ public record LocalStorage(Path root) implements Backup.Location {
   }
 
   @Override
-  public Map<String, Backup.File> scan() {
+  public Map<String, File> scan() {
     log.info("Scanning directory: {}", root);
     return walk(root)
         .parallel()

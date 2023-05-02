@@ -6,13 +6,15 @@ import java.util.Map;
 /**
  * Backup type definition.
  *
+ * @param <SourceT> source location type
+ * @param <DestinationT> destination location type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup {
+public interface Backup<SourceT extends Backup.Location, DestinationT extends Backup.Location> {
 
-  Location source();
+  SourceT source();
 
-  Location destination();
+  DestinationT destination();
 
   void copy(String key);
 
@@ -23,6 +25,7 @@ public interface Backup {
   /** Backup location (source or destination). */
   interface Location {
 
+    /** Returns map of relativized file path to file. */
     Map<String, File> scan();
   }
 

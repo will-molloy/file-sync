@@ -2,6 +2,8 @@ package com.willmolloy.backup;
 
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.Backup.File;
+import com.willmolloy.backup.Backup.Location;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -20,11 +22,11 @@ class BackupRunner {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final Backup backup;
-  private final Backup.Location source;
-  private final Backup.Location destination;
+  private final Backup<?, ?> backup;
+  private final Location source;
+  private final Location destination;
 
-  BackupRunner(Backup backup) {
+  BackupRunner(Backup<?, ?> backup) {
     this.backup = requireNonNull(backup);
     this.source = backup.source();
     this.destination = backup.destination();
@@ -40,8 +42,8 @@ class BackupRunner {
 
     try (ExecutorService executorService =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
-      Map<String, Backup.File> sourceFiles = source.scan();
-      Map<String, Backup.File> destFiles = destination.scan();
+      Map<String, File> sourceFiles = source.scan();
+      Map<String, File> destFiles = destination.scan();
 
       log.info("Scan took: {}", elapsed(startNanos));
 
@@ -52,8 +54,8 @@ class BackupRunner {
                       () -> {
                         String key = e.getKey();
 
-                        Backup.File sourceFile = e.getValue();
-                        Backup.File destFile = destFiles.get(key);
+                        File sourceFile = e.getValue();
+                        File destFile = destFiles.get(key);
 
                         if (destFile == null) {
                           copyCount.incrementAndGet();

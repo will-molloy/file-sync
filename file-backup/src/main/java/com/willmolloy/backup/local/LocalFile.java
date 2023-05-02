@@ -2,7 +2,7 @@ package com.willmolloy.backup.local;
 
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.Backup.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
  * @param path path to the file
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record LocalFile(Path path) implements Backup.File {
+record LocalFile(Path path) implements File {
 
   private static final Logger log = LogManager.getLogger();
 

@@ -3,7 +3,8 @@ package com.willmolloy.backup.s3;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.Backup.File;
+import com.willmolloy.backup.Backup.Location;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +19,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class S3Bucket implements Backup.Location {
+public class S3Bucket implements Location {
 
   // TODO tests
 
@@ -34,7 +35,7 @@ public class S3Bucket implements Backup.Location {
   }
 
   @Override
-  public Map<String, Backup.File> scan() {
+  public Map<String, File> scan() {
     log.info("Scanning bucket: {}", bucketName);
     ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);

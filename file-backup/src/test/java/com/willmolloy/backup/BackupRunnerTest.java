@@ -5,6 +5,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.willmolloy.backup.Backup.File;
+import com.willmolloy.backup.Backup.Location;
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -22,9 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BackupRunnerTest {
 
-  @Mock private Backup.Location mockSource;
-  @Mock private Backup.Location mockDestination;
-  @Mock private Backup mockBackup;
+  @Mock private Location mockSource;
+  @Mock private Location mockDestination;
+  @Mock private Backup<Location, Location> mockBackup;
   private BackupRunner backupRunner;
 
   @BeforeEach
@@ -121,7 +123,7 @@ class BackupRunnerTest {
     verify(mockBackup, never()).delete("A");
   }
 
-  private record TestFile(long size, Instant lastModified) implements Backup.File {
+  private record TestFile(long size, Instant lastModified) implements File {
     private TestFile() {
       this(0, Instant.MIN);
     }

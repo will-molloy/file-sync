@@ -2,7 +2,7 @@ package com.willmolloy.backup.s3;
 
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.Backup.File;
 import java.time.Instant;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record S3ObjectFile(S3Object s3Object) implements Backup.File {
+record S3ObjectFile(S3Object s3Object) implements File {
 
   S3ObjectFile {
     requireNonNull(s3Object);
