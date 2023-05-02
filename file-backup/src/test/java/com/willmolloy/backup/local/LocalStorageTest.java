@@ -49,7 +49,7 @@ class LocalStorageTest {
   }
 
   @Test
-  void scan_returnsRelativizedFileNamesToFiles() throws IOException {
+  void scan_returnsMapOfRelativizedFileNamesToFiles() throws IOException {
     // Given
     Path a = Files.createFile(root.resolve("A"));
     Path b = Files.createFile(root.resolve("B"));

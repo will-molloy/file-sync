@@ -21,8 +21,6 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  */
 public class S3Bucket implements Location {
 
-  // TODO tests
-
   private static final Logger log = LogManager.getLogger();
 
   private final S3Client s3Client;
@@ -42,6 +40,6 @@ public class S3Bucket implements Location {
 
     return response.stream()
         .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
-        .collect(toMap(S3Object::key, S3ObjectFile::new));
+        .collect(toMap(S3Object::key, S3File::new));
   }
 }

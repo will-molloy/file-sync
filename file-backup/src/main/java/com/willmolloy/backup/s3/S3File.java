@@ -12,9 +12,9 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record S3ObjectFile(S3Object s3Object) implements File {
+record S3File(S3Object s3Object) implements File {
 
-  S3ObjectFile {
+  S3File {
     requireNonNull(s3Object);
   }
 
