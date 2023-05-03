@@ -1,5 +1,6 @@
 package com.willmolloy.backup.s3;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -123,6 +124,13 @@ class S3BackupTest {
 
     // When
     assertDoesNotThrow(() -> sut.delete(fakeFileName()));
+  }
+
+  @Test
+  void toString_includesSourceAndDest() {
+    assertThat(sut.toString())
+        .isEqualTo(
+            "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/test-bucket]]");
   }
 
   private String fakeFileName() {

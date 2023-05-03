@@ -54,10 +54,11 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   private void put(String key) {
-    // TODO set MD5
     Path sourcePath = source.root().resolve(key);
-    log.info("put({} -> {})", sourcePath, s3ObjectUri(key));
+    String destinationUri = destination.objectUri(key);
+    log.info("put({} -> {})", sourcePath, destinationUri);
     try {
+      // TODO set MD5
       PutObjectRequest request =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
@@ -65,13 +66,14 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .build();
       s3Client.putObject(request, sourcePath);
     } catch (RuntimeException e) {
-      log.error("Error putting({} -> {})", sourcePath, s3ObjectUri(key));
+      log.error("Error putting({} -> {})", sourcePath, destinationUri);
     }
   }
 
   @Override
   public void delete(String key) {
-    log.info("delete({})", s3ObjectUri(key));
+    String destinationUri = destination.objectUri(key);
+    log.info("delete({})", destinationUri);
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
@@ -80,12 +82,12 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .build();
       s3Client.deleteObject(request);
     } catch (RuntimeException e) {
-      log.error("Error deleting({})", s3ObjectUri(key));
+      log.error("Error deleting({})", destinationUri);
     }
   }
 
-  private String s3ObjectUri(String key) {
-    return "https://s3.console.aws.amazon.com/s3/object/%s?prefix=%s%s"
-        .formatted(destination.bucketName(), destination.prefix(), key);
+  @Override
+  public String toString() {
+    return "S3Backup[source=%s, destination=%s]".formatted(source, destination);
   }
 }

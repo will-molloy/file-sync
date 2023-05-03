@@ -74,7 +74,7 @@ class LocalStorageTest {
   }
 
   @Test
-  void toString_includesClassNameAndRootPath() {
-    assertThat(sut.toString()).isEqualTo("LocalStorage[root=root]");
+  void toString_includesRootPath() {
+    assertThat(sut.toString()).isEqualTo("LocalStorage[root]");
   }
 }

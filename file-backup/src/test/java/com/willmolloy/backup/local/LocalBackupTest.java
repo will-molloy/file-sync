@@ -264,10 +264,9 @@ class LocalBackupTest {
   }
 
   @Test
-  void toString_includesClassNamesAndRootPaths() {
+  void toString_includesSourceAndDest() {
     assertThat(sut.toString())
-        .isEqualTo(
-            "LocalBackup[source=LocalStorage[root=source], destination=LocalStorage[root=dest]]");
+        .isEqualTo("LocalBackup[source=LocalStorage[source], destination=LocalStorage[dest]]");
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {

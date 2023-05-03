@@ -69,4 +69,9 @@ public record LocalStorage(Path root) implements Location {
       return Stream.of(path);
     }
   }
+
+  @Override
+  public String toString() {
+    return "LocalStorage[%s]".formatted(root);
+  }
 }

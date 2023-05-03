@@ -37,7 +37,7 @@ public class S3Bucket implements Location {
 
   @Override
   public Map<String, File> scan() {
-    log.info("Scanning bucket: {}", bucketName);
+    log.info("Scanning bucket: {}", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);
@@ -53,5 +53,19 @@ public class S3Bucket implements Location {
 
   public String prefix() {
     return prefix;
+  }
+
+  @Override
+  public String toString() {
+    return "S3Bucket[%s]".formatted(bucketUri());
+  }
+
+  private String bucketUri() {
+    return "https://s3.console.aws.amazon.com/s3/buckets/%s".formatted(bucketName);
+  }
+
+  public String objectUri(String key) {
+    return "https://s3.console.aws.amazon.com/s3/object/%s?prefix=%s%s"
+        .formatted(bucketName, prefix, key);
   }
 }

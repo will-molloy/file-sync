@@ -77,4 +77,16 @@ class S3BucketTest {
             "F/G/H/I", new S3File(i),
             "X/Y/Z", new S3File(z));
   }
+
+  @Test
+  void toString_includesBucketUri() {
+    assertThat(sut.toString())
+        .isEqualTo("S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/root]");
+  }
+
+  @Test
+  void objectUri_linksToObjectInAwsConsole() {
+    assertThat(sut.objectUri("A/B/C"))
+        .isEqualTo("https://s3.console.aws.amazon.com/s3/object/root?prefix=A/B/C");
+  }
 }
