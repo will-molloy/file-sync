@@ -30,10 +30,9 @@ class LocalStorageTest {
 
   @BeforeEach
   void setUp() throws IOException {
-    // TODO windows gets the key wrong.
-    fs = Jimfs.newFileSystem(Configuration.unix());
+    fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
 
-    root = fs.getPath("/root");
+    root = fs.getPath("root");
     Files.createDirectory(root);
 
     sut = new LocalStorage(root);
@@ -76,6 +75,6 @@ class LocalStorageTest {
 
   @Test
   void toString_includesClassNameAndRootPath() {
-    assertThat(sut.toString()).isEqualTo("LocalStorage[root=/root]");
+    assertThat(sut.toString()).isEqualTo("LocalStorage[root=root]");
   }
 }

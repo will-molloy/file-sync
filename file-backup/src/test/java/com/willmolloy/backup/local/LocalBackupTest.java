@@ -32,12 +32,12 @@ class LocalBackupTest {
 
   @BeforeEach
   void setUp() throws IOException {
-    fs = Jimfs.newFileSystem(Configuration.unix());
+    fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
 
-    sourceRoot = fs.getPath("/source");
+    sourceRoot = fs.getPath("source");
     Files.createDirectory(sourceRoot);
 
-    destRoot = fs.getPath("/dest");
+    destRoot = fs.getPath("dest");
     Files.createDirectory(destRoot);
 
     source = new LocalStorage(sourceRoot);
@@ -79,7 +79,8 @@ class LocalBackupTest {
   @Test
   void copy_copiesDirectoryFromSourceToDestination() throws IOException {
     // Given
-    Path sourceDir = Files.createDirectories(sourceRoot.resolve(fs.getPath("A/B/C")));
+    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceDir);
 
     // When
     sut.copy("A/B/C");
@@ -129,8 +130,10 @@ class LocalBackupTest {
   @Test
   void copy_whenDirectoryAlreadyOnDestination_updatesAnyway() throws IOException {
     // Given
-    Path sourceDir = Files.createDirectories(sourceRoot.resolve(fs.getPath("A/B/C")));
-    Path destDir = Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
+    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceDir);
+    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(destDir);
 
     // When
     sut.copy("A/B/C");
@@ -163,8 +166,10 @@ class LocalBackupTest {
   @Test
   void update_updatesDirectoryFromSourceToDestination() throws IOException {
     // Given
-    Path sourceDir = Files.createDirectories(sourceRoot.resolve(fs.getPath("A/B/C")));
-    Path destDir = Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
+    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceDir);
+    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(destDir);
 
     // When
     sut.update("A/B/C");
@@ -212,7 +217,8 @@ class LocalBackupTest {
   @Test
   void update_whenDirectoryNotOnDestination_copiesAnyway() throws IOException {
     // Given
-    Path sourceDir = Files.createDirectories(sourceRoot.resolve(fs.getPath("A/B/C")));
+    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceDir);
 
     // When
     sut.copy("A/B/C");
@@ -261,7 +267,7 @@ class LocalBackupTest {
   void toString_includesClassNamesAndRootPaths() {
     assertThat(sut.toString())
         .isEqualTo(
-            "LocalBackup[source=LocalStorage[root=/source], destination=LocalStorage[root=/dest]]");
+            "LocalBackup[source=LocalStorage[root=source], destination=LocalStorage[root=dest]]");
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {

@@ -8,8 +8,10 @@ import com.willmolloy.backup.Backup.Location;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,8 +34,17 @@ public record LocalStorage(Path root) implements Location {
     log.info("Scanning directory: {}", root);
     return walk(root)
         .parallel()
-        // strip prefix so can compare source & dest paths
-        .collect(toMap(path -> root.relativize(path).toString(), LocalFile::new));
+        .collect(
+            toMap(
+                path -> {
+                  // relativize and ensure unix separator
+                  List<String> nameElements =
+                      StreamSupport.stream(root.relativize(path).spliterator(), false)
+                          .map(Path::toString)
+                          .toList();
+                  return String.join("/", nameElements);
+                },
+                LocalFile::new));
   }
 
   private Stream<Path> walk(Path path) {

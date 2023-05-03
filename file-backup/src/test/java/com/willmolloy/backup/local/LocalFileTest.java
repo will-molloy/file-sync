@@ -32,9 +32,9 @@ class LocalFileTest {
 
   @BeforeEach
   void setUp() throws IOException {
-    fs = Jimfs.newFileSystem(Configuration.unix());
+    fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
 
-    root = fs.getPath("/root");
+    root = fs.getPath("root");
     Files.createDirectory(root);
   }
 

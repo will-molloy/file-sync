@@ -16,6 +16,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
 
   DestinationT destination();
 
+  // TODO just have a single copy/put method?
   void copy(String key);
 
   void update(String key);
