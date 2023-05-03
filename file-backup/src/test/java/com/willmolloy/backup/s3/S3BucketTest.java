@@ -32,8 +32,8 @@ class S3BucketTest {
 
   @Mock private S3Client mockS3Client;
   private S3Bucket sut;
-  private static final String BUCKET_NAME = "root";
-  private static final String PREFIX = "testing/";
+  private static final String BUCKET_NAME = "my-bucket";
+  private static final String PREFIX = "testing/backup/";
 
   @BeforeEach
   void setUp() {
@@ -48,13 +48,13 @@ class S3BucketTest {
   @Test
   void scan_returnsMapOfKeysToFiles() {
     // Given
-    S3Object a = S3Object.builder().key("A").build();
-    S3Object b = S3Object.builder().key("B").build();
+    S3Object a = S3Object.builder().key(PREFIX + "A").build();
+    S3Object b = S3Object.builder().key(PREFIX + "B").build();
     ListObjectsV2Response page1 = ListObjectsV2Response.builder().contents(a, b).build();
-    S3Object e = S3Object.builder().key("C/D/E").build();
+    S3Object e = S3Object.builder().key(PREFIX + "C/D/E").build();
     ListObjectsV2Response page2 = ListObjectsV2Response.builder().contents(e).build();
-    S3Object i = S3Object.builder().key("F/G/H/I").build();
-    S3Object z = S3Object.builder().key("X/Y/Z").build();
+    S3Object i = S3Object.builder().key(PREFIX + "F/G/H/I").build();
+    S3Object z = S3Object.builder().key(PREFIX + "X/Y/Z").build();
     ListObjectsV2Response page3 = ListObjectsV2Response.builder().contents(i, z).build();
 
     // TODO how to create a real instance?
@@ -80,20 +80,15 @@ class S3BucketTest {
 
   @Test
   void toString_includesBucketUri_whichLinksToBucketInAwsConsole() {
-    assertThat(new S3Bucket(mockS3Client, "my-bucket", "").toString())
-        .isEqualTo("S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket]");
-  }
-
-  @Test
-  void toString_includesBucketUriWithPrefix() {
-    assertThat(new S3Bucket(mockS3Client, "my-bucket", "testing/").toString())
+    assertThat(sut.toString())
         .isEqualTo(
-            "S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=testing/]");
+            "S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=testing/backup/]");
   }
 
   @Test
   void objectUri_linksToObjectInAwsConsole() {
     assertThat(sut.objectUri("A/B/C"))
-        .isEqualTo("https://s3.console.aws.amazon.com/s3/object/root?prefix=A/B/C");
+        .isEqualTo(
+            "https://s3.console.aws.amazon.com/s3/object/my-bucket?prefix=testing/backup/A/B/C");
   }
 }

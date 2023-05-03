@@ -33,7 +33,7 @@ class S3BackupTest {
 
   private static final String ROOT_DIR = "root";
   private static final String BUCKET_NAME = "test-bucket";
-  private static final String BUCKET_PREFIX = "";
+  private static final String BUCKET_PREFIX = "testing/backup/";
 
   @BeforeEach
   void setUp() {
@@ -60,7 +60,7 @@ class S3BackupTest {
     // Then
     verify(mockS3Client)
         .putObject(
-            PutObjectRequest.builder().bucket(BUCKET_NAME).key(fileName).build(),
+            PutObjectRequest.builder().bucket(BUCKET_NAME).key(BUCKET_PREFIX + fileName).build(),
             Path.of(ROOT_DIR + "/" + fileName));
   }
 
@@ -85,7 +85,7 @@ class S3BackupTest {
     // Then
     verify(mockS3Client)
         .putObject(
-            PutObjectRequest.builder().bucket(BUCKET_NAME).key(fileName).build(),
+            PutObjectRequest.builder().bucket(BUCKET_NAME).key(BUCKET_PREFIX + fileName).build(),
             Path.of(ROOT_DIR + "/" + fileName));
   }
 
@@ -109,7 +109,11 @@ class S3BackupTest {
 
     // Then
     verify(mockS3Client)
-        .deleteObject(DeleteObjectRequest.builder().bucket(BUCKET_NAME).key(fileName).build());
+        .deleteObject(
+            DeleteObjectRequest.builder()
+                .bucket(BUCKET_NAME)
+                .key(BUCKET_PREFIX + fileName)
+                .build());
   }
 
   @Test
@@ -126,7 +130,7 @@ class S3BackupTest {
   void toString_includesSourceAndDest() {
     assertThat(sut.toString())
         .isEqualTo(
-            "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/test-bucket]]");
+            "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/test-bucket?prefix=testing/backup/]]");
   }
 
   private String fakeFileName() {

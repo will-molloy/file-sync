@@ -11,7 +11,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 /**
@@ -46,11 +45,19 @@ public class S3Bucket implements Location {
 
     return response.stream()
         .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
-        .collect(toMap(S3Object::key, S3File::new));
+        .collect(
+            toMap(
+                // strip prefix
+                s3Object -> s3Object.key().replaceFirst("^" + prefix, ""),
+                S3File::new));
   }
 
   public String bucketName() {
     return bucketName;
+  }
+
+  public String prefix() {
+    return prefix;
   }
 
   @Override
@@ -59,13 +66,10 @@ public class S3Bucket implements Location {
   }
 
   private String bucketUri() {
-    return S3_BASE_URI
-        + "buckets/%s".formatted(bucketName)
-        + (prefix.isEmpty() ? "" : "?prefix=%s".formatted(prefix));
+    return S3_BASE_URI + "buckets/%s?prefix=%s".formatted(bucketName, prefix);
   }
 
   public String objectUri(String key) {
-    // key already includes the prefix (wasn't removed in the scan above)
-    return S3_BASE_URI + "object/%s?prefix=%s".formatted(bucketName, key);
+    return S3_BASE_URI + "object/%s?prefix=%s%s".formatted(bucketName, prefix, key);
   }
 }
