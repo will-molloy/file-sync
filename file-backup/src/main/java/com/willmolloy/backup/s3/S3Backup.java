@@ -60,10 +60,7 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
     try {
       // TODO set MD5
       PutObjectRequest request =
-          PutObjectRequest.builder()
-              .bucket(destination.bucketName())
-              .key(destination.prefix() + key)
-              .build();
+          PutObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
       s3Client.putObject(request, sourcePath);
     } catch (RuntimeException e) {
       log.error("Error putting({} -> {})", sourcePath, destinationUri);
@@ -76,10 +73,7 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
     log.info("delete({})", destinationUri);
     try {
       DeleteObjectRequest request =
-          DeleteObjectRequest.builder()
-              .bucket(destination.bucketName())
-              .key(destination.prefix() + key)
-              .build();
+          DeleteObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
       s3Client.deleteObject(request);
     } catch (RuntimeException e) {
       log.error("Error deleting({})", destinationUri);

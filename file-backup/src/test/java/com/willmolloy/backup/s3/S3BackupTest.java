@@ -33,7 +33,7 @@ class S3BackupTest {
 
   private static final String ROOT_DIR = "root";
   private static final String BUCKET_NAME = "test-bucket";
-  private static final String BUCKET_PREFIX = "testing/";
+  private static final String BUCKET_PREFIX = "";
 
   @BeforeEach
   void setUp() {
@@ -60,7 +60,7 @@ class S3BackupTest {
     // Then
     verify(mockS3Client)
         .putObject(
-            PutObjectRequest.builder().bucket(BUCKET_NAME).key(BUCKET_PREFIX + fileName).build(),
+            PutObjectRequest.builder().bucket(BUCKET_NAME).key(fileName).build(),
             Path.of(ROOT_DIR + "/" + fileName));
   }
 
@@ -85,7 +85,7 @@ class S3BackupTest {
     // Then
     verify(mockS3Client)
         .putObject(
-            PutObjectRequest.builder().bucket(BUCKET_NAME).key(BUCKET_PREFIX + fileName).build(),
+            PutObjectRequest.builder().bucket(BUCKET_NAME).key(fileName).build(),
             Path.of(ROOT_DIR + "/" + fileName));
   }
 
@@ -109,11 +109,7 @@ class S3BackupTest {
 
     // Then
     verify(mockS3Client)
-        .deleteObject(
-            DeleteObjectRequest.builder()
-                .bucket(BUCKET_NAME)
-                .key(BUCKET_PREFIX + fileName)
-                .build());
+        .deleteObject(DeleteObjectRequest.builder().bucket(BUCKET_NAME).key(fileName).build());
   }
 
   @Test

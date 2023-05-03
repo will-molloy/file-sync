@@ -23,6 +23,8 @@ public class S3Bucket implements Location {
 
   private static final Logger log = LogManager.getLogger();
 
+  private static final String S3_BASE_URI = "https://s3.console.aws.amazon.com/s3/";
+
   @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final S3Client s3Client;
 
@@ -51,21 +53,19 @@ public class S3Bucket implements Location {
     return bucketName;
   }
 
-  public String prefix() {
-    return prefix;
-  }
-
   @Override
   public String toString() {
     return "S3Bucket[%s]".formatted(bucketUri());
   }
 
   private String bucketUri() {
-    return "https://s3.console.aws.amazon.com/s3/buckets/%s".formatted(bucketName);
+    return S3_BASE_URI
+        + "buckets/%s".formatted(bucketName)
+        + (prefix.isEmpty() ? "" : "?prefix=%s".formatted(prefix));
   }
 
   public String objectUri(String key) {
-    return "https://s3.console.aws.amazon.com/s3/object/%s?prefix=%s%s"
-        .formatted(bucketName, prefix, key);
+    // key already includes the prefix (wasn't removed in the scan above)
+    return S3_BASE_URI + "object/%s?prefix=%s".formatted(bucketName, key);
   }
 }

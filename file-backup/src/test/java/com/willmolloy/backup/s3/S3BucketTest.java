@@ -33,7 +33,7 @@ class S3BucketTest {
   @Mock private S3Client mockS3Client;
   private S3Bucket sut;
   private static final String BUCKET_NAME = "root";
-  private static final String PREFIX = "";
+  private static final String PREFIX = "testing/";
 
   @BeforeEach
   void setUp() {
@@ -79,9 +79,16 @@ class S3BucketTest {
   }
 
   @Test
-  void toString_includesBucketUri() {
-    assertThat(sut.toString())
-        .isEqualTo("S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/root]");
+  void toString_includesBucketUri_whichLinksToBucketInAwsConsole() {
+    assertThat(new S3Bucket(mockS3Client, "my-bucket", "").toString())
+        .isEqualTo("S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket]");
+  }
+
+  @Test
+  void toString_includesBucketUriWithPrefix() {
+    assertThat(new S3Bucket(mockS3Client, "my-bucket", "testing/").toString())
+        .isEqualTo(
+            "S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=testing/]");
   }
 
   @Test
