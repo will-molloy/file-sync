@@ -23,23 +23,35 @@ public class S3Bucket implements Location {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final S3Client s3Client;
-  private final String bucketName;
-
   @SuppressFBWarnings("EI_EXPOSE_REP2")
-  public S3Bucket(S3Client s3Client, String bucketName) {
+  private final S3Client s3Client;
+
+  private final String bucketName;
+  private final String prefix;
+
+  public S3Bucket(S3Client s3Client, String bucketName, String prefix) {
     this.s3Client = requireNonNull(s3Client);
     this.bucketName = requireNonNull(bucketName);
+    this.prefix = requireNonNull(prefix);
   }
 
   @Override
   public Map<String, File> scan() {
     log.info("Scanning bucket: {}", bucketName);
-    ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).build();
+    ListObjectsV2Request request =
+        ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);
 
     return response.stream()
         .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
         .collect(toMap(S3Object::key, S3File::new));
+  }
+
+  public String bucketName() {
+    return bucketName;
+  }
+
+  public String prefix() {
+    return prefix;
   }
 }

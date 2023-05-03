@@ -2,12 +2,14 @@ package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.willmolloy.backup.Backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,10 +33,16 @@ class S3BucketTest {
   @Mock private S3Client mockS3Client;
   private S3Bucket sut;
   private static final String BUCKET_NAME = "root";
+  private static final String PREFIX = "";
 
   @BeforeEach
   void setUp() {
-    sut = new S3Bucket(mockS3Client, BUCKET_NAME);
+    sut = new S3Bucket(mockS3Client, BUCKET_NAME, PREFIX);
+  }
+
+  @AfterEach
+  void tearDown() {
+    verifyNoMoreInteractions(mockS3Client);
   }
 
   @Test
@@ -53,7 +61,8 @@ class S3BucketTest {
     ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
     when(response.stream()).thenReturn(Stream.of(page1, page2, page3));
 
-    ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(BUCKET_NAME).build();
+    ListObjectsV2Request request =
+        ListObjectsV2Request.builder().bucket(BUCKET_NAME).prefix(PREFIX).build();
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When

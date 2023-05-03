@@ -30,6 +30,7 @@ class LocalStorageTest {
 
   @BeforeEach
   void setUp() throws IOException {
+    // TODO windows gets the key wrong.
     fs = Jimfs.newFileSystem(Configuration.unix());
 
     root = fs.getPath("/root");
