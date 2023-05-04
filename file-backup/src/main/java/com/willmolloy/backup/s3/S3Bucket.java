@@ -1,6 +1,6 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.Preconditions.check;
+import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
@@ -35,7 +35,7 @@ public class S3Bucket implements Location {
     this.s3Client = requireNonNull(s3Client);
     this.bucketName = requireNonNull(bucketName);
     this.prefix = requireNonNull(prefix);
-    check(prefix.endsWith("/"), "Expected prefix to end with '/', but was: " + prefix);
+    require(prefix.endsWith("/"), "Requires prefix to end with '/': " + prefix);
   }
 
   @Override

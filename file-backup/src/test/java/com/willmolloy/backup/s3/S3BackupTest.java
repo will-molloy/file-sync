@@ -8,7 +8,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.github.javafaker.Faker;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.local.LocalStorage;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,21 +36,28 @@ class S3BackupTest {
   @Mock private S3Client mockS3Client;
   private S3Backup sut;
 
-  private static final String ROOT_DIR = "root";
-  private static final String BUCKET_NAME = "test-bucket";
-  private static final String BUCKET_PREFIX = "testing/backup/";
+  private FileSystem fs;
+  private Path sourceRoot;
+  private static final String DEST_BUCKET = "test-bucket";
+  private static final String DEST_BUCKET_PREFIX = "testing/backup/";
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
+    fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
+
+    sourceRoot = fs.getPath("root");
+    Files.createDirectory(sourceRoot);
+
     sut =
         new S3Backup(
             mockS3Client,
-            new LocalStorage(Path.of(ROOT_DIR)),
-            new S3Bucket(mockS3Client, BUCKET_NAME, BUCKET_PREFIX));
+            new LocalStorage(sourceRoot),
+            new S3Bucket(mockS3Client, DEST_BUCKET, DEST_BUCKET_PREFIX));
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws IOException {
+    fs.close();
     verifyNoMoreInteractions(mockS3Client);
   }
 
@@ -60,8 +72,11 @@ class S3BackupTest {
     // Then
     verify(mockS3Client)
         .putObject(
-            PutObjectRequest.builder().bucket(BUCKET_NAME).key(BUCKET_PREFIX + fileName).build(),
-            Path.of(ROOT_DIR + "/" + fileName));
+            PutObjectRequest.builder()
+                .bucket(DEST_BUCKET)
+                .key(DEST_BUCKET_PREFIX + fileName)
+                .build(),
+            sourceRoot.resolve(fileName));
   }
 
   @Test
@@ -85,8 +100,11 @@ class S3BackupTest {
     // Then
     verify(mockS3Client)
         .putObject(
-            PutObjectRequest.builder().bucket(BUCKET_NAME).key(BUCKET_PREFIX + fileName).build(),
-            Path.of(ROOT_DIR + "/" + fileName));
+            PutObjectRequest.builder()
+                .bucket(DEST_BUCKET)
+                .key(DEST_BUCKET_PREFIX + fileName)
+                .build(),
+            sourceRoot.resolve(fileName));
   }
 
   @Test
@@ -111,8 +129,8 @@ class S3BackupTest {
     verify(mockS3Client)
         .deleteObject(
             DeleteObjectRequest.builder()
-                .bucket(BUCKET_NAME)
-                .key(BUCKET_PREFIX + fileName)
+                .bucket(DEST_BUCKET)
+                .key(DEST_BUCKET_PREFIX + fileName)
                 .build());
   }
 

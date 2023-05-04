@@ -99,8 +99,6 @@ class S3BucketTest {
         assertThrows(
             IllegalArgumentException.class,
             () -> new S3Bucket(mockS3Client, BUCKET_NAME, "prefix"));
-    assertThat(thrown)
-        .hasMessageThat()
-        .isEqualTo("Expected prefix to end with '/', but was: prefix");
+    assertThat(thrown).hasMessageThat().isEqualTo("Requires prefix to end with '/': prefix");
   }
 }

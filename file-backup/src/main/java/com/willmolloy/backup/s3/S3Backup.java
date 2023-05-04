@@ -66,7 +66,7 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .build();
       s3Client.putObject(request, sourcePath);
     } catch (RuntimeException e) {
-      log.error("Error putting({} -> {})", sourcePath, destinationUri);
+      log.error("Error putting(%s -> %s)".formatted(sourcePath, destinationUri), e);
     }
   }
 
@@ -82,7 +82,7 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .build();
       s3Client.deleteObject(request);
     } catch (RuntimeException e) {
-      log.error("Error deleting({})", destinationUri);
+      log.error("Error deleting(%s)".formatted(destinationUri), e);
     }
   }
 

@@ -11,7 +11,7 @@ public final class Preconditions {
    * Checks the given {@code predicate}; if {@code false} throws {@link IllegalArgumentException}
    * with {@code errorMsg}.
    */
-  public static void check(boolean predicate, String errorMsg) {
+  public static void require(boolean predicate, String errorMsg) {
     if (!predicate) {
       throw new IllegalArgumentException(errorMsg);
     }

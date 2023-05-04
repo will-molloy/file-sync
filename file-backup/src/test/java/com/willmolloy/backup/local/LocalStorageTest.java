@@ -2,6 +2,7 @@ package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -76,5 +77,16 @@ class LocalStorageTest {
   @Test
   void toString_includesRootPath() {
     assertThat(sut.toString()).isEqualTo("LocalStorage[root]");
+  }
+
+  @Test
+  void constructor_requiresValidDirectory() {
+    IllegalArgumentException thrown =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new LocalStorage(Files.createFile(root.resolve("A"))));
+    assertThat(thrown)
+        .hasMessageThat()
+        .isEqualTo("Requires a directory: [%s]".formatted(root.resolve("A")));
   }
 }

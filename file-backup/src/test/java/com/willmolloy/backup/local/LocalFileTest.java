@@ -1,6 +1,7 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
@@ -62,9 +63,10 @@ class LocalFileTest {
   }
 
   @Test
-  void size_whenPathDoesntExist_failsGracefully() {
+  void size_whenPathDoesntExist_failsGracefully() throws IOException {
     // Given
-    LocalFile file = new LocalFile(fs.getPath("A"));
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+    Files.delete(file.path());
 
     // When
     long result = file.size();
@@ -87,14 +89,26 @@ class LocalFileTest {
   }
 
   @Test
-  void lastModified_whenPathDoesntExist_failsGracefully() {
+  void lastModified_whenPathDoesntExist_failsGracefully() throws IOException {
     // Given
-    LocalFile file = new LocalFile(fs.getPath("A"));
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+    Files.delete(file.path());
 
     // When
     Instant result = file.lastModified();
 
     // Then
     assertThat(result).isEqualTo(Instant.MIN);
+  }
+
+  @Test
+  void constructor_requiresValidFile() {
+    IllegalArgumentException thrown =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new LocalFile(Files.createDirectory(root.resolve("A"))));
+    assertThat(thrown)
+        .hasMessageThat()
+        .isEqualTo("Requires a file: [%s]".formatted(root.resolve("A")));
   }
 }

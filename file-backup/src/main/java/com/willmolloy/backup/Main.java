@@ -1,5 +1,6 @@
 package com.willmolloy.backup;
 
+import java.nio.file.FileSystems;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,7 +17,8 @@ public final class Main {
   public static void main(String... args) {
     log.debug("main({})", (Object) args);
     try {
-      Backup<?, ?> backup = BackupFactory.create(args);
+      BackupFactory factory = new BackupFactory(FileSystems.getDefault());
+      Backup<?, ?> backup = factory.create(args);
       new BackupRunner(backup).run();
     } catch (Throwable t) {
       log.fatal("Fatal error", t);

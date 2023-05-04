@@ -1,5 +1,6 @@
 package com.willmolloy.backup.local;
 
+import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
@@ -22,6 +23,7 @@ record LocalFile(Path path) implements File {
 
   LocalFile {
     requireNonNull(path);
+    require(Files.isRegularFile(path), "Requires a file: [%s]".formatted(path));
   }
 
   @Override
@@ -29,7 +31,7 @@ record LocalFile(Path path) implements File {
     try {
       return Files.size(path);
     } catch (IOException e) {
-      log.error("Error getting size of file: [{}]", path);
+      log.error("Error getting size of file: [%s]".formatted(path), e);
       return -1;
     }
   }
@@ -39,7 +41,7 @@ record LocalFile(Path path) implements File {
     try {
       return Files.getLastModifiedTime(path).toInstant();
     } catch (IOException e) {
-      log.error("Error getting last modified time of file: [{}]", path);
+      log.error("Error getting last modified time of file: [%s]".formatted(path), e);
       return Instant.MIN;
     }
   }

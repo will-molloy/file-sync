@@ -34,13 +34,9 @@ class LocalBackupTest {
   void setUp() throws IOException {
     fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
 
-    sourceRoot = fs.getPath("source");
-    Files.createDirectory(sourceRoot);
-
-    destRoot = fs.getPath("dest");
-    Files.createDirectory(destRoot);
-
+    sourceRoot = Files.createDirectory(fs.getPath("source"));
     source = new LocalStorage(sourceRoot);
+    destRoot = Files.createDirectory(fs.getPath("dest"));
     destination = new LocalStorage(destRoot);
     sut = new LocalBackup(source, destination);
   }

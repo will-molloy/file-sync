@@ -42,6 +42,7 @@ class BackupRunner {
 
     try (ExecutorService executorService =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
+
       long sourceScanStart = System.nanoTime();
       Map<String, File> sourceFiles = source.scan();
       log.info("Scanned source in: {}", elapsed(sourceScanStart));

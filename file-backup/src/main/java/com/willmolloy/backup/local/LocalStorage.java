@@ -1,5 +1,6 @@
 package com.willmolloy.backup.local;
 
+import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
@@ -27,6 +28,7 @@ public record LocalStorage(Path root) implements Location {
 
   public LocalStorage {
     requireNonNull(root);
+    require(Files.isDirectory(root), "Requires a directory: [%s]".formatted(root));
   }
 
   @Override
@@ -58,7 +60,7 @@ public record LocalStorage(Path root) implements Location {
       try {
         return Files.list(path).flatMap(this::walk);
       } catch (IOException e) {
-        log.error("Error listing directory [%s]".formatted(path), e);
+        log.error("Error listing directory: [%s]".formatted(path), e);
         return Stream.of();
       }
     } else {
