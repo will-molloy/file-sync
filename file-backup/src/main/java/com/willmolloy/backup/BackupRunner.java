@@ -49,11 +49,12 @@ class BackupRunner {
 
       long sourceScanStart = System.nanoTime();
       Map<String, File> sourceFiles = source.scan();
-      log.info("Scanned {} files in source, in: {}", sourceFiles.size(), elapsed(sourceScanStart));
+      log.info("Scanned source with {} files in: {}", sourceFiles.size(), elapsed(sourceScanStart));
 
       long destScanStart = System.nanoTime();
       Map<String, File> destFiles = destination.scan();
-      log.info("Scanned {} files in destination, in: {}", destFiles.size(), elapsed(destScanStart));
+      log.info(
+          "Scanned destination with {} files in: {}", destFiles.size(), elapsed(destScanStart));
 
       Stream<Runnable> copiesAndUpdates =
           sourceFiles.entrySet().stream()
@@ -71,8 +72,7 @@ class BackupRunner {
                           } else {
                             failedCopyCount.incrementAndGet();
                           }
-                        } else if (!sourceFile.size().equals(destFile.size())
-                            || !sourceFile.lastModified().equals(destFile.lastModified())) {
+                        } else if (!sourceFile.etag().equals(destFile.etag())) {
                           if (backup.put(key)) {
                             updateCount.incrementAndGet();
                           } else {

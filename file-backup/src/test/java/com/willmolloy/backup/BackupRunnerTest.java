@@ -12,18 +12,11 @@ import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.BackupRunner.ErrorStatistics;
 import com.willmolloy.backup.BackupRunner.OverallStatistics;
 import com.willmolloy.backup.BackupRunner.Statistics;
-import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -72,13 +65,11 @@ class BackupRunnerTest {
         .isEqualTo(new OverallStatistics(new Statistics(1, 0, 0), new ErrorStatistics(0, 0, 0)));
   }
 
-  @ParameterizedTest
-  @MethodSource(value = "filesNotEqual")
-  void whenFileOnSourceAndDestination_andNotEqual_updatesFileOnDestination(
-      TestFile sourceFile, TestFile destFile) {
+  @Test
+  void whenFileOnSourceAndDestination_andNotEqual_updatesFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
-    when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile("ABC")));
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile("XYZ")));
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -149,11 +140,11 @@ class BackupRunnerTest {
                 "C",
                 new TestFile(),
                 "D",
-                new TestFile(OptionalLong.of(1), Optional.empty()),
+                new TestFile("Hello"),
                 "E",
-                new TestFile(OptionalLong.empty(), Optional.of(Instant.ofEpochSecond(1))),
+                new TestFile("world"),
                 "F",
-                new TestFile(OptionalLong.of(1), Optional.of(Instant.ofEpochSecond(1)))));
+                new TestFile("!")));
     when(mockDestination.scan())
         .thenReturn(
             Map.of(
@@ -205,12 +196,11 @@ class BackupRunnerTest {
         .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(1, 0, 0)));
   }
 
-  @ParameterizedTest
-  @MethodSource(value = "filesNotEqual")
-  void whenUpdateFails_countsFailedUpdate(TestFile sourceFile, TestFile destFile) {
+  @Test
+  void whenUpdateFails_countsFailedUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
-    when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
+    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile("xyz")));
+    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile("abc")));
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -238,25 +228,9 @@ class BackupRunnerTest {
         .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(0, 0, 1)));
   }
 
-  static Stream<Arguments> filesNotEqual() {
-    return Stream.of(
-        Arguments.of(
-            new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(1))),
-            new TestFile(OptionalLong.of(1), Optional.of(Instant.ofEpochSecond(1)))),
-        Arguments.of(
-            new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(2))),
-            new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(1)))),
-        Arguments.of(
-            new TestFile(OptionalLong.of(1), Optional.empty()),
-            new TestFile(OptionalLong.empty(), Optional.empty())),
-        Arguments.of(
-            new TestFile(OptionalLong.empty(), Optional.of(Instant.ofEpochSecond(1))),
-            new TestFile(OptionalLong.empty(), Optional.empty())));
-  }
-
-  private record TestFile(OptionalLong size, Optional<Instant> lastModified) implements File {
+  private record TestFile(String etag) implements File {
     private TestFile() {
-      this(OptionalLong.empty(), Optional.empty());
+      this("");
     }
   }
 }

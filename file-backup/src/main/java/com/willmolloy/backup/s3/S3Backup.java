@@ -1,6 +1,6 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.Md5Helper.md5AsBase64;
+import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
@@ -51,11 +51,12 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
     String destinationUri = destination.objectUri(key);
     log.info("Putting: [{}] -> [{}]", sourcePath, destinationUri);
     try {
+      // TODO multipart upload for large files
       PutObjectRequest request =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
               .key(destination.prefix() + key)
-              .contentMD5(md5AsBase64(sourcePath))
+              .contentMD5(md5Base64(sourcePath))
               .build();
       s3Client.putObject(request, sourcePath);
       return true;

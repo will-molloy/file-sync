@@ -1,5 +1,6 @@
 package com.willmolloy.backup.local;
 
+import static com.willmolloy.backup.util.Md5Helper.md5Base16;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
@@ -7,9 +8,6 @@ import com.willmolloy.backup.Backup.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,22 +27,12 @@ record LocalFile(Path path) implements File {
   }
 
   @Override
-  public OptionalLong size() {
+  public String etag() {
     try {
-      return OptionalLong.of(Files.size(path));
+      return "\"%s\"".formatted(md5Base16(path));
     } catch (IOException e) {
-      log.error("Error getting size of file: [%s]".formatted(path), e);
-      return OptionalLong.empty();
-    }
-  }
-
-  @Override
-  public Optional<Instant> lastModified() {
-    try {
-      return Optional.of(Files.getLastModifiedTime(path).toInstant());
-    } catch (IOException e) {
-      log.error("Error getting last modified time of file: [%s]".formatted(path), e);
-      return Optional.empty();
+      log.error("Error getting MD5 Digest of file: [%s]".formatted(path), e);
+      return "";
     }
   }
 }

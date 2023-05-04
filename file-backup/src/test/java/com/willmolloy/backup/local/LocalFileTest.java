@@ -1,11 +1,9 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -13,9 +11,6 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,58 +45,33 @@ class LocalFileTest {
 
   @ParameterizedTest
   @MethodSource
-  void size_returnsSizeOfFileInBytes(String contents, int size) throws IOException {
+  void etag_returnsMd5HashOfFileContentsInBase16(String contents, String md5Digest)
+      throws IOException {
     // Given
     LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
     Files.writeString(file.path(), contents);
 
     // When
-    OptionalLong result = file.size();
+    String result = file.etag();
 
     // Then
-    assertThat(result).hasValue(size);
+    assertThat(result).isEqualTo(md5Digest);
   }
 
-  static Stream<Arguments> size_returnsSizeOfFileInBytes() {
-    return Stream.of(Arguments.of("", 0), Arguments.of("Hello world", 11));
+  static Stream<Arguments> etag_returnsMd5HashOfFileContentsInBase16() {
+    return Stream.of(
+        Arguments.of("", "\"d41d8cd98f00b204e9800998ecf8427e\""),
+        Arguments.of("Hello world", "\"3e25960a79dbc69b674cd4ec67a72c62\""));
   }
 
   @Test
-  void size_whenPathDoesntExist_failsGracefully() throws IOException {
+  void etag_whenPathDoesntExist_failsGracefully() throws IOException {
     // Given
     LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
     Files.delete(file.path());
 
     // When
-    OptionalLong result = assertDoesNotThrow(() -> file.size());
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void lastModified_returnsLastModifiedInstant() throws IOException {
-    // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-
-    // When
-    Optional<Instant> result = file.lastModified();
-
-    // Then
-    long tolerance = 100;
-    assertThat(result).isPresent();
-    assertThat(result.get())
-        .isIn(Range.closed(result.get().minusMillis(tolerance), result.get().plusMillis(100)));
-  }
-
-  @Test
-  void lastModified_whenPathDoesntExist_failsGracefully() throws IOException {
-    // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-    Files.delete(file.path());
-
-    // When
-    Optional<Instant> result = assertDoesNotThrow(() -> file.lastModified());
+    String result = assertDoesNotThrow(() -> file.etag());
 
     // Then
     assertThat(result).isEmpty();

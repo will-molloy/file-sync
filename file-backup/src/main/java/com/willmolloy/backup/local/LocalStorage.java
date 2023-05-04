@@ -33,7 +33,7 @@ public record LocalStorage(Path root) implements Location {
 
   @Override
   public Map<String, File> scan() {
-    log.info("Scanning directory: {}", root);
+    log.info("Scanning directory: [{}]", root);
     return walk(root)
         .parallel()
         .collect(

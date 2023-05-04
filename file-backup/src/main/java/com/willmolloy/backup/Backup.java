@@ -1,9 +1,7 @@
 package com.willmolloy.backup;
 
-import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * Backup type definition.
@@ -25,7 +23,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   /** Backup location (source or destination). */
   interface Location {
 
-    /** Returns map of relativized file path to file. */
+    /** Map of relativized file path to file. */
     Map<String, File> scan();
   }
 
@@ -33,8 +31,14 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   // interface rather than record so the operations can be lazy
   interface File {
 
-    OptionalLong size();
-
-    Optional<Instant> lastModified();
+    /**
+     * File ETag.
+     *
+     * <p>Currently implemented as MD5 digest of file contents in base16.
+     *
+     * @implNote ETags are required to be wrapped in {@code "} quotes.
+     * @see S3Object#eTag()
+     */
+    String etag();
   }
 }

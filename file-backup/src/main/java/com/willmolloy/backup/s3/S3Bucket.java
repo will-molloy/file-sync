@@ -40,7 +40,7 @@ public class S3Bucket implements Location {
 
   @Override
   public Map<String, File> scan() {
-    log.info("Scanning bucket: {}", bucketUri());
+    log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);

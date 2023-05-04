@@ -3,9 +3,6 @@ package com.willmolloy.backup.s3;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -25,23 +22,14 @@ record S3File(S3Object s3Object) implements File {
   }
 
   @Override
-  public OptionalLong size() {
+  public String etag() {
     try {
-      return OptionalLong.of(s3Object.size());
+      // TODO not always MD5 digest? We're using PUT with SSE-S3 so it should be??
+      //  Doc is not clear about large (> 16MB) files???
+      return requireNonNull(s3Object.eTag());
     } catch (RuntimeException e) {
-      log.error("Error getting size of object: [%s]".formatted(s3Object), e);
-      return OptionalLong.empty();
-    }
-  }
-
-  @Override
-  public Optional<Instant> lastModified() {
-    try {
-      // TODO this is not useful... AWS bases this on object creation in S3
-      return Optional.of(s3Object.lastModified());
-    } catch (RuntimeException e) {
-      log.error("Error getting last modified time of object: [%s]".formatted(s3Object), e);
-      return Optional.empty();
+      log.error("Error getting MD5 Digest of object: [%s]".formatted(s3Object), e);
+      return "";
     }
   }
 }

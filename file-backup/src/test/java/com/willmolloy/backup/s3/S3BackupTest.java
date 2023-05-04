@@ -1,7 +1,7 @@
 package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.willmolloy.backup.util.Md5Helper.md5AsBase64;
+import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -80,17 +80,13 @@ class S3BackupTest {
             PutObjectRequest.builder()
                 .bucket(DEST_BUCKET)
                 .key(DEST_BUCKET_PREFIX + key)
-                .contentMD5(md5AsBase64(sourcePath))
+                .contentMD5(md5Base64(sourcePath))
                 .build(),
             sourcePath);
   }
 
   @Test
   void put_failsGracefully() {
-    // Given
-    when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
-        .thenThrow(new RuntimeException());
-
     // When
     boolean result = assertDoesNotThrow(() -> sut.put(fakeFileName()));
 
