@@ -2,6 +2,8 @@ package com.willmolloy.backup;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * Backup type definition.
@@ -34,8 +36,8 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   // interface rather than record so the operations can be lazy
   interface File {
 
-    long size();
+    OptionalLong size();
 
-    Instant lastModified();
+    Optional<Instant> lastModified();
   }
 }

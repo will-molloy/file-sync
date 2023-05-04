@@ -1,9 +1,13 @@
 package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.github.javafaker.Faker;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
@@ -24,10 +28,23 @@ class S3FileTest {
     S3File file = new S3File(s3Object);
 
     // When
-    long size = file.size();
+    OptionalLong size = file.size();
 
     // Then
-    assertThat(size).isEqualTo(randomLong);
+    assertThat(size).hasValue(randomLong);
+  }
+
+  @Test
+  void size_whenNoSizeAttribute_failsGracefully() {
+    // Given
+    S3Object s3Object = S3Object.builder().build();
+    S3File file = new S3File(s3Object);
+
+    // When
+    OptionalLong size = assertDoesNotThrow(() -> file.size());
+
+    // Then
+    assertThat(size).isEmpty();
   }
 
   @Test
@@ -38,9 +55,22 @@ class S3FileTest {
     S3File file = new S3File(s3Object);
 
     // When
-    Instant lastModified = file.lastModified();
+    Optional<Instant> lastModified = file.lastModified();
 
     // Then
-    assertThat(lastModified).isEqualTo(randomInstant);
+    assertThat(lastModified).hasValue(randomInstant);
+  }
+
+  @Test
+  void size_whenNoLastModifiedAttribute_failsGracefully() {
+    // Given
+    S3Object s3Object = S3Object.builder().build();
+    S3File file = new S3File(s3Object);
+
+    // When
+    Optional<Instant> lastModified = assertDoesNotThrow(() -> file.lastModified());
+
+    // Then
+    assertThat(lastModified).isEmpty();
   }
 }

@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,22 +29,22 @@ record LocalFile(Path path) implements File {
   }
 
   @Override
-  public long size() {
+  public OptionalLong size() {
     try {
-      return Files.size(path);
+      return OptionalLong.of(Files.size(path));
     } catch (IOException e) {
       log.error("Error getting size of file: [%s]".formatted(path), e);
-      return -1;
+      return OptionalLong.empty();
     }
   }
 
   @Override
-  public Instant lastModified() {
+  public Optional<Instant> lastModified() {
     try {
-      return Files.getLastModifiedTime(path).toInstant();
+      return Optional.of(Files.getLastModifiedTime(path).toInstant());
     } catch (IOException e) {
       log.error("Error getting last modified time of file: [%s]".formatted(path), e);
-      return Instant.MIN;
+      return Optional.empty();
     }
   }
 }

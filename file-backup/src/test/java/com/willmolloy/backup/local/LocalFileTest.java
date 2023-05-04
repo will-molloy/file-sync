@@ -1,6 +1,8 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.Range;
@@ -12,6 +14,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,10 +56,10 @@ class LocalFileTest {
     Files.writeString(file.path(), contents);
 
     // When
-    long result = file.size();
+    OptionalLong result = file.size();
 
     // Then
-    assertThat(result).isEqualTo(size);
+    assertThat(result).hasValue(size);
   }
 
   static Stream<Arguments> size_returnsSizeOfFileInBytes() {
@@ -69,10 +73,10 @@ class LocalFileTest {
     Files.delete(file.path());
 
     // When
-    long result = file.size();
+    OptionalLong result = assertDoesNotThrow(() -> file.size());
 
     // Then
-    assertThat(result).isEqualTo(-1);
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -81,11 +85,13 @@ class LocalFileTest {
     LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
 
     // When
-    Instant result = file.lastModified();
+    Optional<Instant> result = file.lastModified();
 
     // Then
     long tolerance = 100;
-    assertThat(result).isIn(Range.closed(result.minusMillis(tolerance), result.plusMillis(100)));
+    assertThat(result).isPresent();
+    assertThat(result.get())
+        .isIn(Range.closed(result.get().minusMillis(tolerance), result.get().plusMillis(100)));
   }
 
   @Test
@@ -95,10 +101,10 @@ class LocalFileTest {
     Files.delete(file.path());
 
     // When
-    Instant result = file.lastModified();
+    Optional<Instant> result = assertDoesNotThrow(() -> file.lastModified());
 
     // Then
-    assertThat(result).isEqualTo(Instant.MIN);
+    assertThat(result).isEmpty();
   }
 
   @Test

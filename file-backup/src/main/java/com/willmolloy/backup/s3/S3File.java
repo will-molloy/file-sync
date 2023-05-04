@@ -4,6 +4,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.OptionalLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
@@ -14,17 +18,29 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  */
 record S3File(S3Object s3Object) implements File {
 
+  private static final Logger log = LogManager.getLogger();
+
   S3File {
     requireNonNull(s3Object);
   }
 
   @Override
-  public long size() {
-    return s3Object.size();
+  public OptionalLong size() {
+    try {
+      return OptionalLong.of(s3Object.size());
+    } catch (RuntimeException e) {
+      log.error("Error getting size of object: [%s]".formatted(s3Object), e);
+      return OptionalLong.empty();
+    }
   }
 
   @Override
-  public Instant lastModified() {
-    return s3Object.lastModified();
+  public Optional<Instant> lastModified() {
+    try {
+      return Optional.of(s3Object.lastModified());
+    } catch (RuntimeException e) {
+      log.error("Error getting last modified time of object: [%s]".formatted(s3Object), e);
+      return Optional.empty();
+    }
   }
 }

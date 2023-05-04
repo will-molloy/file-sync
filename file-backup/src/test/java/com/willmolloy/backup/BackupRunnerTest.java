@@ -9,6 +9,8 @@ import com.willmolloy.backup.Backup.File;
 import com.willmolloy.backup.Backup.Location;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,8 +63,12 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andDifferentSize_updatesFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(1))));
-    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile(1, Instant.ofEpochSecond(1))));
+    when(mockSource.scan())
+        .thenReturn(
+            Map.of("A", new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(1)))));
+    when(mockDestination.scan())
+        .thenReturn(
+            Map.of("A", new TestFile(OptionalLong.of(1), Optional.of(Instant.ofEpochSecond(1)))));
 
     // When
     backupRunner.run();
@@ -74,8 +80,12 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andDifferentModifiedTime_updatesFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(2))));
-    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(1))));
+    when(mockSource.scan())
+        .thenReturn(
+            Map.of("A", new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(2)))));
+    when(mockDestination.scan())
+        .thenReturn(
+            Map.of("A", new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(1)))));
 
     // When
     backupRunner.run();
@@ -87,8 +97,12 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andEqual_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(2))));
-    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile(2, Instant.ofEpochSecond(2))));
+    when(mockSource.scan())
+        .thenReturn(
+            Map.of("A", new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(2)))));
+    when(mockDestination.scan())
+        .thenReturn(
+            Map.of("A", new TestFile(OptionalLong.of(2), Optional.of(Instant.ofEpochSecond(2)))));
 
     // When
     backupRunner.run();
@@ -123,9 +137,9 @@ class BackupRunnerTest {
     verify(mockBackup, never()).delete("A");
   }
 
-  private record TestFile(long size, Instant lastModified) implements File {
+  private record TestFile(OptionalLong size, Optional<Instant> lastModified) implements File {
     private TestFile() {
-      this(0, Instant.MIN);
+      this(OptionalLong.empty(), Optional.empty());
     }
   }
 }

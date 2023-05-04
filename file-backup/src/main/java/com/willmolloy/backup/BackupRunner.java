@@ -64,7 +64,7 @@ class BackupRunner {
                         if (destFile == null) {
                           copyCount.incrementAndGet();
                           backup.copy(key);
-                        } else if (sourceFile.size() != destFile.size()
+                        } else if (!sourceFile.size().equals(destFile.size())
                             || !sourceFile.lastModified().equals(destFile.lastModified())) {
                           updateCount.incrementAndGet();
                           backup.update(key);

@@ -2,6 +2,7 @@ package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -91,7 +92,7 @@ class LocalBackupTest {
   @Test
   void copy_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.copy("A");
+    assertDoesNotThrow(() -> sut.copy("A"));
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -100,7 +101,7 @@ class LocalBackupTest {
   @Test
   void copy_whenDirectoryNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.copy("A/B/C");
+    assertDoesNotThrow(() -> sut.copy("A/B/C"));
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -179,7 +180,7 @@ class LocalBackupTest {
   @Test
   void update_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.update("A");
+    assertDoesNotThrow(() -> sut.update("A"));
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -188,7 +189,7 @@ class LocalBackupTest {
   @Test
   void update_whenDirectoryNotOnSource_failsGracefully() throws IOException {
     // When
-    sut.update("A/B/C");
+    assertDoesNotThrow(() -> sut.update("A/B/C"));
 
     // Then
     assertThatFileSystem().isEmpty();
@@ -253,7 +254,7 @@ class LocalBackupTest {
   @Test
   void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
     // When
-    sut.delete("A");
+    assertDoesNotThrow(() -> sut.delete("A"));
 
     // Then
     assertThatFileSystem().isEmpty();
