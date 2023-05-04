@@ -39,9 +39,9 @@ class S3BackupTest {
   void setUp() {
     sut =
         new S3Backup(
+            mockS3Client,
             new LocalStorage(Path.of(ROOT_DIR)),
-            new S3Bucket(mockS3Client, BUCKET_NAME, BUCKET_PREFIX),
-            mockS3Client);
+            new S3Bucket(mockS3Client, BUCKET_NAME, BUCKET_PREFIX));
   }
 
   @AfterEach

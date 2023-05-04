@@ -21,16 +21,16 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final LocalStorage source;
-  private final S3Bucket destination;
-
   @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final S3Client s3Client;
 
-  public S3Backup(LocalStorage source, S3Bucket destination, S3Client s3Client) {
+  private final LocalStorage source;
+  private final S3Bucket destination;
+
+  public S3Backup(S3Client s3Client, LocalStorage source, S3Bucket destination) {
+    this.s3Client = requireNonNull(s3Client);
     this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
-    this.s3Client = requireNonNull(s3Client);
   }
 
   @Override

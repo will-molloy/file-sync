@@ -1,6 +1,7 @@
 package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -90,5 +91,16 @@ class S3BucketTest {
     assertThat(sut.objectUri("A/B/C"))
         .isEqualTo(
             "https://s3.console.aws.amazon.com/s3/object/my-bucket?prefix=testing/backup/A/B/C");
+  }
+
+  @Test
+  void constructor_checksPrefixMatchesFolder() {
+    IllegalArgumentException thrown =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new S3Bucket(mockS3Client, BUCKET_NAME, "prefix"));
+    assertThat(thrown)
+        .hasMessageThat()
+        .isEqualTo("Expected prefix to end with '/', but was: prefix");
   }
 }

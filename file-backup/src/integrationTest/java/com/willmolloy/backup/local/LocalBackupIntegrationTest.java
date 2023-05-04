@@ -78,7 +78,7 @@ class LocalBackupIntegrationTest {
     createRandomFilesIn(destRoot, count).forEach(p -> {});
 
     // When
-    Main.main(sourceRoot.toString(), destRoot.toString());
+    Main.main(LocalBackup.class.getSimpleName(), sourceRoot.toString(), destRoot.toString());
 
     // Then
     assertThat(Files.walk(sourceRoot).filter(Files::isRegularFile))
