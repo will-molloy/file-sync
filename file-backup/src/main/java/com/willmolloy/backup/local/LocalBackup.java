@@ -28,39 +28,30 @@ public record LocalBackup(LocalStorage source, LocalStorage destination)
   }
 
   @Override
-  public void copy(String key) {
+  public void put(String key) {
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
-    log.info("copy({} -> {})", sourcePath, destPath);
-    try {
-      copyOrUpdate(sourcePath, destPath);
-    } catch (IOException e) {
-      log.error("Error copying(%s -> %s)".formatted(sourcePath, destPath), e);
-    }
-  }
 
-  @Override
-  public void update(String key) {
-    Path sourcePath = source.root().resolve(key);
-    Path destPath = destination.root().resolve(key);
-    log.info("update({} -> {})", sourcePath, destPath);
-    try {
-      copyOrUpdate(sourcePath, destPath);
-    } catch (IOException e) {
-      log.error("Error updating(%s -> %s)".formatted(sourcePath, destPath), e);
+    if (!Files.exists(destPath)) {
+      log.info("copy({} -> {})", sourcePath, destPath);
+    } else {
+      log.info("update({} -> {})", sourcePath, destPath);
     }
-  }
 
-  private void copyOrUpdate(Path sourcePath, Path destPath) throws IOException {
-    Path destParent = destPath.getParent();
-    if (destParent != null && Files.exists(sourcePath)) {
-      Files.createDirectories(destParent);
+    try {
+      Path destParent = destPath.getParent();
+      if (destParent != null && Files.exists(sourcePath)) {
+        Files.createDirectories(destParent);
+      }
+      // TODO check md5 of result with retries?
+      Files.copy(
+          sourcePath,
+          destPath,
+          StandardCopyOption.COPY_ATTRIBUTES,
+          StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      log.error("Error copying/updating(%s -> %s)".formatted(sourcePath, destPath), e);
     }
-    Files.copy(
-        sourcePath,
-        destPath,
-        StandardCopyOption.COPY_ATTRIBUTES,
-        StandardCopyOption.REPLACE_EXISTING);
   }
 
   @Override

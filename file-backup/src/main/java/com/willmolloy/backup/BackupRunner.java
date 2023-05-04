@@ -32,7 +32,7 @@ class BackupRunner {
     this.destination = backup.destination();
   }
 
-  void run() {
+  Statistics run() {
     log.info("Running: {}", backup);
     long startNanos = System.nanoTime();
 
@@ -63,11 +63,11 @@ class BackupRunner {
 
                         if (destFile == null) {
                           copyCount.incrementAndGet();
-                          backup.copy(key);
+                          backup.put(key);
                         } else if (!sourceFile.size().equals(destFile.size())
                             || !sourceFile.lastModified().equals(destFile.lastModified())) {
                           updateCount.incrementAndGet();
-                          backup.update(key);
+                          backup.put(key);
                         }
                       });
 
@@ -83,18 +83,23 @@ class BackupRunner {
                       });
 
       Stream.concat(copiesAndUpdates, deletes).forEach(executorService::submit);
-    } finally {
-      log.info(
-          "Finished: {}, with {}, in: {}",
-          backup,
-          new Statistics(copyCount.get(), updateCount.get(), deleteCount.get()),
-          elapsed(startNanos));
     }
+
+    Statistics statistics = new Statistics(copyCount.get(), updateCount.get(), deleteCount.get());
+    log.info("Finished: {}, with {}, in: {}", backup, statistics, elapsed(startNanos));
+    return statistics;
   }
 
   private Duration elapsed(long startNanos) {
     return Duration.ofNanos(System.nanoTime() - startNanos);
   }
 
-  private record Statistics(long copies, long updates, long deletes) {}
+  /**
+   * Backup statistics.
+   *
+   * @param copies number of copies
+   * @param updates number of updates
+   * @param deletes number of deletes
+   */
+  record Statistics(long copies, long updates, long deletes) {}
 }

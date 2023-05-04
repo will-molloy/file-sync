@@ -5,7 +5,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.local.LocalStorage;
-import com.willmolloy.backup.util.Md5Helper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -47,16 +46,7 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public void copy(String key) {
-    put(key);
-  }
-
-  @Override
-  public void update(String key) {
-    put(key);
-  }
-
-  private void put(String key) {
+  public void put(String key) {
     Path sourcePath = source.root().resolve(key);
     String destinationUri = destination.objectUri(key);
     log.info("put({} -> {})", sourcePath, destinationUri);

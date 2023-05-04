@@ -58,13 +58,13 @@ class LocalBackupTest {
   }
 
   @Test
-  void copy_copiesFileFromSourceToDestination() throws IOException {
+  void put_copiesFileFromSourceToDestination() throws IOException {
     // Given
     Path sourceFile = Files.createFile(sourceRoot.resolve(fs.getPath("A")));
     Files.writeString(sourceFile, "source");
 
     // When
-    sut.copy("A");
+    sut.put("A");
 
     // Then
     Path destFile = destRoot.resolve(fs.getPath("A"));
@@ -74,13 +74,13 @@ class LocalBackupTest {
   }
 
   @Test
-  void copy_copiesDirectoryFromSourceToDestination() throws IOException {
+  void put_copiesDirectoryFromSourceToDestination() throws IOException {
     // Given
     Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
     Files.createDirectories(sourceDir);
 
     // When
-    sut.copy("A/B/C");
+    sut.put("A/B/C");
 
     // Then
     Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
@@ -90,25 +90,25 @@ class LocalBackupTest {
   }
 
   @Test
-  void copy_whenFileNotOnSource_failsGracefully() throws IOException {
+  void put_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
-    assertDoesNotThrow(() -> sut.copy("A"));
+    assertDoesNotThrow(() -> sut.put("A"));
 
     // Then
     assertThatFileSystem().isEmpty();
   }
 
   @Test
-  void copy_whenDirectoryNotOnSource_failsGracefully() throws IOException {
+  void put_whenDirectoryNotOnSource_failsGracefully() throws IOException {
     // When
-    assertDoesNotThrow(() -> sut.copy("A/B/C"));
+    assertDoesNotThrow(() -> sut.put("A/B/C"));
 
     // Then
     assertThatFileSystem().isEmpty();
   }
 
   @Test
-  void copy_whenFileAlreadyOnDestination_updatesAnyway() throws IOException {
+  void put_updatesFileFromSourceToDestination() throws IOException {
     // Given
     Path sourceFile = Files.createFile(sourceRoot.resolve(fs.getPath("A")));
     Files.writeString(sourceFile, "source");
@@ -116,52 +116,18 @@ class LocalBackupTest {
     Files.writeString(destFile, "dest");
 
     // When
-    sut.copy("A");
+    sut.put("A");
 
     // Then
     assertThatFileSystem().containsExactly(sourceFile, destFile);
     assertThat(Files.readString(sourceFile)).isEqualTo("source");
     assertThat(Files.readString(destFile)).isEqualTo("source");
-  }
-
-  @Test
-  void copy_whenDirectoryAlreadyOnDestination_updatesAnyway() throws IOException {
-    // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(destDir);
-
-    // When
-    sut.copy("A/B/C");
-
-    // Then
-    assertThatFileSystem().containsExactly(sourceDir, destDir);
-    assertThat(Files.isDirectory(sourceDir)).isTrue();
-    assertThat(Files.isDirectory(destDir)).isTrue();
   }
 
   // TODO cases like file on source but directory on dest?
 
   @Test
-  void update_updatesFileFromSourceToDestination() throws IOException {
-    // Given
-    Path sourceFile = Files.createFile(sourceRoot.resolve(fs.getPath("A")));
-    Files.writeString(sourceFile, "source");
-    Path destFile = Files.createFile(destRoot.resolve(fs.getPath("A")));
-    Files.writeString(destFile, "dest");
-
-    // When
-    sut.update("A");
-
-    // Then
-    assertThatFileSystem().containsExactly(sourceFile, destFile);
-    assertThat(Files.readString(sourceFile)).isEqualTo("source");
-    assertThat(Files.readString(destFile)).isEqualTo("source");
-  }
-
-  @Test
-  void update_updatesDirectoryFromSourceToDestination() throws IOException {
+  void put_updatesDirectoryFromSourceToDestination() throws IOException {
     // Given
     Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
     Files.createDirectories(sourceDir);
@@ -169,59 +135,9 @@ class LocalBackupTest {
     Files.createDirectories(destDir);
 
     // When
-    sut.update("A/B/C");
+    sut.put("A/B/C");
 
     // Then
-    assertThatFileSystem().containsExactly(sourceDir, destDir);
-    assertThat(Files.isDirectory(sourceDir)).isTrue();
-    assertThat(Files.isDirectory(destDir)).isTrue();
-  }
-
-  @Test
-  void update_whenFileNotOnSource_failsGracefully() throws IOException {
-    // When
-    assertDoesNotThrow(() -> sut.update("A"));
-
-    // Then
-    assertThatFileSystem().isEmpty();
-  }
-
-  @Test
-  void update_whenDirectoryNotOnSource_failsGracefully() throws IOException {
-    // When
-    assertDoesNotThrow(() -> sut.update("A/B/C"));
-
-    // Then
-    assertThatFileSystem().isEmpty();
-  }
-
-  @Test
-  void update_whenFileNotOnDestination_copiesAnyway() throws IOException {
-    // Given
-    Path sourceFile = Files.createFile(sourceRoot.resolve(fs.getPath("A")));
-    Files.writeString(sourceFile, "source");
-
-    // When
-    sut.update("A");
-
-    // Then
-    Path destFile = destRoot.resolve(fs.getPath("A"));
-    assertThatFileSystem().containsExactly(sourceFile, destFile);
-    assertThat(Files.readString(sourceFile)).isEqualTo("source");
-    assertThat(Files.readString(destFile)).isEqualTo("source");
-  }
-
-  @Test
-  void update_whenDirectoryNotOnDestination_copiesAnyway() throws IOException {
-    // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
-
-    // When
-    sut.copy("A/B/C");
-
-    // Then
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
     assertThatFileSystem().containsExactly(sourceDir, destDir);
     assertThat(Files.isDirectory(sourceDir)).isTrue();
     assertThat(Files.isDirectory(destDir)).isTrue();

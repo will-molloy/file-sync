@@ -12,6 +12,7 @@ import com.github.javafaker.Faker;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.local.LocalStorage;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -31,6 +32,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
+@SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 @ExtendWith(MockitoExtension.class)
 class S3BackupTest {
 
@@ -63,13 +65,13 @@ class S3BackupTest {
   }
 
   @Test
-  void copy_makesPutRequest() throws IOException {
+  void put_makesPutRequest() throws IOException {
     // Given
     String key = fakeFileName();
     Path sourcePath = createSourcePath(key);
 
     // When
-    sut.copy(key);
+    sut.put(key);
 
     // Then
     verify(mockS3Client)
@@ -83,43 +85,13 @@ class S3BackupTest {
   }
 
   @Test
-  void copy_failsGracefully() {
+  void put_failsGracefully() {
     // Given
     when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
         .thenThrow(new RuntimeException());
 
     // When
-    assertDoesNotThrow(() -> sut.copy(fakeFileName()));
-  }
-
-  @Test
-  void update_makesPutRequest() throws IOException {
-    // Given
-    String key = fakeFileName();
-    Path sourcePath = createSourcePath(key);
-
-    // When
-    sut.update(key);
-
-    // Then
-    verify(mockS3Client)
-        .putObject(
-            PutObjectRequest.builder()
-                .bucket(DEST_BUCKET)
-                .key(DEST_BUCKET_PREFIX + key)
-                .contentMD5(md5AsBase64(sourcePath))
-                .build(),
-            sourcePath);
-  }
-
-  @Test
-  void update_failsGracefully() {
-    // Given
-    when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
-        .thenThrow(new RuntimeException());
-
-    // When
-    assertDoesNotThrow(() -> sut.update(fakeFileName()));
+    assertDoesNotThrow(() -> sut.put(fakeFileName()));
   }
 
   @Test
