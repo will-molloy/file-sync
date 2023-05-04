@@ -64,9 +64,10 @@ class LocalBackupTest {
     Files.writeString(sourceFile, "source");
 
     // When
-    sut.put("A");
+    boolean result = sut.put("A");
 
     // Then
+    assertThat(result).isTrue();
     Path destFile = destRoot.resolve(fs.getPath("A"));
     assertThatFileSystem().containsExactly(sourceFile, destFile);
     assertThat(Files.readString(sourceFile)).isEqualTo("source");
@@ -80,31 +81,14 @@ class LocalBackupTest {
     Files.createDirectories(sourceDir);
 
     // When
-    sut.put("A/B/C");
+    boolean result = sut.put("A/B/C");
 
     // Then
+    assertThat(result).isTrue();
     Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
     assertThatFileSystem().containsExactly(sourceDir, destDir);
     assertThat(Files.isDirectory(sourceDir)).isTrue();
     assertThat(Files.isDirectory(destDir)).isTrue();
-  }
-
-  @Test
-  void put_whenFileNotOnSource_failsGracefully() throws IOException {
-    // When
-    assertDoesNotThrow(() -> sut.put("A"));
-
-    // Then
-    assertThatFileSystem().isEmpty();
-  }
-
-  @Test
-  void put_whenDirectoryNotOnSource_failsGracefully() throws IOException {
-    // When
-    assertDoesNotThrow(() -> sut.put("A/B/C"));
-
-    // Then
-    assertThatFileSystem().isEmpty();
   }
 
   @Test
@@ -116,9 +100,10 @@ class LocalBackupTest {
     Files.writeString(destFile, "dest");
 
     // When
-    sut.put("A");
+    boolean result = sut.put("A");
 
     // Then
+    assertThat(result).isTrue();
     assertThatFileSystem().containsExactly(sourceFile, destFile);
     assertThat(Files.readString(sourceFile)).isEqualTo("source");
     assertThat(Files.readString(destFile)).isEqualTo("source");
@@ -135,12 +120,33 @@ class LocalBackupTest {
     Files.createDirectories(destDir);
 
     // When
-    sut.put("A/B/C");
+    boolean result = sut.put("A/B/C");
 
     // Then
+    assertThat(result).isTrue();
     assertThatFileSystem().containsExactly(sourceDir, destDir);
     assertThat(Files.isDirectory(sourceDir)).isTrue();
     assertThat(Files.isDirectory(destDir)).isTrue();
+  }
+
+  @Test
+  void put_whenFileNotOnSource_failsGracefully() throws IOException {
+    // When
+    boolean result = assertDoesNotThrow(() -> sut.put("A"));
+
+    // Then
+    assertThat(result).isFalse();
+    assertThatFileSystem().isEmpty();
+  }
+
+  @Test
+  void put_whenDirectoryNotOnSource_failsGracefully() throws IOException {
+    // When
+    boolean result = assertDoesNotThrow(() -> sut.put("A/B/C"));
+
+    // Then
+    assertThat(result).isFalse();
+    assertThatFileSystem().isEmpty();
   }
 
   @Test
@@ -149,9 +155,10 @@ class LocalBackupTest {
     Files.createFile(destRoot.resolve(fs.getPath("A")));
 
     // When
-    sut.delete("A");
+    boolean result = sut.delete("A");
 
     // Then
+    assertThat(result).isTrue();
     assertThatFileSystem().isEmpty();
   }
 
@@ -161,18 +168,20 @@ class LocalBackupTest {
     Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    sut.delete("A");
+    boolean result = sut.delete("A");
 
     // Then
+    assertThat(result).isTrue();
     assertThatFileSystem().isEmpty();
   }
 
   @Test
   void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
     // When
-    assertDoesNotThrow(() -> sut.delete("A"));
+    boolean result = assertDoesNotThrow(() -> sut.delete("A"));
 
     // Then
+    assertThat(result).isTrue();
     assertThatFileSystem().isEmpty();
   }
 

@@ -46,10 +46,10 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public void put(String key) {
+  public boolean put(String key) {
     Path sourcePath = source.root().resolve(key);
     String destinationUri = destination.objectUri(key);
-    log.info("put({} -> {})", sourcePath, destinationUri);
+    log.info("Putting: [{}] -> [{}]", sourcePath, destinationUri);
     try {
       PutObjectRequest request =
           PutObjectRequest.builder()
@@ -58,15 +58,17 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .contentMD5(md5AsBase64(sourcePath))
               .build();
       s3Client.putObject(request, sourcePath);
+      return true;
     } catch (RuntimeException | IOException e) {
-      log.error("Error putting(%s -> %s)".formatted(sourcePath, destinationUri), e);
+      log.error("Error putting: [%s] -> [%s]".formatted(sourcePath, destinationUri), e);
+      return false;
     }
   }
 
   @Override
-  public void delete(String key) {
+  public boolean delete(String key) {
     String destinationUri = destination.objectUri(key);
-    log.info("delete({})", destinationUri);
+    log.info("Deleting: [{}]", destinationUri);
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
@@ -74,8 +76,10 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .key(destination.prefix() + key)
               .build();
       s3Client.deleteObject(request);
+      return true;
     } catch (RuntimeException e) {
-      log.error("Error deleting(%s)".formatted(destinationUri), e);
+      log.error("Error deleting: [%s]".formatted(destinationUri), e);
+      return false;
     }
   }
 

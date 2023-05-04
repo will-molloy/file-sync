@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,14 +29,14 @@ public record LocalBackup(LocalStorage source, LocalStorage destination)
   }
 
   @Override
-  public void put(String key) {
+  public boolean put(String key) {
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
 
     if (!Files.exists(destPath)) {
-      log.info("copy({} -> {})", sourcePath, destPath);
+      log.info("Copying: [{}] -> [{}]", sourcePath, destPath);
     } else {
-      log.info("update({} -> {})", sourcePath, destPath);
+      log.info("Updating: [{}] -> [{}]", sourcePath, destPath);
     }
 
     try {
@@ -49,26 +50,33 @@ public record LocalBackup(LocalStorage source, LocalStorage destination)
           destPath,
           StandardCopyOption.COPY_ATTRIBUTES,
           StandardCopyOption.REPLACE_EXISTING);
+      return true;
     } catch (IOException e) {
-      log.error("Error copying/updating(%s -> %s)".formatted(sourcePath, destPath), e);
+      log.error("Error copying/updating: [%s] -> [%s]".formatted(sourcePath, destPath), e);
+      return false;
     }
   }
 
   @Override
-  public void delete(String key) {
+  public boolean delete(String key) {
     Path destPath = destination.root().resolve(key);
-    log.info("delete({})", destPath);
-    deleteRecursively(destPath);
+    log.info("Deleting: [{}]", destPath);
+    return deleteRecursively(destPath);
   }
 
-  private void deleteRecursively(Path destPath) {
+  private boolean deleteRecursively(Path destPath) {
     try {
+      boolean allDeleted = true;
       if (Files.isDirectory(destPath)) {
-        Files.list(destPath).forEach(this::deleteRecursively);
+        try (Stream<Path> files = Files.list(destPath)) {
+          allDeleted = files.allMatch(this::deleteRecursively);
+        }
       }
       Files.deleteIfExists(destPath);
+      return allDeleted;
     } catch (IOException e) {
-      log.error("Error deleting(%s)".formatted(destPath), e);
+      log.error("Error deleting: [%s]".formatted(destPath), e);
+      return false;
     }
   }
 }

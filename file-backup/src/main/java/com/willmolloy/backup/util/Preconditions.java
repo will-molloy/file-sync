@@ -8,6 +8,15 @@ package com.willmolloy.backup.util;
 public final class Preconditions {
 
   /**
+   * Checks the given {@code predicate}; if {@code false} throws {@link IllegalArgumentException}.
+   */
+  public static void require(boolean predicate) {
+    if (!predicate) {
+      throw new IllegalArgumentException();
+    }
+  }
+
+  /**
    * Checks the given {@code predicate}; if {@code false} throws {@link IllegalArgumentException}
    * with {@code errorMsg}.
    */

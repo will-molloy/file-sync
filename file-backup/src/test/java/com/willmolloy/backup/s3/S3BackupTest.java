@@ -71,9 +71,10 @@ class S3BackupTest {
     Path sourcePath = createSourcePath(key);
 
     // When
-    sut.put(key);
+    boolean result = sut.put(key);
 
     // Then
+    assertThat(result).isTrue();
     verify(mockS3Client)
         .putObject(
             PutObjectRequest.builder()
@@ -91,7 +92,10 @@ class S3BackupTest {
         .thenThrow(new RuntimeException());
 
     // When
-    assertDoesNotThrow(() -> sut.put(fakeFileName()));
+    boolean result = assertDoesNotThrow(() -> sut.put(fakeFileName()));
+
+    // Then
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -100,9 +104,10 @@ class S3BackupTest {
     String key = fakeFileName();
 
     // When
-    sut.delete(key);
+    boolean result = sut.delete(key);
 
     // Then
+    assertThat(result).isTrue();
     verify(mockS3Client)
         .deleteObject(
             DeleteObjectRequest.builder()
@@ -118,7 +123,10 @@ class S3BackupTest {
         .thenThrow(new RuntimeException());
 
     // When
-    assertDoesNotThrow(() -> sut.delete(fakeFileName()));
+    boolean result = assertDoesNotThrow(() -> sut.delete(fakeFileName()));
+
+    // Then
+    assertThat(result).isFalse();
   }
 
   @Test

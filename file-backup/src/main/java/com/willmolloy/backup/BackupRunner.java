@@ -1,5 +1,6 @@
 package com.willmolloy.backup;
 
+import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
@@ -32,13 +33,16 @@ class BackupRunner {
     this.destination = backup.destination();
   }
 
-  Statistics run() {
+  OverallStatistics run() {
     log.info("Running: {}", backup);
     long startNanos = System.nanoTime();
 
     AtomicLong copyCount = new AtomicLong();
+    AtomicLong failedCopyCount = new AtomicLong();
     AtomicLong updateCount = new AtomicLong();
+    AtomicLong failedUpdateCount = new AtomicLong();
     AtomicLong deleteCount = new AtomicLong();
+    AtomicLong failedDeleteCount = new AtomicLong();
 
     try (ExecutorService executorService =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
@@ -62,12 +66,18 @@ class BackupRunner {
                         File destFile = destFiles.get(key);
 
                         if (destFile == null) {
-                          copyCount.incrementAndGet();
-                          backup.put(key);
+                          if (backup.put(key)) {
+                            copyCount.incrementAndGet();
+                          } else {
+                            failedCopyCount.incrementAndGet();
+                          }
                         } else if (!sourceFile.size().equals(destFile.size())
                             || !sourceFile.lastModified().equals(destFile.lastModified())) {
-                          updateCount.incrementAndGet();
-                          backup.put(key);
+                          if (backup.put(key)) {
+                            updateCount.incrementAndGet();
+                          } else {
+                            failedUpdateCount.incrementAndGet();
+                          }
                         }
                       });
 
@@ -77,8 +87,11 @@ class BackupRunner {
                   key ->
                       () -> {
                         if (!sourceFiles.containsKey(key)) {
-                          deleteCount.incrementAndGet();
-                          backup.delete(key);
+                          if (backup.delete(key)) {
+                            deleteCount.incrementAndGet();
+                          } else {
+                            failedDeleteCount.incrementAndGet();
+                          }
                         }
                       });
 
@@ -86,8 +99,22 @@ class BackupRunner {
     }
 
     Statistics statistics = new Statistics(copyCount.get(), updateCount.get(), deleteCount.get());
-    log.info("Finished: {}, with {}, in: {}", backup, statistics, elapsed(startNanos));
-    return statistics;
+    ErrorStatistics errorStatistics =
+        new ErrorStatistics(
+            failedCopyCount.get(), failedUpdateCount.get(), failedDeleteCount.get());
+
+    if (!errorStatistics.any()) {
+      log.info("Finished: {}, with {}, in: {}", backup, statistics, elapsed(startNanos));
+    } else {
+      log.error(
+          "Finished: {}, with {} and {}, in: {}",
+          backup,
+          statistics,
+          errorStatistics,
+          elapsed(startNanos));
+    }
+
+    return new OverallStatistics(statistics, errorStatistics);
   }
 
   private Duration elapsed(long startNanos) {
@@ -95,11 +122,49 @@ class BackupRunner {
   }
 
   /**
-   * Backup statistics.
+   * Statistics over a backup run.
    *
-   * @param copies number of copies
-   * @param updates number of updates
-   * @param deletes number of deletes
+   * @param copies copy count
+   * @param updates update count
+   * @param deletes delete count
    */
-  record Statistics(long copies, long updates, long deletes) {}
+  record Statistics(long copies, long updates, long deletes) {
+    Statistics {
+      require(copies >= 0);
+      require(updates >= 0);
+      require(deletes >= 0);
+    }
+  }
+
+  /**
+   * Error statistics over a backup run.
+   *
+   * @param failedCopies failed copy count
+   * @param failedUpdates failed update count
+   * @param failedDeletes failed delete count
+   */
+  record ErrorStatistics(long failedCopies, long failedUpdates, long failedDeletes) {
+    ErrorStatistics {
+      require(failedCopies >= 0);
+      require(failedUpdates >= 0);
+      require(failedDeletes >= 0);
+    }
+
+    boolean any() {
+      return failedCopies > 0 || failedUpdates > 0 || failedDeletes > 0;
+    }
+  }
+
+  /**
+   * Overall statistics over a backup run.
+   *
+   * @param statistics statistics
+   * @param errorStatistics error statistics
+   */
+  record OverallStatistics(Statistics statistics, ErrorStatistics errorStatistics) {
+    OverallStatistics {
+      requireNonNull(statistics);
+      requireNonNull(errorStatistics);
+    }
+  }
 }

@@ -18,9 +18,9 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
 
   DestinationT destination();
 
-  void put(String key);
+  boolean put(String key);
 
-  void delete(String key);
+  boolean delete(String key);
 
   /** Backup location (source or destination). */
   interface Location {
