@@ -1,6 +1,7 @@
 package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.willmolloy.backup.util.Md5Helper.md5AsBase64;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -62,21 +63,23 @@ class S3BackupTest {
   }
 
   @Test
-  void copy_makesPutRequest() {
+  void copy_makesPutRequest() throws IOException {
     // Given
-    String fileName = fakeFileName();
+    String key = fakeFileName();
+    Path sourcePath = createSourcePath(key);
 
     // When
-    sut.copy(fileName);
+    sut.copy(key);
 
     // Then
     verify(mockS3Client)
         .putObject(
             PutObjectRequest.builder()
                 .bucket(DEST_BUCKET)
-                .key(DEST_BUCKET_PREFIX + fileName)
+                .key(DEST_BUCKET_PREFIX + key)
+                .contentMD5(md5AsBase64(sourcePath))
                 .build(),
-            sourceRoot.resolve(fileName));
+            sourcePath);
   }
 
   @Test
@@ -90,21 +93,23 @@ class S3BackupTest {
   }
 
   @Test
-  void update_makesPutRequest() {
+  void update_makesPutRequest() throws IOException {
     // Given
-    String fileName = fakeFileName();
+    String key = fakeFileName();
+    Path sourcePath = createSourcePath(key);
 
     // When
-    sut.update(fileName);
+    sut.update(key);
 
     // Then
     verify(mockS3Client)
         .putObject(
             PutObjectRequest.builder()
                 .bucket(DEST_BUCKET)
-                .key(DEST_BUCKET_PREFIX + fileName)
+                .key(DEST_BUCKET_PREFIX + key)
+                .contentMD5(md5AsBase64(sourcePath))
                 .build(),
-            sourceRoot.resolve(fileName));
+            sourcePath);
   }
 
   @Test
@@ -120,17 +125,17 @@ class S3BackupTest {
   @Test
   void delete_makesDeleteRequest() {
     // Given
-    String fileName = fakeFileName();
+    String key = fakeFileName();
 
     // When
-    sut.delete(fileName);
+    sut.delete(key);
 
     // Then
     verify(mockS3Client)
         .deleteObject(
             DeleteObjectRequest.builder()
                 .bucket(DEST_BUCKET)
-                .key(DEST_BUCKET_PREFIX + fileName)
+                .key(DEST_BUCKET_PREFIX + key)
                 .build());
   }
 
@@ -153,5 +158,14 @@ class S3BackupTest {
 
   private String fakeFileName() {
     return new Faker().file().fileName(null, null, null, "/");
+  }
+
+  private Path createSourcePath(String key) throws IOException {
+    Path sourcePath = sourceRoot.resolve(key);
+    Path parent = sourcePath.getParent();
+    if (parent != null) {
+      Files.createDirectories(parent);
+    }
+    return Files.createFile(sourcePath);
   }
 }

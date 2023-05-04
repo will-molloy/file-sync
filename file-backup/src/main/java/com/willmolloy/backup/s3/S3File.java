@@ -37,6 +37,7 @@ record S3File(S3Object s3Object) implements File {
   @Override
   public Optional<Instant> lastModified() {
     try {
+      // TODO this is not useful... AWS bases this on object creation in S3
       return Optional.of(s3Object.lastModified());
     } catch (RuntimeException e) {
       log.error("Error getting last modified time of object: [%s]".formatted(s3Object), e);

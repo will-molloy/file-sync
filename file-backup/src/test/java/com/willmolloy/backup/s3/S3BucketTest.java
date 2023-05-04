@@ -33,12 +33,12 @@ class S3BucketTest {
 
   @Mock private S3Client mockS3Client;
   private S3Bucket sut;
-  private static final String BUCKET_NAME = "my-bucket";
+  private static final String BUCKET = "my-bucket";
   private static final String PREFIX = "testing/backup/";
 
   @BeforeEach
   void setUp() {
-    sut = new S3Bucket(mockS3Client, BUCKET_NAME, PREFIX);
+    sut = new S3Bucket(mockS3Client, BUCKET, PREFIX);
   }
 
   @AfterEach
@@ -63,7 +63,7 @@ class S3BucketTest {
     when(response.stream()).thenReturn(Stream.of(page1, page2, page3));
 
     ListObjectsV2Request request =
-        ListObjectsV2Request.builder().bucket(BUCKET_NAME).prefix(PREFIX).build();
+        ListObjectsV2Request.builder().bucket(BUCKET).prefix(PREFIX).build();
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
@@ -97,8 +97,7 @@ class S3BucketTest {
   void constructor_checksPrefixMatchesFolder() {
     IllegalArgumentException thrown =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new S3Bucket(mockS3Client, BUCKET_NAME, "prefix"));
+            IllegalArgumentException.class, () -> new S3Bucket(mockS3Client, BUCKET, "prefix"));
     assertThat(thrown).hasMessageThat().isEqualTo("Requires prefix to end with '/': prefix");
   }
 }

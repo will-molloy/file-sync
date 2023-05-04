@@ -1,10 +1,13 @@
 package com.willmolloy.backup.s3;
 
+import static com.willmolloy.backup.util.Md5Helper.md5AsBase64;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.local.LocalStorage;
+import com.willmolloy.backup.util.Md5Helper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,14 +61,14 @@ public class S3Backup implements Backup<LocalStorage, S3Bucket> {
     String destinationUri = destination.objectUri(key);
     log.info("put({} -> {})", sourcePath, destinationUri);
     try {
-      // TODO set MD5
       PutObjectRequest request =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
               .key(destination.prefix() + key)
+              .contentMD5(md5AsBase64(sourcePath))
               .build();
       s3Client.putObject(request, sourcePath);
-    } catch (RuntimeException e) {
+    } catch (RuntimeException | IOException e) {
       log.error("Error putting(%s -> %s)".formatted(sourcePath, destinationUri), e);
     }
   }
