@@ -16,14 +16,29 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
 
   DestinationT destination();
 
+  /**
+   * Creates or updates the file identified by {@code key} on destination with the corresponding
+   * file on source.
+   *
+   * @return {@code true} if create/update was successful
+   */
   boolean put(String key);
 
+  /**
+   * Deletes the file identified by {@code key} on destination.
+   *
+   * @return {@code true} if delete was successful
+   */
   boolean delete(String key);
 
   /** Backup location (source or destination). */
   interface Location {
 
-    /** Map of relativized file path to file. */
+    /**
+     * Scans the location.
+     *
+     * @return Map of relativized file path (key) to file.
+     */
     Map<String, File> scan();
   }
 
@@ -32,11 +47,10 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   interface File {
 
     /**
-     * File ETag.
+     * Gets (or computes) the files ETag.
      *
-     * <p>Currently implemented as MD5 digest of file contents in base16.
-     *
-     * @implNote ETags are required to be wrapped in {@code "} quotes.
+     * @implSpec ETags are required to be wrapped in {@code "} quotes.
+     * @implNote Currently implemented as MD5 digest of file contents in base16.
      * @see S3Object#eTag()
      */
     String etag();
