@@ -130,6 +130,11 @@ subprojects {
     jvmArgs += '--enable-preview'
   }
 
+  // https://github.com/gradle/gradle/issues/17236
+  tasks.withType(Jar) {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+  }
+
   // pin dependency versions
   ext {
     // production
