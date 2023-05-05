@@ -17,6 +17,33 @@ class S3FileTest {
   private final Faker faker = new Faker();
 
   @Test
+  void size_returnsS3ObjectSize() {
+    // Given
+    long randomLong = faker.random().nextLong();
+    S3Object s3Object = S3Object.builder().size(randomLong).build();
+    S3File file = new S3File(s3Object);
+
+    // When
+    long result = file.size();
+
+    // Then
+    assertThat(result).isEqualTo(randomLong);
+  }
+
+  @Test
+  void size_whenNoSizeAttribute_failsGracefully() {
+    // Given
+    S3Object s3Object = S3Object.builder().build();
+    S3File file = new S3File(s3Object);
+
+    // When
+    long result = assertDoesNotThrow(() -> file.size());
+
+    // Then
+    assertThat(result).isEqualTo(0);
+  }
+
+  @Test
   void etag_returnsS3ObjectETag() {
     // Given
     String randomString = faker.code().asin();
@@ -24,10 +51,10 @@ class S3FileTest {
     S3File file = new S3File(s3Object);
 
     // When
-    String size = file.etag();
+    String result = file.etag();
 
     // Then
-    assertThat(size).isEqualTo(randomString);
+    assertThat(result).isEqualTo(randomString);
   }
 
   @Test
@@ -37,9 +64,9 @@ class S3FileTest {
     S3File file = new S3File(s3Object);
 
     // When
-    String size = assertDoesNotThrow(() -> file.etag());
+    String result = assertDoesNotThrow(() -> file.etag());
 
     // Then
-    assertThat(size).isEmpty();
+    assertThat(result).isEmpty();
   }
 }

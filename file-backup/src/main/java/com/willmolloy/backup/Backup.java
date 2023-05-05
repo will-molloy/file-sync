@@ -46,6 +46,9 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   // interface rather than record so the operations can be lazy
   interface File {
 
+    /** File size in bytes. */
+    long size();
+
     /**
      * Gets (or computes) the files ETag.
      *
@@ -54,5 +57,9 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
      * @see S3Object#eTag()
      */
     String etag();
+
+    default boolean equal(File other) {
+      return size() == other.size() && etag().equals(other.etag());
+    }
   }
 }

@@ -73,7 +73,7 @@ class BackupRunner {
                           } else {
                             failedCreateCount.incrementAndGet();
                           }
-                        } else if (!sourceFile.etag().equals(destFile.etag())) {
+                        } else if (!sourceFile.equal(destFile)) {
                           if (backup.put(key)) {
                             updateCount.incrementAndGet();
                           } else {

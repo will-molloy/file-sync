@@ -22,13 +22,23 @@ record S3File(S3Object s3Object) implements File {
   }
 
   @Override
+  public long size() {
+    try {
+      return s3Object.size();
+    } catch (RuntimeException e) {
+      log.error("Error getting size of object: [%s]".formatted(s3Object), e);
+      return 0;
+    }
+  }
+
+  @Override
   public String etag() {
     try {
       // TODO not always MD5 digest? We're using PUT with SSE-S3 so it should be??
       //  Doc is not clear about large (> 16MB) files???
       return requireNonNull(s3Object.eTag());
     } catch (RuntimeException e) {
-      log.error("Error getting MD5 Digest of object: [%s]".formatted(s3Object), e);
+      log.error("Error getting ETag of object: [%s]".formatted(s3Object), e);
       return "";
     }
   }

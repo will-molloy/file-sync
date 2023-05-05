@@ -45,6 +45,37 @@ class LocalFileTest {
 
   @ParameterizedTest
   @MethodSource
+  void size_returnsSizeOfFileInBytes(String contents, int size) throws IOException {
+    // Given
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+    Files.writeString(file.path(), contents);
+
+    // When
+    long result = file.size();
+
+    // Then
+    assertThat(result).isEqualTo(size);
+  }
+
+  static Stream<Arguments> size_returnsSizeOfFileInBytes() {
+    return Stream.of(Arguments.of("", 0), Arguments.of("Hello world", 11));
+  }
+
+  @Test
+  void size_whenPathDoesntExist_failsGracefully() throws IOException {
+    // Given
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+    Files.delete(file.path());
+
+    // When
+    long result = assertDoesNotThrow(() -> file.size());
+
+    // Then
+    assertThat(result).isEqualTo(0);
+  }
+
+  @ParameterizedTest
+  @MethodSource
   void etag_returnsMd5HashOfFileContentsInBase16(String contents, String md5Digest)
       throws IOException {
     // Given

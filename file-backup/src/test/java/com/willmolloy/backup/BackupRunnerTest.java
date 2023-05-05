@@ -13,10 +13,14 @@ import com.willmolloy.backup.BackupRunner.ErrorStatistics;
 import com.willmolloy.backup.BackupRunner.OverallStatistics;
 import com.willmolloy.backup.BackupRunner.Statistics;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -50,7 +54,7 @@ class BackupRunnerTest {
   }
 
   @Test
-  void whenFileOnSourceAndNotDestination_copiesFileFromSourceToDestination() {
+  void whenFileOnSourceAndNotDestination_createsFileOnDestination() {
     // Given
     when(mockSource.scan()).thenReturn(Map.of("A", new TestFile()));
     when(mockDestination.scan()).thenReturn(Map.of());
@@ -65,11 +69,13 @@ class BackupRunnerTest {
         .isEqualTo(new OverallStatistics(new Statistics(1, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
   }
 
-  @Test
-  void whenFileOnSourceAndDestination_andNotEqual_updatesFileOnDestination() {
+  @ParameterizedTest
+  @MethodSource("filesNotEqual")
+  void whenFileOnSourceAndDestination_andNotEqual_updatesFileOnDestination(
+      File sourceFile, File destFile) {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile("ABC")));
-    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile("XYZ")));
+    when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
+    when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -128,7 +134,7 @@ class BackupRunnerTest {
   }
 
   @Test
-  void copyUpdateAndDelete() {
+  void createsUpdatesAndDeletes() {
     // Given
     when(mockSource.scan())
         .thenReturn(
@@ -140,11 +146,11 @@ class BackupRunnerTest {
                 "C",
                 new TestFile(),
                 "D",
-                new TestFile("Hello"),
+                new TestFile(5, "Hello"),
                 "E",
-                new TestFile("world"),
+                new TestFile(5, "world"),
                 "F",
-                new TestFile("!")));
+                new TestFile(1, "!")));
     when(mockDestination.scan())
         .thenReturn(
             Map.of(
@@ -181,7 +187,7 @@ class BackupRunnerTest {
   }
 
   @Test
-  void whenCopyFails_countsFailedCopy() {
+  void whenCreateFails_countsFailedCreate() {
     // Given
     when(mockSource.scan()).thenReturn(Map.of("A", new TestFile()));
     when(mockDestination.scan()).thenReturn(Map.of());
@@ -196,11 +202,12 @@ class BackupRunnerTest {
         .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 0), new ErrorStatistics(1, 0, 0)));
   }
 
-  @Test
-  void whenUpdateFails_countsFailedUpdate() {
+  @ParameterizedTest
+  @MethodSource("filesNotEqual")
+  void whenUpdateFails_countsFailedUpdate(File sourceFile, File destFile) {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", new TestFile("xyz")));
-    when(mockDestination.scan()).thenReturn(Map.of("A", new TestFile("abc")));
+    when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
+    when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -228,9 +235,16 @@ class BackupRunnerTest {
         .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 0), new ErrorStatistics(0, 0, 1)));
   }
 
-  private record TestFile(String etag) implements File {
+  static Stream<Arguments> filesNotEqual() {
+    return Stream.of(
+        Arguments.of(new TestFile(11, "Hello world!"), new TestFile()),
+        Arguments.of(new TestFile(3, "abc"), new TestFile(3, "xyz")),
+        Arguments.of(new TestFile(1, ""), new TestFile(2, "")));
+  }
+
+  private record TestFile(long size, String etag) implements File {
     private TestFile() {
-      this("");
+      this(0, "");
     }
   }
 }

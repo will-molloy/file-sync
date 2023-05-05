@@ -27,11 +27,21 @@ record LocalFile(Path path) implements File {
   }
 
   @Override
+  public long size() {
+    try {
+      return Files.size(path);
+    } catch (IOException e) {
+      log.error("Error getting size of file: [%s]".formatted(path), e);
+      return 0;
+    }
+  }
+
+  @Override
   public String etag() {
     try {
       return "\"%s\"".formatted(md5Base16(path));
     } catch (IOException e) {
-      log.error("Error getting MD5 Digest of file: [%s]".formatted(path), e);
+      log.error("Error computing MD5 Digest of file: [%s]".formatted(path), e);
       return "";
     }
   }

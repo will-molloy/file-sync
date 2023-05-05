@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 
 /**
@@ -14,20 +15,20 @@ import org.apache.commons.codec.digest.DigestUtils;
  */
 public final class Md5Helper {
 
-  // TODO cache the MD5s?
-
-  /** Returns the MD5 hash of the given {@code file} contents, in base64. */
+  /** Computes the MD5 hash of the given {@code file} contents, in base64. */
   public static String md5Base64(Path file) throws IOException {
-    try (InputStream inputStream = Files.newInputStream(file)) {
-      byte[] md5 = DigestUtils.md5(inputStream);
-      return Base64.encodeBase64String(md5);
-    }
+    return Base64.encodeBase64String(md5(file));
   }
 
-  /** Returns the MD5 hash of the given {@code file} contents, in base16. */
+  /** Computes the MD5 hash of the given {@code file} contents, in base16. */
   public static String md5Base16(Path file) throws IOException {
+    return Hex.encodeHexString(md5(file));
+  }
+
+  // TODO cache the MD5s?
+  private static byte[] md5(Path file) throws IOException {
     try (InputStream inputStream = Files.newInputStream(file)) {
-      return DigestUtils.md5Hex(inputStream);
+      return DigestUtils.md5(inputStream);
     }
   }
 
