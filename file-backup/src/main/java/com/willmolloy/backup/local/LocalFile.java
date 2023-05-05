@@ -8,6 +8,7 @@ import com.willmolloy.backup.Backup.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,6 +37,15 @@ record LocalFile(Path path) implements File {
     }
   }
 
+  Instant lastModified() {
+    try {
+      return Files.getLastModifiedTime(path).toInstant();
+    } catch (IOException e) {
+      log.error("Error getting last modified time of file: [%s]".formatted(path), e);
+      return Instant.MIN;
+    }
+  }
+
   @Override
   public String etag() {
     try {
@@ -44,5 +54,13 @@ record LocalFile(Path path) implements File {
       log.error("Error computing MD5 Digest of file: [%s]".formatted(path), e);
       return "";
     }
+  }
+
+  @Override
+  public boolean equal(File other) {
+    if (other instanceof LocalFile localFile) {
+      return size() == other.size() && lastModified().equals(localFile.lastModified());
+    }
+    return File.super.equal(other);
   }
 }

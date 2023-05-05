@@ -4,6 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,6 +74,34 @@ class LocalFileTest {
 
     // Then
     assertThat(result).isEqualTo(0);
+  }
+
+  @Test
+  void lastModified_returnsLastModifiedTime() throws IOException {
+    // Given
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+
+    // When
+    Instant result = file.lastModified();
+
+    // Then
+    long tolerance = 100;
+    long currentMillis = System.currentTimeMillis();
+    assertThat(result.toEpochMilli())
+        .isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
+  }
+
+  @Test
+  void lastModified_whenPathDoesntExist_failsGracefully() throws IOException {
+    // Given
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+    Files.delete(file.path());
+
+    // When
+    Instant result = assertDoesNotThrow(() -> file.lastModified());
+
+    // Then
+    assertThat(result).isEqualTo(Instant.MIN);
   }
 
   @ParameterizedTest
