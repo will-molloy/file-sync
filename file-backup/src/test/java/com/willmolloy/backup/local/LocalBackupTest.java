@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
+@SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
 class LocalBackupTest {
 
   private FileSystem fs;
@@ -75,20 +77,22 @@ class LocalBackupTest {
   }
 
   @Test
-  void put_copiesDirectoryFromSourceToDestination() throws IOException {
+  void put_copiesNestedFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
+    Path sourceFile = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceFile.getParent());
+    Files.createFile(sourceFile);
+    Files.writeString(sourceFile, "source");
 
     // When
     boolean result = sut.put("A/B/C");
 
     // Then
     assertThat(result).isTrue();
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
-    assertThatFileSystem().containsExactly(sourceDir, destDir);
-    assertThat(Files.isDirectory(sourceDir)).isTrue();
-    assertThat(Files.isDirectory(destDir)).isTrue();
+    Path destFile = destRoot.resolve(fs.getPath("A/B/C"));
+    assertThatFileSystem().containsExactly(sourceFile, destFile);
+    assertThat(Files.readString(sourceFile)).isEqualTo("source");
+    assertThat(Files.readString(destFile)).isEqualTo("source");
   }
 
   @Test
@@ -109,40 +113,33 @@ class LocalBackupTest {
     assertThat(Files.readString(destFile)).isEqualTo("source");
   }
 
-  // TODO cases like file on source but directory on dest?
-
   @Test
-  void put_updatesDirectoryFromSourceToDestination() throws IOException {
+  void put_updatesNestedFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(destDir);
+    Path sourceFile = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceFile.getParent());
+    Files.createFile(sourceFile);
+    Files.writeString(sourceFile, "source");
+
+    Path destFile = destRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(destFile.getParent());
+    Files.createFile(destFile);
+    Files.writeString(destFile, "dest");
 
     // When
     boolean result = sut.put("A/B/C");
 
     // Then
     assertThat(result).isTrue();
-    assertThatFileSystem().containsExactly(sourceDir, destDir);
-    assertThat(Files.isDirectory(sourceDir)).isTrue();
-    assertThat(Files.isDirectory(destDir)).isTrue();
+    assertThatFileSystem().containsExactly(sourceFile, destFile);
+    assertThat(Files.readString(sourceFile)).isEqualTo("source");
+    assertThat(Files.readString(destFile)).isEqualTo("source");
   }
 
   @Test
   void put_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
     boolean result = assertDoesNotThrow(() -> sut.put("A"));
-
-    // Then
-    assertThat(result).isFalse();
-    assertThatFileSystem().isEmpty();
-  }
-
-  @Test
-  void put_whenDirectoryNotOnSource_failsGracefully() throws IOException {
-    // When
-    boolean result = assertDoesNotThrow(() -> sut.put("A/B/C"));
 
     // Then
     assertThat(result).isFalse();

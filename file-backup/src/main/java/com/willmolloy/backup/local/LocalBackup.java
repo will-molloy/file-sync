@@ -44,12 +44,22 @@ public record LocalBackup(LocalStorage source, LocalStorage destination)
       if (destParent != null && Files.exists(sourcePath)) {
         Files.createDirectories(destParent);
       }
-      // TODO check md5 of result with retries?
       Files.copy(
           sourcePath,
           destPath,
           StandardCopyOption.COPY_ATTRIBUTES,
           StandardCopyOption.REPLACE_EXISTING);
+
+      LocalFile sourceFile = new LocalFile(sourcePath);
+      LocalFile destFile = new LocalFile(destPath);
+      // TODO how to test this?
+      if (!sourceFile.equal(destFile)) {
+        // TODO retry?
+        log.error(
+            "Copied source file [{}] does not match destination file [{}]!", sourcePath, destPath);
+        return false;
+      }
+
       return true;
     } catch (IOException e) {
       log.error("Error copying/updating: [%s] -> [%s]".formatted(sourcePath, destPath), e);

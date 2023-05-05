@@ -37,6 +37,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 class S3BackupTest {
 
   @Mock private S3Client mockS3Client;
+  private LocalStorage source;
+  private S3Bucket destination;
   private S3Backup sut;
 
   private FileSystem fs;
@@ -51,17 +53,25 @@ class S3BackupTest {
     sourceRoot = fs.getPath("root");
     Files.createDirectory(sourceRoot);
 
-    sut =
-        new S3Backup(
-            mockS3Client,
-            new LocalStorage(sourceRoot),
-            new S3Bucket(mockS3Client, DEST_BUCKET, DEST_BUCKET_PREFIX));
+    source = new LocalStorage(sourceRoot);
+    destination = new S3Bucket(mockS3Client, DEST_BUCKET, DEST_BUCKET_PREFIX);
+    sut = new S3Backup(mockS3Client, source, destination);
   }
 
   @AfterEach
   void tearDown() throws IOException {
     fs.close();
     verifyNoMoreInteractions(mockS3Client);
+  }
+
+  @Test
+  void source_returnsSource() {
+    assertThat(sut.source()).isSameInstanceAs(source);
+  }
+
+  @Test
+  void destination_returnsDestination() {
+    assertThat(sut.destination()).isSameInstanceAs(destination);
   }
 
   @Test

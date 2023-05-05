@@ -51,12 +51,11 @@ class BackupRunner {
 
       long sourceScanStart = System.nanoTime();
       Map<String, File> sourceFiles = source.scan();
-      log.info("Scanned source with {} files in: {}", sourceFiles.size(), elapsed(sourceScanStart));
+      log.info("Scanned source ({} files) in: {}", sourceFiles.size(), elapsed(sourceScanStart));
 
       long destScanStart = System.nanoTime();
       Map<String, File> destFiles = destination.scan();
-      log.info(
-          "Scanned destination with {} files in: {}", destFiles.size(), elapsed(destScanStart));
+      log.info("Scanned destination ({} files) in: {}", destFiles.size(), elapsed(destScanStart));
 
       Stream<Runnable> createsAndUpdates =
           sourceFiles.entrySet().stream()
