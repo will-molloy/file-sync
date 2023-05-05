@@ -9,7 +9,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,12 +38,13 @@ class BackupRunner {
     log.info("Running: {}", backup);
     long startNanos = System.nanoTime();
 
-    AtomicLong copyCount = new AtomicLong();
-    AtomicLong failedCopyCount = new AtomicLong();
-    AtomicLong updateCount = new AtomicLong();
-    AtomicLong failedUpdateCount = new AtomicLong();
-    AtomicLong deleteCount = new AtomicLong();
-    AtomicLong failedDeleteCount = new AtomicLong();
+    AtomicInteger createCount = new AtomicInteger();
+    AtomicInteger failedCreateCount = new AtomicInteger();
+    AtomicInteger updateCount = new AtomicInteger();
+    AtomicInteger failedUpdateCount = new AtomicInteger();
+    AtomicInteger deleteCount = new AtomicInteger();
+    AtomicInteger failedDeleteCount = new AtomicInteger();
+    AtomicInteger sameCount = new AtomicInteger();
 
     try (ExecutorService executorService =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
@@ -56,21 +58,20 @@ class BackupRunner {
       log.info(
           "Scanned destination with {} files in: {}", destFiles.size(), elapsed(destScanStart));
 
-      Stream<Runnable> copiesAndUpdates =
+      Stream<Runnable> createsAndUpdates =
           sourceFiles.entrySet().stream()
               .map(
                   e ->
                       () -> {
                         String key = e.getKey();
-
                         File sourceFile = e.getValue();
                         File destFile = destFiles.get(key);
 
                         if (destFile == null) {
                           if (backup.put(key)) {
-                            copyCount.incrementAndGet();
+                            createCount.incrementAndGet();
                           } else {
-                            failedCopyCount.incrementAndGet();
+                            failedCreateCount.incrementAndGet();
                           }
                         } else if (!sourceFile.etag().equals(destFile.etag())) {
                           if (backup.put(key)) {
@@ -78,6 +79,8 @@ class BackupRunner {
                           } else {
                             failedUpdateCount.incrementAndGet();
                           }
+                        } else {
+                          sameCount.incrementAndGet();
                         }
                       });
 
@@ -95,13 +98,14 @@ class BackupRunner {
                         }
                       });
 
-      Stream.concat(copiesAndUpdates, deletes).forEach(executorService::submit);
+      Stream.concat(createsAndUpdates, deletes).forEach(executorService::submit);
     }
 
-    Statistics statistics = new Statistics(copyCount.get(), updateCount.get(), deleteCount.get());
+    Statistics statistics =
+        new Statistics(createCount.get(), updateCount.get(), deleteCount.get(), sameCount.get());
     ErrorStatistics errorStatistics =
         new ErrorStatistics(
-            failedCopyCount.get(), failedUpdateCount.get(), failedDeleteCount.get());
+            failedCreateCount.get(), failedUpdateCount.get(), failedDeleteCount.get());
 
     if (!errorStatistics.any()) {
       log.info("Finished: {}, with {}, in: {}", backup, statistics, elapsed(startNanos));
@@ -124,34 +128,36 @@ class BackupRunner {
   /**
    * Statistics over a backup run.
    *
-   * @param copies copy count
-   * @param updates update count
-   * @param deletes delete count
+   * @param filesCreated files created
+   * @param filesUpdated files updated
+   * @param filesDeleted files deleted
+   * @param filesSame files kept same
    */
-  record Statistics(long copies, long updates, long deletes) {
+  record Statistics(int filesCreated, int filesUpdated, int filesDeleted, int filesSame) {
     Statistics {
-      require(copies >= 0);
-      require(updates >= 0);
-      require(deletes >= 0);
+      require(filesCreated >= 0);
+      require(filesUpdated >= 0);
+      require(filesDeleted >= 0);
+      require(filesSame >= 0);
     }
   }
 
   /**
    * Error statistics over a backup run.
    *
-   * @param failedCopies failed copy count
-   * @param failedUpdates failed update count
-   * @param failedDeletes failed delete count
+   * @param failedCreates failed creates
+   * @param failedUpdates failed updates
+   * @param failedDeletes failed deletes
    */
-  record ErrorStatistics(long failedCopies, long failedUpdates, long failedDeletes) {
+  record ErrorStatistics(int failedCreates, int failedUpdates, int failedDeletes) {
     ErrorStatistics {
-      require(failedCopies >= 0);
+      require(failedCreates >= 0);
       require(failedUpdates >= 0);
       require(failedDeletes >= 0);
     }
 
     boolean any() {
-      return failedCopies > 0 || failedUpdates > 0 || failedDeletes > 0;
+      return IntStream.of(failedCreates, failedUpdates, failedDeletes).anyMatch(i -> i > 0);
     }
   }
 

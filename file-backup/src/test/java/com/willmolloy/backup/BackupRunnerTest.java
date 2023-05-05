@@ -62,7 +62,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup).put("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(1, 0, 0), new ErrorStatistics(0, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(1, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
@@ -78,7 +78,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup).put("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 1, 0), new ErrorStatistics(0, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 1, 0, 0), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
@@ -93,7 +93,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup, never()).put("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(0, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 1), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
@@ -109,7 +109,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup).delete("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 1), new ErrorStatistics(0, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 1, 0), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
@@ -124,7 +124,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup, never()).delete("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(0, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 1), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
@@ -177,7 +177,7 @@ class BackupRunnerTest {
     verify(mockBackup).delete("Y");
     verify(mockBackup).delete("Z");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(3, 3, 3), new ErrorStatistics(0, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(3, 3, 3, 0), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
@@ -193,7 +193,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup).put("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(1, 0, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 0), new ErrorStatistics(1, 0, 0)));
   }
 
   @Test
@@ -209,7 +209,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup).put("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(0, 1, 0)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 0), new ErrorStatistics(0, 1, 0)));
   }
 
   @Test
@@ -225,7 +225,7 @@ class BackupRunnerTest {
     // Then
     verify(mockBackup).delete("A");
     assertThat(statistics)
-        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0), new ErrorStatistics(0, 0, 1)));
+        .isEqualTo(new OverallStatistics(new Statistics(0, 0, 0, 0), new ErrorStatistics(0, 0, 1)));
   }
 
   private record TestFile(String etag) implements File {
