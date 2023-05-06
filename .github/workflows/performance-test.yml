@@ -1,4 +1,4 @@
-name: integration-test
+name: performance-test
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  integration-test:
+  performance-test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -24,12 +24,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Integration Test
-        run: ./gradlew projects clean integrationTest --no-daemon --refresh-dependencies
+      - name: Performance Test
+        run: ./gradlew projects clean performanceTest --no-daemon --refresh-dependencies
 
       - name: Upload coverage to Codecov (Linux only)
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v3
         with:
-          flags: integration-tests
+          flags: performance-tests
           fail_ci_if_error: false
