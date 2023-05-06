@@ -97,7 +97,7 @@ class BackupRunner {
                         }
                       });
 
-      Stream.concat(createsAndUpdates, deletes).forEach(executorService::submit);
+      Stream.concat(createsAndUpdates, deletes).forEach(Runnable::run);
     }
 
     Statistics statistics =
