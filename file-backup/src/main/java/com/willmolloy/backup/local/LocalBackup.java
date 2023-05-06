@@ -1,5 +1,6 @@
 package com.willmolloy.backup.local;
 
+import static com.willmolloy.backup.util.Md5Helper.md5Base16;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
@@ -49,7 +50,7 @@ public record LocalBackup(LocalStorage source, LocalStorage destination)
           destPath,
           StandardCopyOption.COPY_ATTRIBUTES,
           StandardCopyOption.REPLACE_EXISTING);
-      return true;
+      return md5Base16(sourcePath).equals(md5Base16(destPath));
     } catch (IOException e) {
       log.error("Error copying/updating: [%s] -> [%s]".formatted(sourcePath, destPath), e);
       return false;

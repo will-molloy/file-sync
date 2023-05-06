@@ -58,9 +58,9 @@ record LocalFile(Path path) implements File {
 
   @Override
   public boolean equal(File other) {
-    if (other instanceof LocalFile localFile) {
-      return size() == other.size() && lastModified().equals(localFile.lastModified());
-    }
+    //    if (other instanceof LocalFile localFile) {
+    //      return size() == other.size() && lastModified().equals(localFile.lastModified());
+    //    }
     return File.super.equal(other);
   }
 }
