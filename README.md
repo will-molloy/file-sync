@@ -4,59 +4,36 @@
 [![performance-test](https://github.com/will-molloy/file-backup/workflows/performance-test/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-backup/actions?query=workflow%3Aperformance-test)
 [![codecov](https://codecov.io/gh/will-molloy/file-backup/branch/main/graph/badge.svg)](https://codecov.io/gh/will-molloy/file-backup)
 
-### Build and test
+## Backup = Mirror
+
+- if file only on source, creates file on destination
+- if file on source AND destination, updates file on destination
+- if file only on destination, deletes file on destination
+
+## Build and test
 
 ```
 ./gradlew spotlessApply build performanceTest
 ```
 
-### Plan:
+## Usage
 
-Backup = mirror
-- if file/directory on src AND not on dest, copy to dest
-- if file/directory not on src AND on dest, delete from dest
-- if file/directory on src AND dest, update dest
-  - use last modified time?
+Run the main method. There are 2 types of backup.
 
-job
-  - abstract
-  - src
-  - dest
-  - how to scan src/dest
-    - assume src will always be windows? i.e. default implementation here
-  - how to copy src -> dest
-  - how to delete from dest
+### LocalBackup
 
-NAS job
-  - concrete
-  - how to scan NAS (dest)
-  - how to copy/delete etc.
+```
+LocalBackup <source_path> <destination_path>
+```
 
-AWS-S3 job
-  - concrete
-  - login to AWS/assume role
-  - how to scan S3 bucket
-  - how to copy/delete etc.
-  - Also need RESTORE i.e. download from S3
-    - Path -> Path can easily be reversed (just swap source/dest)
-      - but S3 requires GET instead of PUT (i.e. it's not symmetrical)
+### S3Backup
 
-profile
-  - src
-  - dest
-  - job type
+```
+S3Backup <source_path> <destination_bucket> <destination_bucket_prefix>
+```
 
-job runner
-  - reads the profiles
-  - instantiates and runs the jobs
+## TODO
 
-scheduler
-  - some way to run on a schedule? 
-    - Windows scheduler?
-  - Otherwise run via bash script adhoc?
-    - Similar to auto-handbrake-encoding
-
-Other
-- Dockerise?
-- Logging, record time etc.
-
+- Package the application (docker?)
+- Schedules
+- Restore
