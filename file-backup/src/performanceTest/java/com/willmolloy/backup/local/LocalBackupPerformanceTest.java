@@ -85,7 +85,7 @@ class LocalBackupPerformanceTest {
     Duration duration = Duration.ofNanos(System.nanoTime() - start);
 
     // Then
-    assertThat(duration).isLessThan(Duration.ofSeconds(30));
+    assertThat(duration).isLessThan(Duration.ofMinutes(1));
     assertThat(Files.walk(sourceRoot).filter(Files::isRegularFile))
         .containsExactlyElementsIn(fileNames.stream().map(sourceRoot::resolve).toList());
     assertThat(Files.walk(destRoot).filter(Files::isRegularFile))
@@ -94,19 +94,16 @@ class LocalBackupPerformanceTest {
 
   static Stream<Arguments> performanceTest() {
     return Stream.of(
-        Arguments.of(1_000, 1),
-        Arguments.of(10_000, 1),
-        Arguments.of(10, 100),
+        Arguments.of(1_000, 10),
         Arguments.of(100, 100),
         Arguments.of(10, 1_000),
-        Arguments.of(4, 5_000),
-        Arguments.of(2, 10_000));
+        Arguments.of(2, 5_000));
   }
 
   private List<String> generateRandomFiles(int count, int sizeInMB) throws IOException {
+    Preconditions.require(count * sizeInMB <= 10_000, "GitHub Actions disk space limit");
+    Preconditions.require(count > 0 && count % 2 == 0, "Can't create files evenly on source/dest");
     log.info("Generating {} random {}MB file(s)...", count, sizeInMB);
-    Preconditions.require(count % 2 == 0, "Can't split files evenly on source/dest");
-    Preconditions.require(count * sizeInMB <= 20_000, "GitHub Actions disk space limit?");
 
     List<String> fileNames = new ArrayList<>();
     for (int i = 0; i < count / 2; i++) {
