@@ -1,17 +1,26 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -147,5 +156,67 @@ class LocalFileTest {
     assertThat(thrown)
         .hasMessageThat()
         .isEqualTo("Requires a file: [%s]".formatted(root.resolve("A")));
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  void equal_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual(
+      String thisContents,
+      long thisLastModified,
+      String otherContents,
+      long otherLastModified,
+      boolean expected)
+      throws IOException {
+    // Given
+    LocalFile thisFile = spy(new LocalFile(Files.createFile(root.resolve("A"))));
+    Files.writeString(thisFile.path(), thisContents);
+    Files.setLastModifiedTime(thisFile.path(), FileTime.fromMillis(thisLastModified));
+
+    LocalFile otherFile = spy(new LocalFile(Files.createFile(root.resolve("B"))));
+    Files.writeString(otherFile.path(), otherContents);
+    Files.setLastModifiedTime(otherFile.path(), FileTime.fromMillis(otherLastModified));
+
+    // Then
+    assertThat(thisFile.equal(otherFile)).isEqualTo(expected);
+    verify(thisFile, never()).etag();
+    verify(otherFile, never()).etag();
+  }
+
+  static Stream<Arguments>
+      equal_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual() {
+    long currentMillis = System.currentTimeMillis();
+    return Stream.of(
+        Arguments.of("ABC", currentMillis, "ABC", currentMillis, true),
+        Arguments.of("ABC", currentMillis, "XYZ", currentMillis, true),
+        Arguments.of("ABC", currentMillis, "ABCD", currentMillis, false),
+        Arguments.of("ABC", currentMillis, "ABC", currentMillis + 1, false),
+        Arguments.of("ABC", currentMillis, "XYZ", currentMillis + 1, false),
+        Arguments.of("ABC", currentMillis, "ABCD", currentMillis + 1, false));
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  void equal_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual(
+      String thisContents, String otherContents, boolean expected) throws IOException {
+    // Given
+    LocalFile thisFile = spy(new LocalFile(Files.createFile(root.resolve("A"))));
+    Files.writeString(thisFile.path(), thisContents);
+
+    Backup.File otherFile = mock(Backup.File.class);
+    when(otherFile.etag()).thenReturn("\"%s\"".formatted(md5Hex(otherContents)));
+    when(otherFile.size()).thenReturn((long) otherContents.length());
+
+    // Then
+    assertThat(thisFile.equal(otherFile)).isEqualTo(expected);
+    boolean etagCalled = thisContents.length() == otherContents.length();
+    verify(thisFile, etagCalled ? times(1) : never()).etag();
+    verify(otherFile, etagCalled ? times(1) : never()).etag();
+  }
+
+  static Stream<Arguments> equal_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual() {
+    return Stream.of(
+        Arguments.of("ABC", "ABC", true),
+        Arguments.of("ABC", "XYZ", false),
+        Arguments.of("ABC", "ABCD", false));
   }
 }

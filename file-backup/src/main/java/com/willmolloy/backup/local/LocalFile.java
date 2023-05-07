@@ -37,7 +37,8 @@ record LocalFile(Path path) implements File {
     }
   }
 
-  Instant lastModified() {
+  @Override
+  public Instant lastModified() {
     try {
       return Files.getLastModifiedTime(path).toInstant();
     } catch (IOException e) {
@@ -61,6 +62,6 @@ record LocalFile(Path path) implements File {
     if (other instanceof LocalFile localFile) {
       return size() == other.size() && lastModified().equals(localFile.lastModified());
     }
-    return File.super.equal(other);
+    return size() == other.size() && etag().equals(other.etag());
   }
 }

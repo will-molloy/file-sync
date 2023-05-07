@@ -1,5 +1,6 @@
 package com.willmolloy.backup;
 
+import java.time.Instant;
 import java.util.Map;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
@@ -49,6 +50,9 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
     /** File size in bytes. */
     long size();
 
+    /** Last modified time. */
+    Instant lastModified();
+
     /**
      * Gets (or computes) the files ETag.
      *
@@ -63,8 +67,6 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
      *
      * @apiNote Used to determine if a file requires updating.
      */
-    default boolean equal(File other) {
-      return size() == other.size() && etag().equals(other.etag());
-    }
+    boolean equal(File other);
   }
 }
