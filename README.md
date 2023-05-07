@@ -18,22 +18,28 @@
 
 ## Usage
 
-Run the main method. There are 2 types of backup.
+Run the main method. Args depend on the backup type.
 
-### LocalBackup
+### Local Backup
 
-```
-LocalBackup <source_path> <destination_path>
-```
-
-### S3Backup
+Backup to locally mounted storage. E.g. another disk or NAS.
 
 ```
-S3Backup <source_path> <destination_bucket> <destination_bucket_prefix>
+local.Main <source_path> <destination_path>
 ```
 
-## TODO
+### S3 Backup
 
-- Package the application (docker?)
-- Schedules
-- Restore
+Backup to AWS S3 bucket.
+
+```
+s3.Main <source_path> <destination_bucket> <destination_bucket_prefix>
+```
+
+## Project layout
+
+| Module                                   | Description                         |
+|------------------------------------------|-------------------------------------|
+| [file-backup-core](./file-backup-core)   | Core backup interface and algorithm |
+| [file-backup-local](./file-backup-local) | Local backup implementation         |
+| [file-backup-s3](./file-backup-s3)       | S3 backup implementation            |

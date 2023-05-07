@@ -1,2 +1,4 @@
 rootProject.name = 'file-backup'
-include 'file-backup'
+include 'file-backup-core'
+include 'file-backup-local'
+include 'file-backup-s3'

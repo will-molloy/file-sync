@@ -151,7 +151,6 @@ subprojects {
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: "$log4jVersion"
     implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j2-impl', version: "$log4jVersion"
     implementation group: 'com.github.spotbugs', name: 'spotbugs-annotations', version: '4.7.3'
-    implementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.56'
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "$junitVersion"
