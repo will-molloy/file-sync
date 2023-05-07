@@ -43,7 +43,6 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   }
 
   /** Backup file. */
-  // interface rather than record so the operations can be lazy
   interface File {
 
     /** File size in bytes. */

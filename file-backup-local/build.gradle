@@ -1,3 +1,27 @@
+plugins {
+  id 'com.google.cloud.tools.jib' version '3.3.1'
+}
+
+jib {
+  from {
+    image = "amazoncorretto:19"
+  }
+  to {
+    image = "file-backup-local:latest"
+  }
+  container {
+    mainClass = 'com.willmolloy.backup.local.Main'
+    args = ["/source", "/destination"]
+    creationTime = getGitCommitTime()
+    jvmFlags = ['--enable-preview']
+  }
+}
+
+static def getGitCommitTime() {
+  String[] parts = 'git show -s --format=%ci'.execute().text.trim().split(" ")
+  return (parts[0]+'T'+parts[1]+parts[2])
+}
+
 dependencies {
   implementation project(":file-backup-core")
 }

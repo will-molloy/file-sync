@@ -2,6 +2,7 @@
 
 [![build](https://github.com/will-molloy/file-backup/workflows/build/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-backup/actions?query=workflow%3Abuild)
 [![performance-test](https://github.com/will-molloy/file-backup/workflows/performance-test/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-backup/actions?query=workflow%3Aperformance-test)
+[![docker](https://github.com/will-molloy/file-backup/workflows/docker/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-backup/actions?query=workflow%3Adocker)
 [![codecov](https://codecov.io/gh/will-molloy/file-backup/branch/main/graph/badge.svg)](https://codecov.io/gh/will-molloy/file-backup)
 
 ## Backup = Mirror
@@ -12,27 +13,39 @@
 
 ## Build and test
 
-```
+```bash
 ./gradlew spotlessApply build performanceTest
 ```
 
 ## Usage
 
-Run the main method. Args depend on the backup type.
+Build and run the docker container (or run the main method directly). 
+Args depend on the backup type.
 
 ### Local Backup
 
 Backup to locally mounted storage. E.g. another disk or NAS.
 
-```
-local.Main <source_path> <destination_path>
+1. Build image:
+   ```bash
+   ./gradlew :file-backup-local:jibDockerBuild
+   ```
+
+2. Run:
+   ```bash
+   docker run --rm -v <source_path>:/source -v <destination_path>:/destination file-backup-local
+   ```
+
+If you need to mount a network drive, run something like:
+```bash
+docker volume create --driver local --opt type=cifs --opt device="//<SERVER_IP>/<PATH>" --opt o=user='<USER>',password='<PASS>' <VOLUME_NAME>
 ```
 
 ### S3 Backup
 
 Backup to AWS S3 bucket.
 
-```
+```bash
 s3.Main <source_path> <destination_bucket> <destination_bucket_prefix>
 ```
 
