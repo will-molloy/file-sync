@@ -2,17 +2,21 @@ package com.willmolloy.backup.local;
 
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 import com.willmolloy.backup.Backup.File;
 import com.willmolloy.backup.Backup.Location;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,38 +39,56 @@ public record LocalStorage(Path root) implements Location {
   @Override
   public Map<String, File> scan() {
     log.info("Scanning directory: [{}]", root);
-    return walk(root)
-        .parallel()
-        .collect(
-            toMap(
-                ((Function<Path, Path>) root::relativize)
-                    .andThen(LocalStorage::ensureUnixSeparator),
-                LocalFile::new,
-                // not sure how duplicates occur?? But it does happen; use the most recent scan
-                (first, second) -> second));
-  }
 
-  // TODO use Files.walkFileTree??
-  private static Stream<Path> walk(Path path) {
-    log.debug("walk({})", path);
-    // avoid AccessDeniedException
-    if (!Files.isReadable(path)) {
-      return Stream.of();
-    }
+    Map<String, File> map = new HashMap<>();
 
-    if (Files.isDirectory(path)) {
-      try {
-        return Files.list(path).flatMap(LocalStorage::walk);
-      } catch (IOException e) {
-        log.error("Error listing directory: [%s]".formatted(path), e);
-        return Stream.of();
-      }
-    } else {
-      // limit to files only for now
-      // TODO what about empty dirs?
-      // TODO what about overwriting dirs with files?
-      //  Could be files without extensions that cause this?
-      return Stream.of(path);
+    Function<Path, String> keyFunc =
+        ((Function<Path, Path>) root::relativize).andThen(LocalStorage::ensureUnixSeparator);
+
+    // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
+    BiFunction<File, File, File> mergeFunc = (first, second) -> second;
+
+    try {
+      Files.walkFileTree(
+          root,
+          new FileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
+              if (!attributes.isRegularFile()) {
+                // ignore symbolic links
+                log.warn("Not a file: [{}]", file);
+                return FileVisitResult.CONTINUE;
+              }
+
+              String key = keyFunc.apply(file);
+              LocalFile localFile = new LocalFile(file, attributes);
+              map.merge(key, localFile, mergeFunc);
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException e) {
+              log.warn("Failed to visit file: [%s]".formatted(file), e);
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path directory, IOException e) {
+              if (e != null) {
+                log.warn("Failed to visit directory: [%s]".formatted(directory), e);
+              }
+              return FileVisitResult.CONTINUE;
+            }
+          });
+
+      return map;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 

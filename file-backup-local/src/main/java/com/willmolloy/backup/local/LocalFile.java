@@ -6,7 +6,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -28,21 +27,18 @@ class LocalFile implements File {
   private final long size;
   private final Instant lastModified;
 
-  LocalFile(Path path) {
-    try {
-      this.path = requireNonNull(path);
-      // more efficient to read attributes once
-      BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
-      require(attributes.isRegularFile(), "Requires a file: [%s]".formatted(path));
-      this.size = attributes.size();
-      this.lastModified = attributes.lastModifiedTime().toInstant();
-    } catch (IOException e) {
-      log.error("Error reading file attributes", e);
-      throw new UncheckedIOException(e);
-    }
+  LocalFile(Path path, BasicFileAttributes attributes) {
+    this.path = requireNonNull(path);
+    require(attributes.isRegularFile(), "Requires a file: [%s]".formatted(path));
+    this.size = attributes.size();
+    this.lastModified = attributes.lastModifiedTime().toInstant();
   }
 
-  public Path path() {
+  LocalFile(Path path) throws IOException {
+    this(path, Files.readAttributes(path, BasicFileAttributes.class));
+  }
+
+  Path path() {
     return path;
   }
 
