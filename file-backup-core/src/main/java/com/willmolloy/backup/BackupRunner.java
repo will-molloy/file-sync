@@ -5,7 +5,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
 import com.willmolloy.backup.Backup.Location;
+import java.text.NumberFormat;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,7 +26,10 @@ import org.apache.logging.log4j.Logger;
 public class BackupRunner {
 
   private static final Logger log = LogManager.getLogger();
+
   private static final int MEGA = 1_000_000;
+
+  private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.ENGLISH);
 
   private final Backup<?, ?> backup;
   private final Location source;
@@ -62,8 +67,8 @@ public class BackupRunner {
       log.info(
           "Scanned source in: {}. {} files. {}MB",
           elapsed(sourceScanStart),
-          sourceFiles.size(),
-          sourceSizeMB);
+          numberFormat.format(sourceFiles.size()),
+          numberFormat.format(sourceSizeMB));
 
       long destScanStart = System.nanoTime();
       Map<String, File> destFiles = destination.scan();
@@ -71,8 +76,8 @@ public class BackupRunner {
       log.info(
           "Scanned destination in: {}. {} files. {}MB",
           elapsed(destScanStart),
-          destFiles.size(),
-          destSizeMB);
+          numberFormat.format(destFiles.size()),
+          numberFormat.format(destSizeMB));
 
       Stream<Runnable> createsAndUpdates =
           sourceFiles.entrySet().stream()
@@ -143,18 +148,18 @@ public class BackupRunner {
         "Finished: {} in: {}. {} files created, {} files updated, {} files deleted, {} files same. {}MB added, {}MB removed",
         backup,
         elapsed(startNanos),
-        statistics.filesCreated(),
-        statistics.filesUpdated(),
-        statistics.filesDeleted(),
-        statistics.filesSame(),
-        addedMB,
-        removedMB);
+        numberFormat.format(statistics.filesCreated()),
+        numberFormat.format(statistics.filesUpdated()),
+        numberFormat.format(statistics.filesDeleted()),
+        numberFormat.format(statistics.filesSame()),
+        numberFormat.format(addedMB),
+        numberFormat.format(removedMB));
     if (errorStatistics.any()) {
       log.warn(
           "{} failed creates, {} failed updates, {} failed deletes",
-          errorStatistics.failedCreates(),
-          errorStatistics.failedUpdates(),
-          errorStatistics.failedDeletes());
+          numberFormat.format(errorStatistics.failedCreates()),
+          numberFormat.format(errorStatistics.failedUpdates()),
+          numberFormat.format(errorStatistics.failedDeletes()));
     }
 
     return new OverallStatistics(statistics, errorStatistics);
