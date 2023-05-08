@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 /**
  * LocalBackupPerformanceTest.
@@ -75,15 +74,13 @@ class LocalBackupPerformanceTest {
 
   @ParameterizedTest(name = "{0} {1}MB file(s)")
   @MethodSource
-  @SetEnvironmentVariable(key = "SOURCE_PATH", value = "build/LocalBackupPerformanceTest/source")
-  @SetEnvironmentVariable(key = "DESTINATION_PATH", value = "build/LocalBackupPerformanceTest/dest")
   void performanceTest(int count, int fileSizeInMB) throws IOException {
     // Given
     List<String> fileNames = generateRandomFiles(count, fileSizeInMB);
 
     // When
     long start = System.nanoTime();
-    Main.main();
+    Main.main(sourceRoot.toString(), destRoot.toString());
     Duration duration = Duration.ofNanos(System.nanoTime() - start);
 
     // Then
