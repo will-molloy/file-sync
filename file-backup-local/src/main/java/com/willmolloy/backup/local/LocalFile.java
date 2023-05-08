@@ -6,45 +6,54 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Local file on disk.
  *
- * @param path path to the file
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record LocalFile(Path path) implements File {
+class LocalFile implements File {
 
   private static final Logger log = LogManager.getLogger();
 
-  LocalFile {
-    requireNonNull(path);
-    require(Files.isRegularFile(path), "Requires a file: [%s]".formatted(path));
+  private final Path path;
+  private final long size;
+  private final Instant lastModified;
+
+  LocalFile(Path path) {
+    try {
+      this.path = requireNonNull(path);
+      // more efficient to read attributes once
+      BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+      require(attributes.isRegularFile(), "Requires a file: [%s]".formatted(path));
+      this.size = attributes.size();
+      this.lastModified = attributes.lastModifiedTime().toInstant();
+    } catch (IOException e) {
+      log.error("Error reading file attributes", e);
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public Path path() {
+    return path;
   }
 
   @Override
   public long size() {
-    try {
-      return Files.size(path);
-    } catch (IOException e) {
-      log.error("Error getting size of file: [%s]".formatted(path), e);
-      return 0;
-    }
+    return size;
   }
 
   @Override
   public Instant lastModified() {
-    try {
-      return Files.getLastModifiedTime(path).toInstant();
-    } catch (IOException e) {
-      log.error("Error getting last modified time of file: [%s]".formatted(path), e);
-      return Instant.MIN;
-    }
+    return lastModified;
   }
 
   @Override
@@ -58,10 +67,32 @@ record LocalFile(Path path) implements File {
   }
 
   @Override
-  public boolean equal(File other) {
+  public boolean sameContents(File other) {
     if (other instanceof LocalFile localFile) {
       return size() == other.size() && lastModified().equals(localFile.lastModified());
     }
-    return size() == other.size() && etag().equals(other.etag());
+    return File.super.sameContents(other);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    LocalFile localFile = (LocalFile) o;
+    return Objects.equals(path, localFile.path);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(path);
+  }
+
+  @Override
+  public String toString() {
+    return "%s[%s]".formatted(getClass().getSimpleName(), path);
   }
 }

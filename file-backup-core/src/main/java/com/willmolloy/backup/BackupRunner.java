@@ -92,7 +92,7 @@ public class BackupRunner {
                             failedCreateCount.incrementAndGet();
                           }
 
-                        } else if (!sourceFile.equal(destFile)) {
+                        } else if (!sourceFile.sameContents(destFile)) {
                           long destFileSize = destFile.size();
 
                           if (backup.put(key)) {

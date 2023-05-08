@@ -94,7 +94,7 @@ class S3FileTest {
 
   @ParameterizedTest
   @MethodSource
-  void equal_onlyTrueIfSizeAndETagEqual(
+  void sameContents_onlyTrueIfSizeAndETagEqual(
       long thisSize, String thisETag, long otherSize, String otherETag, boolean expected) {
     // Given
     S3File thisFile = spy(new S3File(S3Object.builder().size(thisSize).eTag(thisETag).build()));
@@ -104,13 +104,13 @@ class S3FileTest {
     when(otherFile.etag()).thenReturn(otherETag);
 
     // Then
-    assertThat(thisFile.equal(otherFile)).isEqualTo(expected);
+    assertThat(thisFile.sameContents(otherFile)).isEqualTo(expected);
     boolean etagCalled = thisSize == otherSize;
     verify(thisFile, etagCalled ? times(1) : never()).etag();
     verify(otherFile, etagCalled ? times(1) : never()).etag();
   }
 
-  static Stream<Arguments> equal_onlyTrueIfSizeAndETagEqual() {
+  static Stream<Arguments> sameContents_onlyTrueIfSizeAndETagEqual() {
     long randomLong = FAKER.random().nextLong();
     String randomString = FAKER.code().asin();
     return Stream.of(
@@ -118,5 +118,12 @@ class S3FileTest {
         Arguments.of(randomLong, randomString, randomLong + 1, randomString, false),
         Arguments.of(randomLong, randomString, randomLong, randomString + 1, false),
         Arguments.of(randomLong, randomString, randomLong + 1, randomString + 1, false));
+  }
+
+  @Test
+  void toString_includesS3Object() {
+    S3Object s3Object = S3Object.builder().build();
+    S3File file = new S3File(s3Object);
+    assertThat(file.toString()).isEqualTo("S3File[s3Object=S3Object()]");
   }
 }

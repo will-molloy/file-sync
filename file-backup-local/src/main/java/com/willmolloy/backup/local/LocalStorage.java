@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
@@ -38,18 +39,15 @@ public record LocalStorage(Path root) implements Location {
         .parallel()
         .collect(
             toMap(
-                path -> {
-                  // relativize and ensure unix separator
-                  List<String> nameElements =
-                      StreamSupport.stream(root.relativize(path).spliterator(), false)
-                          .map(Path::toString)
-                          .toList();
-                  return String.join("/", nameElements);
-                },
-                LocalFile::new));
+                ((Function<Path, Path>) root::relativize)
+                    .andThen(LocalStorage::ensureUnixSeparator),
+                LocalFile::new,
+                // not sure how duplicates occur?? But it does happen; use the most recent scan
+                (first, second) -> second));
   }
 
-  private Stream<Path> walk(Path path) {
+  // TODO use Files.walkFileTree??
+  private static Stream<Path> walk(Path path) {
     log.debug("walk({})", path);
     // avoid AccessDeniedException
     if (!Files.isReadable(path)) {
@@ -58,7 +56,7 @@ public record LocalStorage(Path root) implements Location {
 
     if (Files.isDirectory(path)) {
       try {
-        return Files.list(path).flatMap(this::walk);
+        return Files.list(path).flatMap(LocalStorage::walk);
       } catch (IOException e) {
         log.error("Error listing directory: [%s]".formatted(path), e);
         return Stream.of();
@@ -72,8 +70,18 @@ public record LocalStorage(Path root) implements Location {
     }
   }
 
+  private static String ensureUnixSeparator(Path path) {
+    if (java.io.File.separatorChar == '/') {
+      return path.toString();
+    } else {
+      List<String> nameElements =
+          StreamSupport.stream(path.spliterator(), false).map(Path::toString).toList();
+      return String.join("/", nameElements);
+    }
+  }
+
   @Override
   public String toString() {
-    return "LocalStorage[%s]".formatted(root);
+    return "%s[%s]".formatted(getClass().getSimpleName(), root);
   }
 }

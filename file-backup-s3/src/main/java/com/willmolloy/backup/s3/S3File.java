@@ -49,9 +49,4 @@ record S3File(S3Object s3Object) implements File {
       return "";
     }
   }
-
-  @Override
-  public boolean equal(File other) {
-    return size() == other.size() && etag().equals(other.etag());
-  }
 }

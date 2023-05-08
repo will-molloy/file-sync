@@ -68,12 +68,12 @@ class BackupRunnerTest {
   }
 
   @Test
-  void whenFileOnSourceAndDestination_andNotEqual_updatesFileOnDestination() {
+  void whenFileOnSourceAndDestination_andNotSameContents_updatesFileOnDestination() {
     // Given
     when(mockSource.scan()).thenReturn(Map.of("A", mockSourceFile));
     when(mockDestination.scan()).thenReturn(Map.of("A", mockDestinationFile));
     when(mockBackup.put(any())).thenReturn(true);
-    when(mockSourceFile.equal(mockDestinationFile)).thenReturn(false);
+    when(mockSourceFile.sameContents(mockDestinationFile)).thenReturn(false);
 
     // When
     OverallStatistics statistics = backupRunner.run();
@@ -85,11 +85,11 @@ class BackupRunnerTest {
   }
 
   @Test
-  void whenFileOnSourceAndDestination_andEqual_skipsUpdate() {
+  void whenFileOnSourceAndDestination_andSameContents_skipsUpdate() {
     // Given
     when(mockSource.scan()).thenReturn(Map.of("A", mockSourceFile));
     when(mockDestination.scan()).thenReturn(Map.of("A", mockDestinationFile));
-    when(mockSourceFile.equal(mockDestinationFile)).thenReturn(true);
+    when(mockSourceFile.sameContents(mockDestinationFile)).thenReturn(true);
 
     // When
     OverallStatistics statistics = backupRunner.run();
@@ -121,7 +121,7 @@ class BackupRunnerTest {
     // Given
     when(mockSource.scan()).thenReturn(Map.of("A", mockSourceFile));
     when(mockDestination.scan()).thenReturn(Map.of("A", mockDestinationFile));
-    when(mockSourceFile.equal(mockDestinationFile)).thenReturn(true);
+    when(mockSourceFile.sameContents(mockDestinationFile)).thenReturn(true);
 
     // When
     OverallStatistics statistics = backupRunner.run();
@@ -167,7 +167,7 @@ class BackupRunnerTest {
                 mockDestinationFile));
     when(mockBackup.put(any())).thenReturn(true);
     when(mockBackup.delete(any())).thenReturn(true);
-    when(mockSourceFile.equal(mockDestinationFile)).thenReturn(false);
+    when(mockSourceFile.sameContents(mockDestinationFile)).thenReturn(false);
 
     // When
     OverallStatistics statistics = backupRunner.run();

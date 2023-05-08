@@ -58,8 +58,9 @@ class LocalFileTest {
   @MethodSource
   void size_returnsSizeOfFileInBytes(String contents, int size) throws IOException {
     // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-    Files.writeString(file.path(), contents);
+    Path path = Files.createFile(root.resolve("A"));
+    Files.writeString(path, contents);
+    LocalFile file = new LocalFile(path);
 
     // When
     long result = file.size();
@@ -70,19 +71,6 @@ class LocalFileTest {
 
   static Stream<Arguments> size_returnsSizeOfFileInBytes() {
     return Stream.of(Arguments.of("", 0), Arguments.of("Hello world", 11));
-  }
-
-  @Test
-  void size_whenPathDoesntExist_failsGracefully() throws IOException {
-    // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-    Files.delete(file.path());
-
-    // When
-    long result = assertDoesNotThrow(() -> file.size());
-
-    // Then
-    assertThat(result).isEqualTo(0);
   }
 
   @Test
@@ -100,26 +88,14 @@ class LocalFileTest {
         .isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
   }
 
-  @Test
-  void lastModified_whenPathDoesntExist_failsGracefully() throws IOException {
-    // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-    Files.delete(file.path());
-
-    // When
-    Instant result = assertDoesNotThrow(() -> file.lastModified());
-
-    // Then
-    assertThat(result).isEqualTo(Instant.MIN);
-  }
-
   @ParameterizedTest
   @MethodSource
   void etag_returnsMd5HashOfFileContentsInBase16(String contents, String md5Digest)
       throws IOException {
     // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-    Files.writeString(file.path(), contents);
+    Path path = Files.createFile(root.resolve("A"));
+    Files.writeString(path, contents);
+    LocalFile file = new LocalFile(path);
 
     // When
     String result = file.etag();
@@ -160,7 +136,7 @@ class LocalFileTest {
 
   @ParameterizedTest
   @MethodSource
-  void equal_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual(
+  void sameContents_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual(
       String thisContents,
       long thisLastModified,
       String otherContents,
@@ -168,22 +144,24 @@ class LocalFileTest {
       boolean expected)
       throws IOException {
     // Given
-    LocalFile thisFile = spy(new LocalFile(Files.createFile(root.resolve("A"))));
-    Files.writeString(thisFile.path(), thisContents);
-    Files.setLastModifiedTime(thisFile.path(), FileTime.fromMillis(thisLastModified));
+    Path thisFilePath = Files.createFile(root.resolve("A"));
+    Files.writeString(thisFilePath, thisContents);
+    Files.setLastModifiedTime(thisFilePath, FileTime.fromMillis(thisLastModified));
+    LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
-    LocalFile otherFile = spy(new LocalFile(Files.createFile(root.resolve("B"))));
-    Files.writeString(otherFile.path(), otherContents);
-    Files.setLastModifiedTime(otherFile.path(), FileTime.fromMillis(otherLastModified));
+    Path otherFilePath = Files.createFile(root.resolve("B"));
+    Files.writeString(otherFilePath, otherContents);
+    Files.setLastModifiedTime(otherFilePath, FileTime.fromMillis(otherLastModified));
+    LocalFile otherFile = spy(new LocalFile(otherFilePath));
 
     // Then
-    assertThat(thisFile.equal(otherFile)).isEqualTo(expected);
+    assertThat(thisFile.sameContents(otherFile)).isEqualTo(expected);
     verify(thisFile, never()).etag();
     verify(otherFile, never()).etag();
   }
 
   static Stream<Arguments>
-      equal_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual() {
+      sameContents_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual() {
     long currentMillis = System.currentTimeMillis();
     return Stream.of(
         Arguments.of("ABC", currentMillis, "ABC", currentMillis, true),
@@ -196,27 +174,35 @@ class LocalFileTest {
 
   @ParameterizedTest
   @MethodSource
-  void equal_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual(
+  void sameContents_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual(
       String thisContents, String otherContents, boolean expected) throws IOException {
     // Given
-    LocalFile thisFile = spy(new LocalFile(Files.createFile(root.resolve("A"))));
-    Files.writeString(thisFile.path(), thisContents);
+    Path thisFilePath = Files.createFile(root.resolve("A"));
+    Files.writeString(thisFilePath, thisContents);
+    LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
     Backup.File otherFile = mock(Backup.File.class);
     when(otherFile.etag()).thenReturn("\"%s\"".formatted(md5Hex(otherContents)));
     when(otherFile.size()).thenReturn((long) otherContents.length());
 
     // Then
-    assertThat(thisFile.equal(otherFile)).isEqualTo(expected);
+    assertThat(thisFile.sameContents(otherFile)).isEqualTo(expected);
     boolean etagCalled = thisContents.length() == otherContents.length();
     verify(thisFile, etagCalled ? times(1) : never()).etag();
     verify(otherFile, etagCalled ? times(1) : never()).etag();
   }
 
-  static Stream<Arguments> equal_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual() {
+  static Stream<Arguments> sameContents_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual() {
     return Stream.of(
         Arguments.of("ABC", "ABC", true),
         Arguments.of("ABC", "XYZ", false),
         Arguments.of("ABC", "ABCD", false));
+  }
+
+  @Test
+  void toString_includesPath() throws IOException {
+    Path path = Files.createFile(root.resolve("ABCD"));
+    LocalFile file = new LocalFile(path);
+    assertThat(file.toString()).isEqualTo("LocalFile[%s]".formatted(path));
   }
 }

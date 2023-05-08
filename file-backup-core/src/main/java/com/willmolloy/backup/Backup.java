@@ -60,10 +60,12 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
     String etag();
 
     /**
-     * {@code true} if the {@code other} file is considered equal.
+     * {@code true} if the {@code other} file's contents are the same.
      *
      * @apiNote Used to determine if a file requires updating.
      */
-    boolean equal(File other);
+    default boolean sameContents(File other) {
+      return size() == other.size() && etag().equals(other.etag());
+    }
   }
 }
