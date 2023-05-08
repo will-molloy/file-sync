@@ -6,7 +6,6 @@ import com.willmolloy.backup.BackupRunner;
 import com.willmolloy.backup.local.LocalStorage;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.regions.Region;
@@ -30,9 +29,8 @@ final class Main {
       String destPrefix = readEnvVariable("DESTINATION_BUCKET_PREFIX");
 
       FileSystem fs = FileSystems.getDefault();
-      Path sourceRoot = fs.getPath(sourcePath);
 
-      LocalStorage source = new LocalStorage(sourceRoot);
+      LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
       S3Bucket dest = new S3Bucket(s3Client, destBucket, destPrefix);
 
       S3Backup backup = new S3Backup(s3Client, source, dest);

@@ -5,7 +5,6 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.BackupRunner;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,11 +24,9 @@ final class Main {
       String destPath = readEnvVariable("DESTINATION_PATH");
 
       FileSystem fs = FileSystems.getDefault();
-      Path sourceRoot = fs.getPath(sourcePath);
-      Path destRoot = fs.getPath(destPath);
 
-      LocalStorage source = new LocalStorage(sourceRoot);
-      LocalStorage dest = new LocalStorage(destRoot);
+      LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
+      LocalStorage dest = new LocalStorage(fs.getPath(destPath));
 
       LocalBackup backup = new LocalBackup(source, dest);
       new BackupRunner(backup).run();
