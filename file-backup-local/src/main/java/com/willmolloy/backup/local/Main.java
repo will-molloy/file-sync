@@ -1,12 +1,11 @@
 package com.willmolloy.backup.local;
 
-import static com.willmolloy.backup.util.Preconditions.require;
+import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BackupRunner;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,14 +20,13 @@ final class Main {
 
   /** Main method. */
   public static void main(String... args) {
-    log.debug("main({})", (Object) args);
     try {
-      require(args.length == 2, "Requires 2 args: " + Arrays.toString(args));
+      String sourcePath = readEnvVariable("SOURCE_PATH");
+      String destPath = readEnvVariable("DESTINATION_PATH");
 
       FileSystem fs = FileSystems.getDefault();
-
-      Path sourceRoot = fs.getPath(args[0]);
-      Path destRoot = fs.getPath(args[1]);
+      Path sourceRoot = fs.getPath(sourcePath);
+      Path destRoot = fs.getPath(destPath);
 
       LocalStorage source = new LocalStorage(sourceRoot);
       LocalStorage dest = new LocalStorage(destRoot);
@@ -40,6 +38,10 @@ final class Main {
       log.fatal("Fatal error", t);
       System.exit(1);
     }
+  }
+
+  private static String readEnvVariable(String name) {
+    return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
   }
 
   private Main() {}

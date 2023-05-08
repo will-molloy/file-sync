@@ -11,7 +11,7 @@ jib {
   }
   container {
     mainClass = 'com.willmolloy.backup.local.Main'
-    args = ["/source", "/destination"]
+    environment(Map.of("SOURCE_PATH", "/source", "DESTINATION_PATH", "/destination"))
     creationTime = getGitCommitTime()
     jvmFlags = ['--enable-preview']
   }

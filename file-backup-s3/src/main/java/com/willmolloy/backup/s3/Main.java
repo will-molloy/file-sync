@@ -1,13 +1,12 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.Preconditions.require;
+import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BackupRunner;
 import com.willmolloy.backup.local.LocalStorage;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.regions.Region;
@@ -24,17 +23,14 @@ final class Main {
 
   /** Main method. */
   public static void main(String... args) {
-    log.debug("main({})", (Object) args);
-
     try (S3Client s3Client =
         S3Client.builder().region(Region.US_EAST_1).forcePathStyle(true).build()) {
-      require(args.length == 3, "Requires 3 args: " + Arrays.toString(args));
+      String sourcePath = readEnvVariable("SOURCE_PATH");
+      String destBucket = readEnvVariable("DESTINATION_BUCKET");
+      String destPrefix = readEnvVariable("DESTINATION_BUCKET_PREFIX");
 
       FileSystem fs = FileSystems.getDefault();
-
-      Path sourceRoot = fs.getPath(args[0]);
-      String destBucket = args[1];
-      String destPrefix = args[2];
+      Path sourceRoot = fs.getPath(sourcePath);
 
       LocalStorage source = new LocalStorage(sourceRoot);
       S3Bucket dest = new S3Bucket(s3Client, destBucket, destPrefix);
@@ -46,6 +42,10 @@ final class Main {
       log.fatal("Fatal error", t);
       System.exit(1);
     }
+  }
+
+  private static String readEnvVariable(String name) {
+    return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
   }
 
   private Main() {}

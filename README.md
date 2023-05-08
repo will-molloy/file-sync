@@ -19,7 +19,7 @@
 
 ## Usage
 
-Build and run the docker container (or run the main method directly). 
+Build and run the docker container.
 Args depend on the backup type.
 
 ### Local Backup
@@ -36,18 +36,19 @@ Backup to locally mounted storage. E.g. another disk or NAS.
    docker run --rm -v <source_path>:/source -v <destination_path>:/destination file-backup-local
    ```
 
-If you need to mount a network drive, run something like:
-```bash
-docker volume create --driver local --opt type=cifs --opt device="//<SERVER_IP>/<PATH>" --opt o=user='<USER>',password='<PASS>' <VOLUME_NAME>
-```
-
 ### S3 Backup
 
 Backup to AWS S3 bucket.
 
-```bash
-s3.Main <source_path> <destination_bucket> <destination_bucket_prefix>
-```
+1. Build image:
+   ```bash
+   ./gradlew :file-backup-s3:jibDockerBuild
+   ```
+
+2. Run:
+   ```bash
+   docker run --rm -v <source_path>:/source -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> file-backup-s3
+   ```
 
 ## Project layout
 
