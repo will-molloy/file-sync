@@ -29,7 +29,11 @@ final class Main {
       LocalStorage dest = new LocalStorage(fs.getPath(destPath));
 
       LocalBackup backup = new LocalBackup(source, dest);
-      new BackupRunner(backup).run();
+      BackupRunner.OverallStatistics statistics = new BackupRunner(backup).run();
+
+      if (statistics.errorStatistics().any()) {
+        System.exit(1);
+      }
 
     } catch (Throwable t) {
       log.fatal("Fatal error", t);

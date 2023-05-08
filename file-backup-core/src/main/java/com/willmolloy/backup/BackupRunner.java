@@ -172,8 +172,8 @@ public class BackupRunner {
    * @param filesDeleted files deleted
    * @param filesSame files kept same
    */
-  record Statistics(int filesCreated, int filesUpdated, int filesDeleted, int filesSame) {
-    Statistics {
+  public record Statistics(int filesCreated, int filesUpdated, int filesDeleted, int filesSame) {
+    public Statistics {
       require(filesCreated >= 0);
       require(filesUpdated >= 0);
       require(filesDeleted >= 0);
@@ -188,14 +188,14 @@ public class BackupRunner {
    * @param failedUpdates failed updates
    * @param failedDeletes failed deletes
    */
-  record ErrorStatistics(int failedCreates, int failedUpdates, int failedDeletes) {
-    ErrorStatistics {
+  public record ErrorStatistics(int failedCreates, int failedUpdates, int failedDeletes) {
+    public ErrorStatistics {
       require(failedCreates >= 0);
       require(failedUpdates >= 0);
       require(failedDeletes >= 0);
     }
 
-    boolean any() {
+    public boolean any() {
       return IntStream.of(failedCreates, failedUpdates, failedDeletes).anyMatch(i -> i > 0);
     }
   }
@@ -206,8 +206,8 @@ public class BackupRunner {
    * @param statistics statistics
    * @param errorStatistics error statistics
    */
-  record OverallStatistics(Statistics statistics, ErrorStatistics errorStatistics) {
-    OverallStatistics {
+  public record OverallStatistics(Statistics statistics, ErrorStatistics errorStatistics) {
+    public OverallStatistics {
       requireNonNull(statistics);
       requireNonNull(errorStatistics);
     }

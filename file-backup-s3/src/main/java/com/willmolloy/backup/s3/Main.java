@@ -34,7 +34,11 @@ final class Main {
       S3Bucket dest = new S3Bucket(s3Client, destBucket, destPrefix);
 
       S3Backup backup = new S3Backup(s3Client, source, dest);
-      new BackupRunner(backup).run();
+      BackupRunner.OverallStatistics statistics = new BackupRunner(backup).run();
+
+      if (statistics.errorStatistics().any()) {
+        System.exit(1);
+      }
 
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
