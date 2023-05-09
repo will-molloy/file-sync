@@ -36,8 +36,6 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   public boolean put(String key) {
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
-    log.info("Copying: [{}] -> [{}]", sourcePath, destPath);
-
     try {
       Path destParent = destPath.getParent();
       if (destParent != null) {
@@ -48,6 +46,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           destPath,
           StandardCopyOption.COPY_ATTRIBUTES,
           StandardCopyOption.REPLACE_EXISTING);
+      log.info("Copied: [{}] -> [{}]", sourcePath, destPath);
       return true;
     } catch (DirectoryNotEmptyException e) {
       log.warn(
@@ -64,8 +63,6 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   @Override
   public boolean delete(String key) {
     Path destPath = destination.root().resolve(key);
-    log.info("Deleting: [{}]", destPath);
-
     try {
       Files.walkFileTree(
           destPath,
@@ -89,6 +86,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
               return FileVisitResult.CONTINUE;
             }
           });
+      log.info("Deleted: [{}]", destPath);
       return true;
     } catch (NoSuchFileException e) {
       return true;

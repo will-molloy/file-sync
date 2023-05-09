@@ -48,7 +48,6 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   public boolean put(String key) {
     Path sourcePath = source.root().resolve(key);
     String destinationUri = destination.objectUri(key);
-    log.info("Putting: [{}] -> [{}]", sourcePath, destinationUri);
     try {
       // TODO multipart upload for large files
       PutObjectRequest request =
@@ -59,6 +58,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .storageClass(StorageClass.DEEP_ARCHIVE)
               .build();
       s3Client.putObject(request, sourcePath);
+      log.info("Put: [{}] -> [{}]", sourcePath, destinationUri);
       return true;
     } catch (RuntimeException | IOException e) {
       log.error("Error putting: [%s] -> [%s]".formatted(sourcePath, destinationUri), e);
@@ -69,7 +69,6 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   @Override
   public boolean delete(String key) {
     String destinationUri = destination.objectUri(key);
-    log.info("Deleting: [{}]", destinationUri);
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
@@ -77,6 +76,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .key(destination.prefix() + key)
               .build();
       s3Client.deleteObject(request);
+      log.info("Deleted: [{}]", destinationUri);
       return true;
     } catch (RuntimeException e) {
       log.error("Error deleting: [%s]".formatted(destinationUri), e);
