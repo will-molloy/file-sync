@@ -26,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.StorageClass;
 
 /**
  * S3BackupTest.
@@ -91,6 +92,7 @@ class S3BackupTest {
                 .bucket(DEST_BUCKET)
                 .key(DEST_BUCKET_PREFIX + key)
                 .contentMD5(md5Base64(sourcePath))
+                .storageClass(StorageClass.DEEP_ARCHIVE)
                 .build(),
             sourcePath);
   }

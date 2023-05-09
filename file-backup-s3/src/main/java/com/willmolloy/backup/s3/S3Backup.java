@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.StorageClass;
 
 /**
  * For backups to AWS S3.
@@ -55,6 +56,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .bucket(destination.bucketName())
               .key(destination.prefix() + key)
               .contentMD5(md5Base64(sourcePath))
+              .storageClass(StorageClass.DEEP_ARCHIVE)
               .build();
       s3Client.putObject(request, sourcePath);
       return true;

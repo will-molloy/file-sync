@@ -38,7 +38,7 @@ Backup to locally mounted storage. E.g. another disk or NAS.
 
 ### S3 Backup
 
-Backup to AWS S3 bucket.
+Backup to AWS S3 bucket (Glacier Deep Archive).
 
 1. Build image:
    ```bash
