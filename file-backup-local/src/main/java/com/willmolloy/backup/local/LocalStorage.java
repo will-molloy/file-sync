@@ -53,6 +53,9 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
         };
 
     try {
+      // limit to files only for now TODO what about empty dirs?
+      // TODO what about overwriting dirs with files?
+      //  Could be files without extensions that cause this?
       Files.walkFileTree(
           root,
           new FileVisitor<>() {
@@ -85,9 +88,9 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
             }
 
             @Override
-            public FileVisitResult postVisitDirectory(Path directory, IOException e) {
+            public FileVisitResult postVisitDirectory(Path dir, IOException e) {
               if (e != null) {
-                log.error("Failed to visit directory: [%s]".formatted(directory), e);
+                log.error("Failed to visit directory: [%s]".formatted(dir), e);
               }
               return FileVisitResult.CONTINUE;
             }

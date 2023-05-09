@@ -4,10 +4,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.util.stream.Stream;
+import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,16 +35,11 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   public boolean put(String key) {
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
-
-    if (!Files.exists(destPath)) {
-      log.info("Copying: [{}] -> [{}]", sourcePath, destPath);
-    } else {
-      log.info("Updating: [{}] -> [{}]", sourcePath, destPath);
-    }
+    log.info("Copying: [{}] -> [{}]", sourcePath, destPath);
 
     try {
       Path destParent = destPath.getParent();
-      if (destParent != null && Files.exists(sourcePath)) {
+      if (destParent != null) {
         Files.createDirectories(destParent);
       }
       Files.copy(
@@ -51,7 +49,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           StandardCopyOption.REPLACE_EXISTING);
       return true;
     } catch (IOException e) {
-      log.error("Error copying/updating: [%s] -> [%s]".formatted(sourcePath, destPath), e);
+      log.error("Error copying: [%s] -> [%s]".formatted(sourcePath, destPath), e);
       return false;
     }
   }
@@ -60,19 +58,30 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   public boolean delete(String key) {
     Path destPath = destination.root().resolve(key);
     log.info("Deleting: [{}]", destPath);
-    return deleteRecursively(destPath);
-  }
 
-  private boolean deleteRecursively(Path destPath) {
     try {
-      boolean allDeleted = true;
-      if (Files.isDirectory(destPath)) {
-        try (Stream<Path> files = Files.list(destPath)) {
-          allDeleted = files.allMatch(this::deleteRecursively);
-        }
-      }
-      Files.deleteIfExists(destPath);
-      return allDeleted;
+      Files.walkFileTree(
+          destPath,
+          new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes)
+                throws IOException {
+              Files.deleteIfExists(file);
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+              if (e != null) {
+                throw e;
+              }
+              Files.deleteIfExists(dir);
+              return FileVisitResult.CONTINUE;
+            }
+          });
+      return true;
+    } catch (NoSuchFileException e) {
+      return true;
     } catch (IOException e) {
       log.error("Error deleting: [%s]".formatted(destPath), e);
       return false;
