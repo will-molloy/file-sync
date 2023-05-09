@@ -10,7 +10,8 @@ import java.util.Map;
  * @param <DestinationT> destination location type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup<SourceT extends Backup.Location, DestinationT extends Backup.Location> {
+public interface Backup<
+    SourceT extends Backup.Location<?>, DestinationT extends Backup.Location<?>> {
 
   SourceT source();
 
@@ -31,15 +32,19 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    */
   boolean delete(String key);
 
-  /** Backup location (source or destination). */
-  interface Location {
+  /**
+   * Backup location (source or destination).
+   *
+   * @param <FileT> type of file stored on this location
+   */
+  interface Location<FileT extends File> {
 
     /**
      * Scans the location.
      *
      * @return Map of relativized file path (key) to file.
      */
-    Map<String, File> scan();
+    Map<String, FileT> scan();
   }
 
   /** Backup file. */

@@ -32,10 +32,10 @@ public class BackupRunner {
   private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.ENGLISH);
 
   private final Backup<?, ?> backup;
-  private final Location source;
-  private final Location destination;
+  private final Location<? extends File> source;
+  private final Location<? extends File> destination;
 
-  public BackupRunner(Backup<?, ?> backup) {
+  public BackupRunner(Backup<? extends Location<?>, ? extends Location<?>> backup) {
     this.backup = requireNonNull(backup);
     this.source = backup.source();
     this.destination = backup.destination();
@@ -62,7 +62,7 @@ public class BackupRunner {
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
       long sourceScanStart = System.nanoTime();
-      Map<String, File> sourceFiles = source.scan();
+      Map<String, ? extends File> sourceFiles = source.scan();
       long sourceSizeMB = sourceFiles.values().stream().mapToLong(File::size).sum() / MEGA;
       log.info(
           "Scanned source in: {}. {} files. {}MB",
@@ -71,7 +71,7 @@ public class BackupRunner {
           numberFormat.format(sourceSizeMB));
 
       long destScanStart = System.nanoTime();
-      Map<String, File> destFiles = destination.scan();
+      Map<String, ? extends File> destFiles = destination.scan();
       long destSizeMB = destFiles.values().stream().mapToLong(File::size).sum() / MEGA;
       log.info(
           "Scanned destination in: {}. {} files. {}MB",

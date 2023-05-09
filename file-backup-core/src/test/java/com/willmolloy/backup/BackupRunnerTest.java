@@ -30,9 +30,9 @@ class BackupRunnerTest {
 
   @Mock private File mockSourceFile;
   @Mock private File mockDestinationFile;
-  @Mock private Location mockSource;
-  @Mock private Location mockDestination;
-  @Mock private Backup<Location, Location> mockBackup;
+  @Mock private Location<File> mockSource;
+  @Mock private Location<File> mockDestination;
+  @Mock private Backup<Location<File>, Location<File>> mockBackup;
   private BackupRunner backupRunner;
 
   @BeforeEach

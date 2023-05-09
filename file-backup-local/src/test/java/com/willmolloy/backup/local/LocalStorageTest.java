@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.Backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -62,7 +61,7 @@ class LocalStorageTest {
     Path z = Files.createFile(root.resolve("X/Y/Z"));
 
     // When
-    Map<String, File> scan = sut.scan();
+    Map<String, LocalFile> scan = sut.scan();
 
     // Then
     assertThat(scan)

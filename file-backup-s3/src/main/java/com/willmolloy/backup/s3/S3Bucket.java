@@ -4,7 +4,6 @@ import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.willmolloy.backup.Backup.File;
 import com.willmolloy.backup.Backup.Location;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +17,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class S3Bucket implements Location {
+class S3Bucket implements Location<S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -37,7 +36,7 @@ class S3Bucket implements Location {
   }
 
   @Override
-  public Map<String, File> scan() {
+  public Map<String, S3File> scan() {
     log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();

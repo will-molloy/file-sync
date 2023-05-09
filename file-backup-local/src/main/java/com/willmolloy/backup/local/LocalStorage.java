@@ -3,20 +3,20 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup.File;
 import com.willmolloy.backup.Backup.Location;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,7 +27,7 @@ import org.apache.logging.log4j.Logger;
  * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalStorage(Path root) implements Location {
+public record LocalStorage(Path root) implements Location<LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -37,16 +37,20 @@ public record LocalStorage(Path root) implements Location {
   }
 
   @Override
-  public Map<String, File> scan() {
+  public Map<String, LocalFile> scan() {
     log.info("Scanning directory: [{}]", root);
 
-    Map<String, File> map = new HashMap<>();
+    Map<String, LocalFile> map = new HashMap<>();
 
     Function<Path, String> keyFunc =
         ((Function<Path, Path>) root::relativize).andThen(LocalStorage::ensureUnixSeparator);
 
     // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-    BiFunction<File, File, File> mergeFunc = (first, second) -> second;
+    BiFunction<LocalFile, LocalFile, LocalFile> mergeFunc =
+        (first, second) -> {
+          log.warn("Scanned duplicate: [{}]", second.path());
+          return second;
+        };
 
     try {
       Files.walkFileTree(
@@ -59,9 +63,8 @@ public record LocalStorage(Path root) implements Location {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
-              if (!attributes.isRegularFile()) {
-                // ignore symbolic links
-                log.warn("Not a file: [{}]", file);
+              if (attributes.isSymbolicLink()) {
+                log.warn("Skipping (symlink): [{}]", file);
                 return FileVisitResult.CONTINUE;
               }
 
@@ -73,14 +76,18 @@ public record LocalStorage(Path root) implements Location {
 
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException e) {
-              log.warn("Failed to visit file: [%s]".formatted(file), e);
+              if (e instanceof AccessDeniedException) {
+                log.warn("Skipping (access denied): [{}]", file);
+              } else {
+                log.error("Failed to visit file: [%s]".formatted(file), e);
+              }
               return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult postVisitDirectory(Path directory, IOException e) {
               if (e != null) {
-                log.warn("Failed to visit directory: [%s]".formatted(directory), e);
+                log.error("Failed to visit directory: [%s]".formatted(directory), e);
               }
               return FileVisitResult.CONTINUE;
             }
@@ -96,9 +103,9 @@ public record LocalStorage(Path root) implements Location {
     if (java.io.File.separatorChar == '/') {
       return path.toString();
     } else {
-      List<String> nameElements =
-          StreamSupport.stream(path.spliterator(), false).map(Path::toString).toList();
-      return String.join("/", nameElements);
+      return StreamSupport.stream(path.spliterator(), false)
+          .map(Path::toString)
+          .collect(Collectors.joining("/"));
     }
   }
 
