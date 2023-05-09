@@ -4,7 +4,7 @@ import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
-import com.willmolloy.backup.Backup.Location;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.Locale;
@@ -13,126 +13,79 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Runs a {@link Backup}.
  *
+ * @see #run(Backup)
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class BackupRunner {
+@SuppressFBWarnings(
+    value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
+    justification = "Relying on default ExecutorService.close to wait for futures")
+public final class BackupRunner {
 
   private static final Logger log = LogManager.getLogger();
 
   private static final int MEGA = 1_000_000;
 
-  private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.ENGLISH);
-
-  private final Backup<?, ?> backup;
-  private final Location<? extends File> source;
-  private final Location<? extends File> destination;
-
-  public BackupRunner(Backup<? extends Location<?>, ? extends Location<?>> backup) {
-    this.backup = requireNonNull(backup);
-    this.source = backup.source();
-    this.destination = backup.destination();
+  /** Runs the backup. */
+  // static factory ensures single instance per run
+  public static OverallStatistics run(Backup<?, ?> backup) {
+    return new BackupRunner(backup).run();
   }
 
-  /** Runs the backup. */
-  public OverallStatistics run() {
+  private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.ENGLISH);
+  private final AtomicInteger createCount = new AtomicInteger();
+  private final AtomicInteger failedCreateCount = new AtomicInteger();
+  private final AtomicInteger updateCount = new AtomicInteger();
+  private final AtomicInteger failedUpdateCount = new AtomicInteger();
+  private final AtomicInteger deleteCount = new AtomicInteger();
+  private final AtomicInteger failedDeleteCount = new AtomicInteger();
+  private final AtomicInteger sameCount = new AtomicInteger();
+  // long can represent up to 9.2 EB
+  private final AtomicLong bytesAdded = new AtomicLong();
+  private final AtomicLong bytesRemoved = new AtomicLong();
+
+  private final Backup<?, ?> backup;
+
+  private BackupRunner(Backup<?, ?> backup) {
+    this.backup = requireNonNull(backup);
+  }
+
+  private OverallStatistics run() {
     log.info("Running: {}", backup);
     long startNanos = System.nanoTime();
-
-    AtomicInteger createCount = new AtomicInteger();
-    AtomicInteger failedCreateCount = new AtomicInteger();
-    AtomicInteger updateCount = new AtomicInteger();
-    AtomicInteger failedUpdateCount = new AtomicInteger();
-    AtomicInteger deleteCount = new AtomicInteger();
-    AtomicInteger failedDeleteCount = new AtomicInteger();
-    AtomicInteger sameCount = new AtomicInteger();
-
-    // long can represent up to 9.2 EB
-    AtomicLong bytesAdded = new AtomicLong();
-    AtomicLong bytesRemoved = new AtomicLong();
 
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      long sourceScanStart = System.nanoTime();
-      Map<String, ? extends File> sourceFiles = source.scan();
-      long sourceSizeMB = sourceFiles.values().stream().mapToLong(File::size).sum() / MEGA;
-      log.info(
-          "Scanned source in: {}. {} files. {}MB",
-          elapsed(sourceScanStart),
-          numberFormat.format(sourceFiles.size()),
-          numberFormat.format(sourceSizeMB));
+      Map<String, ? extends File> sourceFiles = scanWithLog(backup.source()::scan, "source");
+      Map<String, ? extends File> destFiles =
+          scanWithLog(backup.destination()::scan, "destination");
 
-      long destScanStart = System.nanoTime();
-      Map<String, ? extends File> destFiles = destination.scan();
-      long destSizeMB = destFiles.values().stream().mapToLong(File::size).sum() / MEGA;
-      log.info(
-          "Scanned destination in: {}. {} files. {}MB",
-          elapsed(destScanStart),
-          numberFormat.format(destFiles.size()),
-          numberFormat.format(destSizeMB));
+      sourceFiles.forEach(
+          (key, sourceFile) -> {
+            File destFile = destFiles.get(key);
+            if (destFile == null) {
+              threadPool.submit(() -> create(key, sourceFile));
+            } else if (!sourceFile.same(destFile)) {
+              threadPool.submit(() -> update(key, sourceFile, destFile));
+            } else {
+              sameCount.incrementAndGet();
+            }
+          });
 
-      Stream<Runnable> createsAndUpdates =
-          sourceFiles.entrySet().stream()
-              .map(
-                  e ->
-                      () -> {
-                        String key = e.getKey();
-                        File sourceFile = e.getValue();
-                        File destFile = destFiles.get(key);
-                        long sourceFileSize = sourceFile.size();
-
-                        if (destFile == null) {
-                          if (backup.put(key)) {
-                            createCount.incrementAndGet();
-                            bytesAdded.addAndGet(sourceFileSize);
-                          } else {
-                            failedCreateCount.incrementAndGet();
-                          }
-
-                        } else if (!sourceFile.same(destFile)) {
-                          long destFileSize = destFile.size();
-
-                          if (backup.put(key)) {
-                            updateCount.incrementAndGet();
-                            bytesAdded.addAndGet(sourceFileSize);
-                            bytesRemoved.addAndGet(destFileSize);
-                          } else {
-                            failedUpdateCount.incrementAndGet();
-                          }
-
-                        } else {
-                          sameCount.incrementAndGet();
-                        }
-                      });
-
-      Stream<Runnable> deletes =
-          destFiles.entrySet().stream()
-              .map(
-                  e ->
-                      () -> {
-                        String key = e.getKey();
-                        File destFile = e.getValue();
-                        long destFileSize = destFile.size();
-
-                        if (!sourceFiles.containsKey(key)) {
-                          if (backup.delete(key)) {
-                            deleteCount.incrementAndGet();
-                            bytesRemoved.addAndGet(destFileSize);
-                          } else {
-                            failedDeleteCount.incrementAndGet();
-                          }
-                        }
-                      });
-
-      Stream.concat(createsAndUpdates, deletes).forEach(threadPool::submit);
+      destFiles.forEach(
+          (key, destFile) -> {
+            if (!sourceFiles.containsKey(key)) {
+              threadPool.submit(() -> delete(key, destFile));
+            }
+          });
     }
 
     Statistics statistics =
@@ -165,7 +118,49 @@ public class BackupRunner {
     return new OverallStatistics(statistics, errorStatistics);
   }
 
-  private Duration elapsed(long startNanos) {
+  private Map<String, ? extends File> scanWithLog(
+      Supplier<Map<String, ? extends File>> scan, String locationForLog) {
+    long scanStart = System.nanoTime();
+    Map<String, ? extends File> files = scan.get();
+    long sizeMB = files.values().stream().mapToLong(File::size).sum() / MEGA;
+    log.info(
+        "Scanned {} in: {}. {} files. {}MB",
+        locationForLog,
+        elapsed(scanStart),
+        numberFormat.format(files.size()),
+        numberFormat.format(sizeMB));
+    return files;
+  }
+
+  private void create(String key, File sourceFile) {
+    if (backup.put(key)) {
+      createCount.incrementAndGet();
+      bytesAdded.addAndGet(sourceFile.size());
+    } else {
+      failedCreateCount.incrementAndGet();
+    }
+  }
+
+  private void update(String key, File sourceFile, File destFile) {
+    if (backup.put(key)) {
+      updateCount.incrementAndGet();
+      bytesAdded.addAndGet(sourceFile.size());
+      bytesRemoved.addAndGet(destFile.size());
+    } else {
+      failedUpdateCount.incrementAndGet();
+    }
+  }
+
+  private void delete(String key, File destFile) {
+    if (backup.delete(key)) {
+      deleteCount.incrementAndGet();
+      bytesRemoved.addAndGet(destFile.size());
+    } else {
+      failedDeleteCount.incrementAndGet();
+    }
+  }
+
+  private static Duration elapsed(long startNanos) {
     return Duration.ofNanos(System.nanoTime() - startNanos);
   }
 

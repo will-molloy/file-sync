@@ -33,8 +33,8 @@ final class Main {
       LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
       S3Bucket dest = new S3Bucket(s3Client, destBucket, destPrefix);
 
-      S3Backup backup = new S3Backup(s3Client, source, dest);
-      BackupRunner.OverallStatistics statistics = new BackupRunner(backup).run();
+      S3Backup s3Backup = new S3Backup(s3Client, source, dest);
+      BackupRunner.OverallStatistics statistics = BackupRunner.run(s3Backup);
 
       if (statistics.errorStatistics().any()) {
         System.exit(1);

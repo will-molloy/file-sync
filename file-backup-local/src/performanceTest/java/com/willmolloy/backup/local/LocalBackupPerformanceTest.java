@@ -83,7 +83,7 @@ class LocalBackupPerformanceTest {
     long start = System.nanoTime();
     LocalBackup localBackup =
         new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
-    new BackupRunner(localBackup).run();
+    BackupRunner.run(localBackup);
     Duration duration = Duration.ofNanos(System.nanoTime() - start);
 
     // Then

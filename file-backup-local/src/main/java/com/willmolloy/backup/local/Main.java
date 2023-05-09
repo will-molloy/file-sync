@@ -28,8 +28,8 @@ final class Main {
       LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
       LocalStorage dest = new LocalStorage(fs.getPath(destPath));
 
-      LocalBackup backup = new LocalBackup(source, dest);
-      BackupRunner.OverallStatistics statistics = new BackupRunner(backup).run();
+      LocalBackup localBackup = new LocalBackup(source, dest);
+      BackupRunner.OverallStatistics statistics = BackupRunner.run(localBackup);
 
       if (statistics.errorStatistics().any()) {
         System.exit(1);

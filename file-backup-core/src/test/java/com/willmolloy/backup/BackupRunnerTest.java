@@ -33,13 +33,11 @@ class BackupRunnerTest {
   @Mock private Location<File> mockSource;
   @Mock private Location<File> mockDestination;
   @Mock private Backup<Location<File>, Location<File>> mockBackup;
-  private BackupRunner backupRunner;
 
   @BeforeEach
   void setUp() {
     when(mockBackup.source()).thenReturn(mockSource);
     when(mockBackup.destination()).thenReturn(mockDestination);
-    backupRunner = new BackupRunner(mockBackup);
   }
 
   @AfterEach
@@ -59,7 +57,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).put("A");
@@ -76,7 +74,7 @@ class BackupRunnerTest {
     when(mockSourceFile.same(mockDestinationFile)).thenReturn(false);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).put("A");
@@ -92,7 +90,7 @@ class BackupRunnerTest {
     when(mockSourceFile.same(mockDestinationFile)).thenReturn(true);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup, never()).put("A");
@@ -108,7 +106,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).delete("A");
@@ -124,7 +122,7 @@ class BackupRunnerTest {
     when(mockSourceFile.same(mockDestinationFile)).thenReturn(true);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup, never()).delete("A");
@@ -170,7 +168,7 @@ class BackupRunnerTest {
     when(mockSourceFile.same(mockDestinationFile)).thenReturn(false);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).put("A");
@@ -194,7 +192,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).put("A");
@@ -210,7 +208,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).put("A");
@@ -226,7 +224,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(false);
 
     // When
-    OverallStatistics statistics = backupRunner.run();
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
     verify(mockBackup).delete("A");
