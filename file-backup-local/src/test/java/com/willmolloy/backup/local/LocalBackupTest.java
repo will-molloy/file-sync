@@ -137,6 +137,28 @@ class LocalBackupTest {
   }
 
   @Test
+  void put_overwritesNonEmptyDirectoryOnDestinationWithFileOnSource() throws IOException {
+    // Given
+    Path sourceFile = sourceRoot.resolve(fs.getPath("A/B/C"));
+    Files.createDirectories(sourceFile.getParent());
+    Files.createFile(sourceFile);
+    Files.writeString(sourceFile, "source");
+
+    Path destDir = destRoot.resolve(fs.getPath("A/B/C/D"));
+    Files.createDirectories(destDir);
+
+    // When
+    boolean result = sut.put("A/B/C");
+
+    // Then
+    Path expectedDestFile = destRoot.resolve(fs.getPath("A/B/C"));
+    assertThat(result).isTrue();
+    assertThatFileSystem().containsExactly(sourceFile, expectedDestFile);
+    assertThat(Files.readString(sourceFile)).isEqualTo("source");
+    assertThat(Files.readString(expectedDestFile)).isEqualTo("source");
+  }
+
+  @Test
   void put_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
     boolean result = assertDoesNotThrow(() -> sut.put("A"));

@@ -53,9 +53,6 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
         };
 
     try {
-      // limit to files only for now TODO what about empty dirs?
-      // TODO what about overwriting dirs with files?
-      //  Could be files without extensions that cause this?
       Files.walkFileTree(
           root,
           new FileVisitor<>() {
@@ -71,6 +68,7 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
                 return FileVisitResult.CONTINUE;
               }
 
+              // limit to files only for now TODO what about empty dirs?
               String key = keyFunc.apply(file);
               LocalFile localFile = new LocalFile(file, attributes);
               map.merge(key, localFile, mergeFunc);
