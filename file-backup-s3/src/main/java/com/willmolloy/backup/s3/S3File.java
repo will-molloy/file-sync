@@ -3,7 +3,6 @@ package com.willmolloy.backup.s3;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.File;
-import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -29,24 +28,6 @@ record S3File(S3Object s3Object) implements File {
     } catch (RuntimeException e) {
       log.error("Error getting size of object: [%s]".formatted(s3Object), e);
       return 0;
-    }
-  }
-
-  @Override
-  public Instant lastModified() {
-    // not supported because s3 object last-modified is really creation time (for our purposes)
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public String etag() {
-    try {
-      // TODO not always MD5 digest? We're using PUT with SSE-S3 so it should be??
-      //  Doc is not clear about large (> 16MB) files???
-      return requireNonNull(s3Object.eTag());
-    } catch (RuntimeException e) {
-      log.error("Error getting ETag of object: [%s]".formatted(s3Object), e);
-      return "";
     }
   }
 }

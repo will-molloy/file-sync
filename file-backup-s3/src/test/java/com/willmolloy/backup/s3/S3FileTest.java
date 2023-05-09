@@ -2,12 +2,8 @@ package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javafaker.Faker;
@@ -55,69 +51,25 @@ class S3FileTest {
     assertThat(result).isEqualTo(0);
   }
 
-  @Test
-  void lastModified_notSupported() {
-    // Given
-    S3Object s3Object = S3Object.builder().build();
-    S3File file = new S3File(s3Object);
-
-    // Then
-    assertThrows(UnsupportedOperationException.class, () -> file.lastModified());
-  }
-
-  @Test
-  void etag_returnsS3ObjectETag() {
-    // Given
-    String randomString = FAKER.code().asin();
-    S3Object s3Object = S3Object.builder().eTag(randomString).build();
-    S3File file = new S3File(s3Object);
-
-    // When
-    String result = file.etag();
-
-    // Then
-    assertThat(result).isEqualTo(randomString);
-  }
-
-  @Test
-  void etag_whenNoETagAttribute_failsGracefully() {
-    // Given
-    S3Object s3Object = S3Object.builder().build();
-    S3File file = new S3File(s3Object);
-
-    // When
-    String result = assertDoesNotThrow(() -> file.etag());
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
   @ParameterizedTest
   @MethodSource
-  void sameContents_onlyTrueIfSizeAndETagEqual(
-      long thisSize, String thisETag, long otherSize, String otherETag, boolean expected) {
+  void same_onlyTrueIfSizeEqual(long thisSize, long otherSize, boolean expected) {
     // Given
-    S3File thisFile = spy(new S3File(S3Object.builder().size(thisSize).eTag(thisETag).build()));
+    S3File thisFile = spy(new S3File(S3Object.builder().size(thisSize).build()));
 
     Backup.File otherFile = mock(Backup.File.class);
     when(otherFile.size()).thenReturn(otherSize);
-    when(otherFile.etag()).thenReturn(otherETag);
 
     // Then
-    assertThat(thisFile.sameContents(otherFile)).isEqualTo(expected);
-    boolean etagCalled = thisSize == otherSize;
-    verify(thisFile, etagCalled ? times(1) : never()).etag();
-    verify(otherFile, etagCalled ? times(1) : never()).etag();
+    assertThat(thisFile.same(otherFile)).isEqualTo(expected);
   }
 
-  static Stream<Arguments> sameContents_onlyTrueIfSizeAndETagEqual() {
+  static Stream<Arguments> same_onlyTrueIfSizeEqual() {
     long randomLong = FAKER.random().nextLong();
-    String randomString = FAKER.code().asin();
     return Stream.of(
-        Arguments.of(randomLong, randomString, randomLong, randomString, true),
-        Arguments.of(randomLong, randomString, randomLong + 1, randomString, false),
-        Arguments.of(randomLong, randomString, randomLong, randomString + 1, false),
-        Arguments.of(randomLong, randomString, randomLong + 1, randomString + 1, false));
+        Arguments.of(randomLong, randomLong, true),
+        Arguments.of(randomLong, randomLong + 1, false),
+        Arguments.of(randomLong, randomLong - 1, false));
   }
 
   @Test

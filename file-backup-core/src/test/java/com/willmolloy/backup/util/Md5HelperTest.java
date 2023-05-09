@@ -59,24 +59,4 @@ class Md5HelperTest {
         Arguments.of("", "1B2M2Y8AsgTpgAmY7PhCfg=="),
         Arguments.of("Hello world", "PiWWCnnbxptnTNTsZ6csYg=="));
   }
-
-  @ParameterizedTest
-  @MethodSource
-  void md5Base16(String contents, String md5Digest) throws IOException {
-    // Given
-    Path path = Files.createFile(root.resolve("A"));
-    Files.writeString(path, contents);
-
-    // When
-    String result = Md5Helper.md5Base16(path);
-
-    // Then
-    assertThat(result).isEqualTo(md5Digest);
-  }
-
-  static Stream<Arguments> md5Base16() {
-    return Stream.of(
-        Arguments.of("", "d41d8cd98f00b204e9800998ecf8427e"),
-        Arguments.of("Hello world", "3e25960a79dbc69b674cd4ec67a72c62"));
-  }
 }

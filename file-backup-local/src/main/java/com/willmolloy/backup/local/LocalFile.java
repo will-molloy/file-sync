@@ -1,6 +1,5 @@
 package com.willmolloy.backup.local;
 
-import static com.willmolloy.backup.util.Md5Helper.md5Base16;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
@@ -11,8 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Local file on disk.
@@ -20,8 +17,6 @@ import org.apache.logging.log4j.Logger;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 class LocalFile implements File {
-
-  private static final Logger log = LogManager.getLogger();
 
   private final Path path;
   private final long size;
@@ -47,27 +42,16 @@ class LocalFile implements File {
     return size;
   }
 
-  @Override
-  public Instant lastModified() {
+  Instant lastModified() {
     return lastModified;
   }
 
   @Override
-  public String etag() {
-    try {
-      return "\"%s\"".formatted(md5Base16(path));
-    } catch (IOException e) {
-      log.error("Error computing MD5 Digest of file: [%s]".formatted(path), e);
-      return "";
-    }
-  }
-
-  @Override
-  public boolean sameContents(File other) {
+  public boolean same(File other) {
     if (other instanceof LocalFile localFile) {
       return size() == other.size() && lastModified().equals(localFile.lastModified());
     }
-    return File.super.sameContents(other);
+    return File.super.same(other);
   }
 
   @Override

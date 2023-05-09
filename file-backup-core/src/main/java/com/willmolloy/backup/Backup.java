@@ -1,6 +1,5 @@
 package com.willmolloy.backup;
 
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -53,24 +52,17 @@ public interface Backup<
     /** File size in bytes. */
     long size();
 
-    /** Last modified time. */
-    Instant lastModified();
-
     /**
-     * Gets (or computes) the files ETag.
-     *
-     * @implSpec ETags are required to be wrapped in {@code "} quotes.
-     * @implNote Currently implemented as MD5 digest of file contents in base16.
-     */
-    String etag();
-
-    /**
-     * {@code true} if the {@code other} file's contents are the same.
+     * {@code true} if the {@code other} file can be considered the same.
      *
      * @apiNote Used to determine if a file requires updating.
+     * @implNote The default implementation just looks at file size.
      */
-    default boolean sameContents(File other) {
-      return size() == other.size() && etag().equals(other.etag());
+    // for s3; considered last-modified, but it's really object-creation time.
+    // also considered e-tag, but it's calculated differently for large (> 16MB) files.
+    // file size is good enough?
+    default boolean same(File other) {
+      return size() == other.size();
     }
   }
 }

@@ -1,14 +1,9 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
@@ -88,41 +83,6 @@ class LocalFileTest {
         .isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
   }
 
-  @ParameterizedTest
-  @MethodSource
-  void etag_returnsMd5HashOfFileContentsInBase16(String contents, String md5Digest)
-      throws IOException {
-    // Given
-    Path path = Files.createFile(root.resolve("A"));
-    Files.writeString(path, contents);
-    LocalFile file = new LocalFile(path);
-
-    // When
-    String result = file.etag();
-
-    // Then
-    assertThat(result).isEqualTo(md5Digest);
-  }
-
-  static Stream<Arguments> etag_returnsMd5HashOfFileContentsInBase16() {
-    return Stream.of(
-        Arguments.of("", "\"d41d8cd98f00b204e9800998ecf8427e\""),
-        Arguments.of("Hello world", "\"3e25960a79dbc69b674cd4ec67a72c62\""));
-  }
-
-  @Test
-  void etag_whenPathDoesntExist_failsGracefully() throws IOException {
-    // Given
-    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
-    Files.delete(file.path());
-
-    // When
-    String result = assertDoesNotThrow(() -> file.etag());
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
   @Test
   void constructor_requiresValidFile() {
     IllegalArgumentException thrown =
@@ -136,7 +96,7 @@ class LocalFileTest {
 
   @ParameterizedTest
   @MethodSource
-  void sameContents_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual(
+  void same_whenOtherIsLocalFile_onlyTrueWhenSizeAndLastModifiedEqual(
       String thisContents,
       long thisLastModified,
       String otherContents,
@@ -155,13 +115,10 @@ class LocalFileTest {
     LocalFile otherFile = spy(new LocalFile(otherFilePath));
 
     // Then
-    assertThat(thisFile.sameContents(otherFile)).isEqualTo(expected);
-    verify(thisFile, never()).etag();
-    verify(otherFile, never()).etag();
+    assertThat(thisFile.same(otherFile)).isEqualTo(expected);
   }
 
-  static Stream<Arguments>
-      sameContents_whenOtherIsLocalFile_ignoresETag_onlyTrueWhenSizeAndLastModifiedEqual() {
+  static Stream<Arguments> same_whenOtherIsLocalFile_onlyTrueWhenSizeAndLastModifiedEqual() {
     long currentMillis = System.currentTimeMillis();
     return Stream.of(
         Arguments.of("ABC", currentMillis, "ABC", currentMillis, true),
@@ -174,7 +131,7 @@ class LocalFileTest {
 
   @ParameterizedTest
   @MethodSource
-  void sameContents_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual(
+  void same_whenOtherNotLocalFile_onlyTrueWhenSizeEqual(
       String thisContents, String otherContents, boolean expected) throws IOException {
     // Given
     Path thisFilePath = Files.createFile(root.resolve("A"));
@@ -182,21 +139,18 @@ class LocalFileTest {
     LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
     Backup.File otherFile = mock(Backup.File.class);
-    when(otherFile.etag()).thenReturn("\"%s\"".formatted(md5Hex(otherContents)));
     when(otherFile.size()).thenReturn((long) otherContents.length());
 
     // Then
-    assertThat(thisFile.sameContents(otherFile)).isEqualTo(expected);
-    boolean etagCalled = thisContents.length() == otherContents.length();
-    verify(thisFile, etagCalled ? times(1) : never()).etag();
-    verify(otherFile, etagCalled ? times(1) : never()).etag();
+    assertThat(thisFile.same(otherFile)).isEqualTo(expected);
   }
 
-  static Stream<Arguments> sameContents_whenOtherNotLocalFile_onlyTrueWhenSizeAndETagEqual() {
+  static Stream<Arguments> same_whenOtherNotLocalFile_onlyTrueWhenSizeEqual() {
     return Stream.of(
         Arguments.of("ABC", "ABC", true),
-        Arguments.of("ABC", "XYZ", false),
-        Arguments.of("ABC", "ABCD", false));
+        Arguments.of("ABC", "XYZ", true),
+        Arguments.of("ABC", "ABCD", false),
+        Arguments.of("XYZ", "AB", false));
   }
 
   @Test
