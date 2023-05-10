@@ -31,6 +31,7 @@ public final class BackupRunner {
 
   private static final Logger log = LogManager.getLogger();
 
+  private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
   /** Runs the backup. */
@@ -39,7 +40,6 @@ public final class BackupRunner {
     return new BackupRunner(backup).run();
   }
 
-  private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.ENGLISH);
   private final AtomicInteger createCount = new AtomicInteger();
   private final AtomicInteger failedCreateCount = new AtomicInteger();
   private final AtomicInteger updateCount = new AtomicInteger();
@@ -59,7 +59,7 @@ public final class BackupRunner {
 
   private OverallStatistics run() {
     log.info("Running: {}", backup);
-    long startNanos = System.nanoTime();
+    long runStartNanos = System.nanoTime();
 
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
@@ -87,48 +87,20 @@ public final class BackupRunner {
             }
           });
     }
-
-    Statistics statistics =
-        new Statistics(createCount.get(), updateCount.get(), deleteCount.get(), sameCount.get());
-    ErrorStatistics errorStatistics =
-        new ErrorStatistics(
-            failedCreateCount.get(), failedUpdateCount.get(), failedDeleteCount.get());
-
-    long addedMB = bytesAdded.get() / MEGA;
-    long removedMB = bytesRemoved.get() / MEGA;
-
-    log.info(
-        "Finished: {} in: {}. {} files created, {} files updated, {} files deleted, {} files same. {}MB added, {}MB removed",
-        backup,
-        elapsed(startNanos),
-        numberFormat.format(statistics.filesCreated()),
-        numberFormat.format(statistics.filesUpdated()),
-        numberFormat.format(statistics.filesDeleted()),
-        numberFormat.format(statistics.filesSame()),
-        numberFormat.format(addedMB),
-        numberFormat.format(removedMB));
-    if (errorStatistics.any()) {
-      log.warn(
-          "{} failed creates, {} failed updates, {} failed deletes",
-          numberFormat.format(errorStatistics.failedCreates()),
-          numberFormat.format(errorStatistics.failedUpdates()),
-          numberFormat.format(errorStatistics.failedDeletes()));
-    }
-
-    return new OverallStatistics(statistics, errorStatistics);
+    return getAndLogStats(runStartNanos);
   }
 
   private Map<String, ? extends File> scanWithLog(
       Supplier<Map<String, ? extends File>> scan, String locationForLog) {
-    long scanStart = System.nanoTime();
+    long scanStartNanos = System.nanoTime();
     Map<String, ? extends File> files = scan.get();
     long sizeMB = files.values().stream().mapToLong(File::size).sum() / MEGA;
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,
-        elapsed(scanStart),
-        numberFormat.format(files.size()),
-        numberFormat.format(sizeMB));
+        elapsed(scanStartNanos),
+        NUMBER_FORMAT.format(files.size()),
+        NUMBER_FORMAT.format(sizeMB));
     return files;
   }
 
@@ -160,6 +132,27 @@ public final class BackupRunner {
     }
   }
 
+  private OverallStatistics getAndLogStats(long runStartNanos) {
+    Statistics statistics =
+        new Statistics(
+            createCount.get(),
+            updateCount.get(),
+            deleteCount.get(),
+            sameCount.get(),
+            bytesAdded.get(),
+            bytesRemoved.get());
+    ErrorStatistics errorStatistics =
+        new ErrorStatistics(
+            failedCreateCount.get(), failedUpdateCount.get(), failedDeleteCount.get());
+
+    log.info("Finished: {} in: {}. {}", backup, elapsed(runStartNanos), statistics);
+    if (errorStatistics.any()) {
+      log.warn("{}", errorStatistics);
+    }
+
+    return new OverallStatistics(statistics, errorStatistics);
+  }
+
   private static Duration elapsed(long startNanos) {
     return Duration.ofNanos(System.nanoTime() - startNanos);
   }
@@ -167,17 +160,39 @@ public final class BackupRunner {
   /**
    * Statistics over a backup run.
    *
-   * @param filesCreated files created
-   * @param filesUpdated files updated
-   * @param filesDeleted files deleted
+   * @param filesCreated files created on destination
+   * @param filesUpdated files updated on destination
+   * @param filesDeleted files deleted on destination
    * @param filesSame files kept same
+   * @param bytesAdded bytes added to destination
+   * @param bytesRemoved bytes removed from destination
    */
-  public record Statistics(int filesCreated, int filesUpdated, int filesDeleted, int filesSame) {
+  public record Statistics(
+      int filesCreated,
+      int filesUpdated,
+      int filesDeleted,
+      int filesSame,
+      long bytesAdded,
+      long bytesRemoved) {
     public Statistics {
       require(filesCreated >= 0);
       require(filesUpdated >= 0);
       require(filesDeleted >= 0);
       require(filesSame >= 0);
+      require(bytesAdded >= 0);
+      require(bytesRemoved >= 0);
+    }
+
+    @Override
+    public String toString() {
+      return "%s files created, %s files updated, %s files deleted, %s files same. %sMB added, %sMB removed"
+          .formatted(
+              NUMBER_FORMAT.format(filesCreated),
+              NUMBER_FORMAT.format(filesUpdated),
+              NUMBER_FORMAT.format(filesDeleted),
+              NUMBER_FORMAT.format(filesSame),
+              NUMBER_FORMAT.format(bytesAdded / MEGA),
+              NUMBER_FORMAT.format(bytesRemoved / MEGA));
     }
   }
 
@@ -197,6 +212,15 @@ public final class BackupRunner {
 
     public boolean any() {
       return IntStream.of(failedCreates, failedUpdates, failedDeletes).anyMatch(i -> i > 0);
+    }
+
+    @Override
+    public String toString() {
+      return "%s failed creates, %s failed updates, %s failed deletes"
+          .formatted(
+              NUMBER_FORMAT.format(failedCreates),
+              NUMBER_FORMAT.format(failedUpdates),
+              NUMBER_FORMAT.format(failedDeletes));
     }
   }
 
