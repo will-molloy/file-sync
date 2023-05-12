@@ -64,48 +64,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   public boolean delete(String key) {
     Path destPath = destination.root().resolve(key);
     try {
-      Files.walkFileTree(
-          destPath,
-          // multiple threads are running recursive delete (recursive is the only way to make this
-          // thread-safe)
-          // so ignore 'NoSuchFileException' as another thread may have got there first.
-          new FileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                throws IOException {
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes)
-                throws IOException {
-              Files.deleteIfExists(file);
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
-              if (e instanceof NoSuchFileException) {
-                return FileVisitResult.CONTINUE;
-              } else {
-                log.error("Error visiting file: [%s]".formatted(file), e);
-                throw e;
-              }
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
-              if (e != null) {
-                if (e instanceof NoSuchFileException) {
-                  return FileVisitResult.CONTINUE;
-                }
-                log.error("Error visiting directory: [%s]".formatted(dir), e);
-                throw e;
-              }
-              Files.deleteIfExists(dir);
-              return FileVisitResult.CONTINUE;
-            }
-          });
+      Files.walkFileTree(destPath, new DirectoryCleaner());
       log.info("Deleted: [{}]", destPath);
       return true;
     } catch (NoSuchFileException ignored) {
@@ -113,6 +72,45 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     } catch (IOException e) {
       log.error("Error deleting: [%s]".formatted(destPath), e);
       return false;
+    }
+  }
+
+  // multiple threads are running recursive delete (recursive is the only way to make this
+  // thread-safe - can't delete in order)
+  // so ignore 'NoSuchFileException' as another thread may have got there first.
+  private static final class DirectoryCleaner implements FileVisitor<Path> {
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+      Files.deleteIfExists(file);
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+      if (e instanceof NoSuchFileException) {
+        return FileVisitResult.CONTINUE;
+      } else {
+        log.error("Error visiting file: [%s]".formatted(file), e);
+        throw e;
+      }
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+      if (e != null) {
+        if (e instanceof NoSuchFileException) {
+          return FileVisitResult.CONTINUE;
+        }
+        log.error("Error visiting directory: [%s]".formatted(dir), e);
+        throw e;
+      }
+      Files.deleteIfExists(dir);
+      return FileVisitResult.CONTINUE;
     }
   }
 }
