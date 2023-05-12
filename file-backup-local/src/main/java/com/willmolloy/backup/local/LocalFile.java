@@ -19,31 +19,28 @@ import java.util.Objects;
 class LocalFile implements File {
 
   private final Path path;
-  private final long size;
-  private final Instant lastModified;
+  private final BasicFileAttributes attributes;
 
   LocalFile(Path path, BasicFileAttributes attributes) {
     this.path = requireNonNull(path);
-    require(attributes.isRegularFile(), "Requires a file: [%s]".formatted(path));
-    this.size = attributes.size();
-    this.lastModified = attributes.lastModifiedTime().toInstant();
+    this.attributes = requireNonNull(attributes);
+    require(
+        attributes.isRegularFile() || attributes.isDirectory(),
+        "Requires a file or directory: [%s]".formatted(path));
   }
 
   LocalFile(Path path) throws IOException {
     this(path, Files.readAttributes(path, BasicFileAttributes.class));
   }
 
-  Path path() {
-    return path;
+  @Override
+  public long size() {
+    return attributes.size();
   }
 
   @Override
-  public long size() {
-    return size;
-  }
-
-  Instant lastModified() {
-    return lastModified;
+  public boolean isRegularFile() {
+    return attributes.isRegularFile();
   }
 
   @Override
@@ -52,6 +49,14 @@ class LocalFile implements File {
       return size() == other.size() && lastModified().equals(localFile.lastModified());
     }
     return File.super.same(other);
+  }
+
+  Path path() {
+    return path;
+  }
+
+  Instant lastModified() {
+    return attributes.lastAccessTime().toInstant();
   }
 
   @Override

@@ -30,4 +30,10 @@ record S3File(S3Object s3Object) implements File {
       return 0;
     }
   }
+
+  @Override
+  public boolean isRegularFile() {
+    // 's3 list' only returns files (i.e. objects), no folders
+    return true;
+  }
 }

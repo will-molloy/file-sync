@@ -52,6 +52,9 @@ public interface Backup<
     /** File size in bytes. */
     long size();
 
+    /** {@code true} if file. {@code false} if directory. */
+    boolean isRegularFile();
+
     /**
      * {@code true} if the {@code other} file can be considered the same.
      *

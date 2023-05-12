@@ -147,6 +147,8 @@ class LocalBackupIntegrationTest {
         .containsExactly(
             destRoot,
             destRoot.resolve("A.txt"),
+            destRoot.resolve("B"),
+            destRoot.resolve("B/C"),
             destRoot.resolve("D"),
             destRoot.resolve("D/E.mp4"),
             destRoot.resolve("D/F.mp3"),
@@ -190,6 +192,38 @@ class LocalBackupIntegrationTest {
 
     assertThat(Files.walk(sourceRoot)).containsExactly(sourceRoot);
     assertThat(Files.walk(destRoot)).containsExactly(destRoot);
+  }
+
+  @Test
+  void overwritesDirectoryOnDestinationWithFileOnSource() throws IOException {
+    // Given
+    // bit of an edge case scenario... file matching dir name (i.e. no extension)
+    createFile(sourceRoot.resolve("A/B/C"), "hello!");
+    createDirectory(destRoot.resolve("A/B/C/D/E/F"));
+    createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
+
+    // When
+    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+
+    // Then
+    assertThat(statistics)
+        .isEqualTo(
+            new BackupRunner.OverallStatistics(
+                new BackupRunner.Statistics(0, 1, 0, 0, 6, 0),
+                new BackupRunner.ErrorStatistics(0, 0, 0)));
+
+    assertThat(Files.walk(sourceRoot))
+        .containsExactly(
+            sourceRoot,
+            sourceRoot.resolve("A"),
+            sourceRoot.resolve("A/B"),
+            sourceRoot.resolve("A/B/C"));
+    assertThat(Files.walk(destRoot))
+        .containsExactly(
+            destRoot, destRoot.resolve("A"), destRoot.resolve("A/B"), destRoot.resolve("A/B/C"));
+
+    assertThat(Files.readString(sourceRoot.resolve("A/B/C"))).isEqualTo("hello!");
+    assertThat(Files.readString(destRoot.resolve("A/B/C"))).isEqualTo("hello!");
   }
 
   private void createFile(Path path, String contents) throws IOException {

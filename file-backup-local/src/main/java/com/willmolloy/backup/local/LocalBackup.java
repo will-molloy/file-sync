@@ -6,10 +6,10 @@ import com.willmolloy.backup.Backup;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.logging.log4j.LogManager;
@@ -66,7 +66,16 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     try {
       Files.walkFileTree(
           destPath,
-          new SimpleFileVisitor<>() {
+          // multiple threads are running recursive delete (recursive is the only way to make this
+          // thread-safe)
+          // so ignore 'NoSuchFileException' as another thread may have got there first.
+          new FileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                throws IOException {
+              return FileVisitResult.CONTINUE;
+            }
+
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attributes)
                 throws IOException {
@@ -75,11 +84,22 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
             }
 
             @Override
+            public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
+              if (e instanceof NoSuchFileException) {
+                return FileVisitResult.CONTINUE;
+              } else {
+                log.error("Error visiting file: [%s]".formatted(file), e);
+                throw e;
+              }
+            }
+
+            @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
               if (e != null) {
                 if (e instanceof NoSuchFileException) {
                   return FileVisitResult.CONTINUE;
                 }
+                log.error("Error visiting directory: [%s]".formatted(dir), e);
                 throw e;
               }
               Files.deleteIfExists(dir);
@@ -88,7 +108,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           });
       log.info("Deleted: [{}]", destPath);
       return true;
-    } catch (NoSuchFileException e) {
+    } catch (NoSuchFileException ignored) {
       return true;
     } catch (IOException e) {
       log.error("Error deleting: [%s]".formatted(destPath), e);

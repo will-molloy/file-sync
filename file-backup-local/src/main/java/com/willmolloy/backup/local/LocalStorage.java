@@ -58,17 +58,29 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
           new FileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
+              if (!attributes.isDirectory()) {
+                log.warn(
+                    "Skipped directory (not actually a directory): [{}]. Attributes: [{}]",
+                    dir,
+                    attributes);
+                return FileVisitResult.CONTINUE;
+              }
+
+              String key = keyFunc.apply(dir);
+              LocalFile localFile = new LocalFile(dir, attributes);
+              map.merge(key, localFile, mergeFunc);
               return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
-              if (attributes.isSymbolicLink()) {
-                log.warn("Skipped (symlink): [{}]", file);
+              // TODO handle symlinks?
+              if (!attributes.isRegularFile()) {
+                log.warn(
+                    "Skipped file (not actually a file): [{}]. Attributes: [{}]", file, attributes);
                 return FileVisitResult.CONTINUE;
               }
 
-              // limit to files only for now TODO what about backing up empty dirs?
               String key = keyFunc.apply(file);
               LocalFile localFile = new LocalFile(file, attributes);
               map.merge(key, localFile, mergeFunc);

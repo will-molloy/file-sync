@@ -7,6 +7,7 @@ import com.willmolloy.backup.Backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.text.NumberFormat;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -70,6 +71,13 @@ public final class BackupRunner {
 
       sourceFiles.forEach(
           (key, sourceFile) -> {
+            // limit to files only for now
+            // TODO what about backing up empty dirs (i.e. leaves)?
+            //  Would require expensive IO call to test 'is empty dir'...
+            if (!sourceFile.isRegularFile()) {
+              return;
+            }
+
             File destFile = destFiles.get(key);
             if (destFile == null) {
               threadPool.submit(() -> create(key, sourceFile));
@@ -80,6 +88,8 @@ public final class BackupRunner {
             }
           });
 
+      // for dest we need to attempt deletion of every path, including directories
+      // otherwise empty dirs are left on destination
       destFiles.forEach(
           (key, destFile) -> {
             if (!sourceFiles.containsKey(key)) {
@@ -93,18 +103,23 @@ public final class BackupRunner {
   private Map<String, ? extends File> scanWithLog(
       Supplier<Map<String, ? extends File>> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
-    Map<String, ? extends File> files = scan.get();
-    long sizeMB = files.values().stream().mapToLong(File::size).sum() / MEGA;
+
+    Map<String, ? extends File> paths = scan.get();
+
+    List<? extends File> files = paths.values().stream().filter(File::isRegularFile).toList();
+    long sizeMB = files.stream().mapToLong(File::size).sum() / MEGA;
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,
         elapsed(scanStartNanos),
         NUMBER_FORMAT.format(files.size()),
         NUMBER_FORMAT.format(sizeMB));
-    return files;
+
+    return paths;
   }
 
   private void create(String key, File sourceFile) {
+    require(sourceFile.isRegularFile(), "create requires file");
     if (backup.put(key)) {
       createCount.incrementAndGet();
       bytesAdded.addAndGet(sourceFile.size());
@@ -114,6 +129,7 @@ public final class BackupRunner {
   }
 
   private void update(String key, File sourceFile, File destFile) {
+    require(sourceFile.isRegularFile(), "update requires file");
     if (backup.put(key)) {
       updateCount.incrementAndGet();
       bytesAdded.addAndGet(sourceFile.size());
@@ -125,8 +141,10 @@ public final class BackupRunner {
 
   private void delete(String key, File destFile) {
     if (backup.delete(key)) {
-      deleteCount.incrementAndGet();
-      bytesRemoved.addAndGet(destFile.size());
+      if (destFile.isRegularFile()) {
+        deleteCount.incrementAndGet();
+        bytesRemoved.addAndGet(destFile.size());
+      }
     } else {
       failedDeleteCount.incrementAndGet();
     }
