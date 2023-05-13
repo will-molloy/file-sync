@@ -3,7 +3,6 @@ package com.willmolloy.backup;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -77,7 +76,6 @@ class BackupRunnerTest {
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
-    verify(mockBackup, never()).put("A");
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
@@ -116,7 +114,6 @@ class BackupRunnerTest {
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
-    verify(mockBackup, never()).put("A");
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(0, 0, 0, 1, 0, 0), new ErrorStatistics(0, 0, 0)));
@@ -132,7 +129,38 @@ class BackupRunnerTest {
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
-    verify(mockBackup, never()).put("A");
+    assertThat(statistics)
+        .isEqualTo(
+            new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
+  }
+
+  @Test
+  void whenFileOnSourceAndDirectoryOnDestination_overwritesDirectoryOnDestination() {
+    // Given
+    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockBackup.put(any())).thenReturn(true);
+
+    // When
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
+
+    // Then
+    verify(mockBackup).put("A");
+    assertThat(statistics)
+        .isEqualTo(
+            new OverallStatistics(new Statistics(1, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
+  }
+
+  @Test
+  void whenDirectoryOnSourceAndFileOnDestination_skipsUpdate() {
+    // Given
+    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+
+    // When
+    OverallStatistics statistics = BackupRunner.run(mockBackup);
+
+    // Then
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
@@ -168,7 +196,6 @@ class BackupRunnerTest {
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
-    verify(mockBackup, never()).delete("A");
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(0, 0, 0, 1, 0, 0), new ErrorStatistics(0, 0, 0)));
@@ -201,7 +228,6 @@ class BackupRunnerTest {
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
-    verify(mockBackup, never()).delete("A");
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));

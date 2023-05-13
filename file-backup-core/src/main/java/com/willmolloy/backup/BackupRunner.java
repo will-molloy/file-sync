@@ -71,17 +71,21 @@ public final class BackupRunner {
 
       sourceNodes.forEach(
           (key, sourceNode) -> {
-            // limit to files only for now
-            // TODO what about backing up empty dirs (i.e. leaves)?
-            //  Would require expensive IO call to test 'is empty dir'...
-            if (sourceNode instanceof Node.File sourceFile) {
-              Node destNode = destNodes.get(key);
-              if (destNode == null || destNode instanceof Node.Directory) {
-                threadPool.submit(() -> create(key, sourceFile));
-              } else if (destNode instanceof Node.File destFile && !sourceFile.same(destFile)) {
-                threadPool.submit(() -> update(key, sourceFile, destFile));
-              } else {
-                sameCount.incrementAndGet();
+            switch (sourceNode) {
+              case Node.File sourceFile -> {
+                Node destNode = destNodes.get(key);
+                if (destNode == null || destNode instanceof Node.Directory) {
+                  threadPool.submit(() -> create(key, sourceFile));
+                } else if (destNode instanceof Node.File destFile && !sourceFile.same(destFile)) {
+                  threadPool.submit(() -> update(key, sourceFile, destFile));
+                } else {
+                  sameCount.incrementAndGet();
+                }
+              }
+              case Node.Directory sourceDir -> {
+                // limit to files only for now
+                // TODO what about backing up empty dirs (i.e. leaves)?
+                //  Would require expensive IO call to test 'is empty dir'...
               }
             }
           });
