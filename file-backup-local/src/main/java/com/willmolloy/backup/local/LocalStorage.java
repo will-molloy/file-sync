@@ -96,13 +96,6 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
 
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
-      if (!attributes.isDirectory()) {
-        log.warn(
-            "Skipped directory (not actually a directory): [{}]. Attributes: [{}]",
-            dir,
-            attributes);
-        return FileVisitResult.CONTINUE;
-      }
       consumer.accept(dir, attributes);
       return FileVisitResult.CONTINUE;
     }
@@ -110,8 +103,8 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
       // TODO handle symlinks?
-      if (!attributes.isRegularFile()) {
-        log.warn("Skipped file (not actually a file): [{}]. Attributes: [{}]", file, attributes);
+      if (attributes.isSymbolicLink()) {
+        log.warn("Skipped file (symlink): [{}]", file);
         return FileVisitResult.CONTINUE;
       }
       consumer.accept(file, attributes);
