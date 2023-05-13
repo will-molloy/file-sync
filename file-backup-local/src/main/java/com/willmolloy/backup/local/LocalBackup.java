@@ -48,6 +48,8 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           StandardCopyOption.REPLACE_EXISTING);
       log.info("Copied: [{}] -> [{}]", sourcePath, destPath);
       return true;
+    } catch (NoSuchFileException ignored) {
+      return true;
     } catch (DirectoryNotEmptyException e) {
       log.warn(
           "Error copying: [{}] -> [{}]. Deleting non-empty directory on destination first",
