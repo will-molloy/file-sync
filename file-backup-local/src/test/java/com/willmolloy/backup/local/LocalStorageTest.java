@@ -49,16 +49,16 @@ class LocalStorageTest {
   }
 
   @Test
-  void scan_returnsMapOfRelativizedFileNamesToFiles() throws IOException {
+  void scan_returnsMapOfRelativizedFileNamesToFilesAndDirectories() throws IOException {
     // Given
-    Path a = Files.createFile(root.resolve("A"));
-    Path b = Files.createFile(root.resolve("B"));
+    Files.createFile(root.resolve("A"));
+    Files.createFile(root.resolve("B"));
     Files.createDirectories(root.resolve("C/D"));
-    Path e = Files.createFile(root.resolve("C/D/E"));
+    Files.createFile(root.resolve("C/D/E"));
     Files.createDirectories(root.resolve("F/G/H"));
-    Path i = Files.createFile(root.resolve("F/G/H/I"));
+    Files.createFile(root.resolve("F/G/H/I"));
     Files.createDirectories(root.resolve("X/Y"));
-    Path z = Files.createFile(root.resolve("X/Y/Z"));
+    Files.createFile(root.resolve("X/Y/Z"));
 
     // When
     Map<String, LocalFile> scan = sut.scan();
@@ -66,11 +66,18 @@ class LocalStorageTest {
     // Then
     assertThat(scan)
         .containsExactly(
-            "A", new LocalFile(a),
-            "B", new LocalFile(b),
-            "C/D/E", new LocalFile(e),
-            "F/G/H/I", new LocalFile(i),
-            "X/Y/Z", new LocalFile(z));
+            "A", new LocalFile(root.resolve("A")),
+            "B", new LocalFile(root.resolve("B")),
+            "C", new LocalFile(root.resolve("C")),
+            "C/D", new LocalFile(root.resolve("C/D")),
+            "C/D/E", new LocalFile(root.resolve("C/D/E")),
+            "F", new LocalFile(root.resolve("F")),
+            "F/G", new LocalFile(root.resolve("F/G")),
+            "F/G/H", new LocalFile(root.resolve("F/G/H")),
+            "F/G/H/I", new LocalFile(root.resolve("F/G/H/I")),
+            "X", new LocalFile(root.resolve("X")),
+            "X/Y", new LocalFile(root.resolve("X/Y")),
+            "X/Y/Z", new LocalFile(root.resolve("X/Y/Z")));
   }
 
   @Test

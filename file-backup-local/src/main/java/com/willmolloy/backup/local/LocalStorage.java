@@ -56,6 +56,10 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
 
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
+            if (path == root) {
+              return;
+            }
+
             String key = keyFunc.apply(path);
             LocalFile localFile = new LocalFile(path, attributes);
             map.merge(key, localFile, mergeFunc);
