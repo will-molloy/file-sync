@@ -1,6 +1,7 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -146,5 +147,16 @@ class LocalFileTest {
     Path path = Files.createFile(root.resolve("ABCD"));
     LocalFile file = new LocalFile(path);
     assertThat(file.toString()).isEqualTo("LocalFile[%s]".formatted(path));
+  }
+
+  @Test
+  void constructor_requiresValidFile() {
+    IllegalArgumentException thrown =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new LocalFile(Files.createDirectory(root.resolve("A"))));
+    assertThat(thrown)
+        .hasMessageThat()
+        .isEqualTo("Requires a file: [%s]".formatted(root.resolve("A")));
   }
 }
