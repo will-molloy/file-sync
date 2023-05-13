@@ -56,7 +56,7 @@ class LocalFile implements File {
   }
 
   Instant lastModified() {
-    return attributes.lastAccessTime().toInstant();
+    return attributes.lastModifiedTime().toInstant();
   }
 
   @Override
