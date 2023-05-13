@@ -66,7 +66,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   public boolean delete(String key) {
     Path destPath = destination.root().resolve(key);
     try {
-      Files.walkFileTree(destPath, new DirectoryCleaner());
+      Files.walkFileTree(destPath, new RecursiveDelete());
       log.info("Deleted: [{}]", destPath);
       return true;
     } catch (NoSuchFileException ignored) {
@@ -77,10 +77,10 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     }
   }
 
-  // multiple threads are running recursive delete (recursive is the only way to make this
-  // thread-safe - can't delete in order)
+  // multiple threads are running recursive delete
+  // (this is the only way to run in parallel - can't guarantee the order)
   // so ignore 'NoSuchFileException' as another thread may have got there first.
-  private static final class DirectoryCleaner implements FileVisitor<Path> {
+  private static final class RecursiveDelete implements FileVisitor<Path> {
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
       return FileVisitResult.CONTINUE;
