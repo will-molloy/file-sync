@@ -39,8 +39,8 @@ class LocalFile implements File {
   }
 
   @Override
-  public boolean isRegularFile() {
-    return attributes.isRegularFile();
+  public boolean isDirectory() {
+    return attributes.isDirectory();
   }
 
   @Override

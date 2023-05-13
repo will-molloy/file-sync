@@ -2,6 +2,7 @@ package com.willmolloy.backup;
 
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Predicate.not;
 
 import com.willmolloy.backup.Backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -74,7 +75,7 @@ public final class BackupRunner {
             // limit to files only for now
             // TODO what about backing up empty dirs (i.e. leaves)?
             //  Would require expensive IO call to test 'is empty dir'...
-            if (!sourceFile.isRegularFile()) {
+            if (sourceFile.isDirectory()) {
               return;
             }
 
@@ -106,7 +107,7 @@ public final class BackupRunner {
 
     Map<String, ? extends File> paths = scan.get();
 
-    List<? extends File> files = paths.values().stream().filter(File::isRegularFile).toList();
+    List<? extends File> files = paths.values().stream().filter(not(File::isDirectory)).toList();
     long sizeMB = files.stream().mapToLong(File::size).sum() / MEGA;
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
@@ -119,7 +120,6 @@ public final class BackupRunner {
   }
 
   private void create(String key, File sourceFile) {
-    require(sourceFile.isRegularFile(), "create requires file");
     if (backup.put(key)) {
       createCount.incrementAndGet();
       bytesAdded.addAndGet(sourceFile.size());
@@ -129,7 +129,6 @@ public final class BackupRunner {
   }
 
   private void update(String key, File sourceFile, File destFile) {
-    require(sourceFile.isRegularFile(), "update requires file");
     if (backup.put(key)) {
       updateCount.incrementAndGet();
       bytesAdded.addAndGet(sourceFile.size());
@@ -141,7 +140,7 @@ public final class BackupRunner {
 
   private void delete(String key, File destFile) {
     if (backup.delete(key)) {
-      if (destFile.isRegularFile()) {
+      if (!destFile.isDirectory()) {
         deleteCount.incrementAndGet();
         bytesRemoved.addAndGet(destFile.size());
       }
