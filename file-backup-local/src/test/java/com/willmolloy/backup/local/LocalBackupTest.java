@@ -164,7 +164,7 @@ class LocalBackupTest {
     boolean result = assertDoesNotThrow(() -> sut.put("A"));
 
     // Then
-    assertThat(result).isFalse();
+    assertThat(result).isTrue();
     assertThatFileSystem().isEmpty();
   }
 
