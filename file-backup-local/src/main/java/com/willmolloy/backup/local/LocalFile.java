@@ -3,7 +3,7 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup.File;
+import com.willmolloy.backup.Backup.Node;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,17 +16,17 @@ import java.util.Objects;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class LocalFile implements File {
+class LocalFile implements Node.File {
 
   private final Path path;
-  private final BasicFileAttributes attributes;
+  private final long size;
+  private final Instant lastModified;
 
   LocalFile(Path path, BasicFileAttributes attributes) {
+    require(attributes.isRegularFile(), "Requires a file: [%s]".formatted(path));
     this.path = requireNonNull(path);
-    this.attributes = requireNonNull(attributes);
-    require(
-        attributes.isRegularFile() || attributes.isDirectory(),
-        "Requires a file or directory: [%s]".formatted(path));
+    this.size = attributes.size();
+    this.lastModified = attributes.lastModifiedTime().toInstant();
   }
 
   LocalFile(Path path) throws IOException {
@@ -35,12 +35,7 @@ class LocalFile implements File {
 
   @Override
   public long size() {
-    return attributes.size();
-  }
-
-  @Override
-  public boolean isDirectory() {
-    return attributes.isDirectory();
+    return size;
   }
 
   @Override
@@ -51,12 +46,8 @@ class LocalFile implements File {
     return File.super.same(other);
   }
 
-  Path path() {
-    return path;
-  }
-
   Instant lastModified() {
-    return attributes.lastModifiedTime().toInstant();
+    return lastModified;
   }
 
   @Override

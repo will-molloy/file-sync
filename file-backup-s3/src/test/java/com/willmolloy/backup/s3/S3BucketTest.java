@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -66,7 +67,7 @@ class S3BucketTest {
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
-    Map<String, S3File> scan = sut.scan();
+    Map<String, Backup.Node> scan = sut.scan();
 
     // Then
     assertThat(scan)

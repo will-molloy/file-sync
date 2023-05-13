@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -61,22 +62,22 @@ class LocalStorageTest {
     Files.createFile(root.resolve("X/Y/Z"));
 
     // When
-    Map<String, LocalFile> scan = sut.scan();
+    Map<String, Backup.Node> scan = sut.scan();
 
     // Then
     assertThat(scan)
         .containsExactly(
             "A", new LocalFile(root.resolve("A")),
             "B", new LocalFile(root.resolve("B")),
-            "C", new LocalFile(root.resolve("C")),
-            "C/D", new LocalFile(root.resolve("C/D")),
+            "C", new LocalDirectory(root.resolve("C")),
+            "C/D", new LocalDirectory(root.resolve("C/D")),
             "C/D/E", new LocalFile(root.resolve("C/D/E")),
-            "F", new LocalFile(root.resolve("F")),
-            "F/G", new LocalFile(root.resolve("F/G")),
-            "F/G/H", new LocalFile(root.resolve("F/G/H")),
+            "F", new LocalDirectory(root.resolve("F")),
+            "F/G", new LocalDirectory(root.resolve("F/G")),
+            "F/G/H", new LocalDirectory(root.resolve("F/G/H")),
             "F/G/H/I", new LocalFile(root.resolve("F/G/H/I")),
-            "X", new LocalFile(root.resolve("X")),
-            "X/Y", new LocalFile(root.resolve("X/Y")),
+            "X", new LocalDirectory(root.resolve("X")),
+            "X/Y", new LocalDirectory(root.resolve("X/Y")),
             "X/Y/Z", new LocalFile(root.resolve("X/Y/Z")));
   }
 

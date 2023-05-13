@@ -126,7 +126,7 @@ class LocalFileTest {
     Files.writeString(thisFilePath, thisContents);
     LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
-    Backup.File otherFile = mock(Backup.File.class);
+    Backup.Node.File otherFile = mock(Backup.Node.File.class);
     when(otherFile.size()).thenReturn((long) otherContents.length());
 
     // Then

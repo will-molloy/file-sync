@@ -3,6 +3,7 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.Backup.Location;
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +30,7 @@ import org.apache.logging.log4j.Logger;
  * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalStorage(Path root) implements Location<LocalFile> {
+public record LocalStorage(Path root) implements Location {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -39,33 +40,39 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
   }
 
   @Override
-  public Map<String, LocalFile> scan() {
+  public Map<String, Backup.Node> scan() {
     log.info("Scanning directory: [{}]", root);
     try {
-      Map<String, LocalFile> map = new HashMap<>();
+      Map<String, Backup.Node> map = new HashMap<>();
 
       Function<Path, String> keyFunc =
           ((Function<Path, Path>) root::relativize).andThen(LocalStorage::ensureUnixSeparator);
 
       // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-      BiFunction<LocalFile, LocalFile, LocalFile> mergeFunc =
+      BiFunction<Backup.Node, Backup.Node, Backup.Node> mergeFunc =
           (first, second) -> {
-            log.warn("Scanned duplicate: [{}]", second.path());
+            log.warn("Scanned duplicate: [{}]", second);
             return second;
           };
 
-      BiConsumer<Path, BasicFileAttributes> consumer =
+      BiConsumer<Path, BasicFileAttributes> fileConsumer =
           (path, attributes) -> {
-            if (path == root) {
-              return;
-            }
-
             String key = keyFunc.apply(path);
             LocalFile localFile = new LocalFile(path, attributes);
             map.merge(key, localFile, mergeFunc);
           };
 
-      Files.walkFileTree(root, new DirectoryScanner(consumer));
+      BiConsumer<Path, BasicFileAttributes> directoryConsumer =
+          (path, attributes) -> {
+            if (path == root) {
+              return;
+            }
+            String key = keyFunc.apply(path);
+            LocalDirectory localFile = new LocalDirectory(path, attributes);
+            map.merge(key, localFile, mergeFunc);
+          };
+
+      Files.walkFileTree(root, new DirectoryScanner(fileConsumer, directoryConsumer));
       return map;
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -88,15 +95,19 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
   }
 
   private static final class DirectoryScanner implements FileVisitor<Path> {
-    private final BiConsumer<Path, BasicFileAttributes> consumer;
+    private final BiConsumer<Path, BasicFileAttributes> fileConsumer;
+    private final BiConsumer<Path, BasicFileAttributes> directoryConsumer;
 
-    private DirectoryScanner(BiConsumer<Path, BasicFileAttributes> consumer) {
-      this.consumer = requireNonNull(consumer);
+    private DirectoryScanner(
+        BiConsumer<Path, BasicFileAttributes> fileConsumer,
+        BiConsumer<Path, BasicFileAttributes> directoryConsumer) {
+      this.fileConsumer = requireNonNull(fileConsumer);
+      this.directoryConsumer = requireNonNull(directoryConsumer);
     }
 
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
-      consumer.accept(dir, attributes);
+      directoryConsumer.accept(dir, attributes);
       return FileVisitResult.CONTINUE;
     }
 
@@ -107,7 +118,7 @@ public record LocalStorage(Path root) implements Location<LocalFile> {
         log.warn("Skipped file (symlink): [{}]", file);
         return FileVisitResult.CONTINUE;
       }
-      consumer.accept(file, attributes);
+      fileConsumer.accept(file, attributes);
       return FileVisitResult.CONTINUE;
     }
 

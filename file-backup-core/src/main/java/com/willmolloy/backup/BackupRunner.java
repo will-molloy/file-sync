@@ -2,9 +2,8 @@ package com.willmolloy.backup;
 
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Predicate.not;
 
-import com.willmolloy.backup.Backup.File;
+import com.willmolloy.backup.Backup.Node;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.text.NumberFormat;
 import java.time.Duration;
@@ -17,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,34 +66,31 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      Map<String, ? extends File> sourceFiles = scanWithLog(backup.source()::scan, "source");
-      Map<String, ? extends File> destFiles =
-          scanWithLog(backup.destination()::scan, "destination");
+      Map<String, Node> sourceNodes = scanWithLog(backup.source()::scan, "source");
+      Map<String, Node> destNodes = scanWithLog(backup.destination()::scan, "destination");
 
-      sourceFiles.forEach(
-          (key, sourceFile) -> {
+      sourceNodes.forEach(
+          (key, sourceNode) -> {
             // limit to files only for now
             // TODO what about backing up empty dirs (i.e. leaves)?
             //  Would require expensive IO call to test 'is empty dir'...
-            if (sourceFile.isDirectory()) {
-              return;
-            }
-
-            File destFile = destFiles.get(key);
-            if (destFile == null) {
-              threadPool.submit(() -> create(key, sourceFile));
-            } else if (!sourceFile.same(destFile)) {
-              threadPool.submit(() -> update(key, sourceFile, destFile));
-            } else {
-              sameCount.incrementAndGet();
+            if (sourceNode instanceof Node.File sourceFile) {
+              Node destNode = destNodes.get(key);
+              if (destNode == null || destNode instanceof Node.Directory) {
+                threadPool.submit(() -> create(key, sourceFile));
+              } else if (destNode instanceof Node.File destFile && !sourceFile.same(destFile)) {
+                threadPool.submit(() -> update(key, sourceFile, destFile));
+              } else {
+                sameCount.incrementAndGet();
+              }
             }
           });
 
       // for dest we need to attempt deletion of every path, including directories
       // otherwise empty dirs are left on destination
-      destFiles.forEach(
+      destNodes.forEach(
           (key, destFile) -> {
-            if (!sourceFiles.containsKey(key)) {
+            if (!sourceNodes.containsKey(key)) {
               threadPool.submit(() -> delete(key, destFile));
             }
           });
@@ -101,14 +98,16 @@ public final class BackupRunner {
     return getAndLogStats(runStartNanos);
   }
 
-  private Map<String, ? extends File> scanWithLog(
-      Supplier<Map<String, ? extends File>> scan, String locationForLog) {
+  private Map<String, Node> scanWithLog(Supplier<Map<String, Node>> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
 
-    Map<String, ? extends File> paths = scan.get();
+    Map<String, Node> nodes = scan.get();
 
-    List<? extends File> files = paths.values().stream().filter(not(File::isDirectory)).toList();
-    long sizeMB = files.stream().mapToLong(File::size).sum() / MEGA;
+    List<Node.File> files =
+        nodes.values().stream()
+            .flatMap(node -> node instanceof Node.File file ? Stream.of(file) : Stream.empty())
+            .toList();
+    long sizeMB = files.stream().mapToLong(Node.File::size).sum() / MEGA;
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,
@@ -116,10 +115,10 @@ public final class BackupRunner {
         NUMBER_FORMAT.format(files.size()),
         NUMBER_FORMAT.format(sizeMB));
 
-    return paths;
+    return nodes;
   }
 
-  private void create(String key, File sourceFile) {
+  private void create(String key, Node.File sourceFile) {
     if (backup.put(key)) {
       createCount.incrementAndGet();
       bytesAdded.addAndGet(sourceFile.size());
@@ -128,7 +127,7 @@ public final class BackupRunner {
     }
   }
 
-  private void update(String key, File sourceFile, File destFile) {
+  private void update(String key, Node.File sourceFile, Node.File destFile) {
     if (backup.put(key)) {
       updateCount.incrementAndGet();
       bytesAdded.addAndGet(sourceFile.size());
@@ -138,9 +137,9 @@ public final class BackupRunner {
     }
   }
 
-  private void delete(String key, File destFile) {
+  private void delete(String key, Node destNode) {
     if (backup.delete(key)) {
-      if (!destFile.isDirectory()) {
+      if (destNode instanceof Node.File destFile) {
         deleteCount.incrementAndGet();
         bytesRemoved.addAndGet(destFile.size());
       }

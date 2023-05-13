@@ -209,7 +209,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 1, 0, 0, 6, 0),
+                new BackupRunner.Statistics(1, 0, 0, 0, 6, 0),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     assertThat(Files.walk(sourceRoot))
