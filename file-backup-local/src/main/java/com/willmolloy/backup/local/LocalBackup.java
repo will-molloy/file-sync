@@ -49,7 +49,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
       log.info("Copied: [{}] -> [{}]", sourcePath, destPath);
       return true;
     } catch (NoSuchFileException ignored) {
-      log.warn("Error copying: [{}] -> [{}]. Source file deleted since scan", sourcePath, destPath);
+      log.warn("Skipped copy: [{}] -> [{}]. Source file deleted since scan", sourcePath, destPath);
       return true;
     } catch (DirectoryNotEmptyException e) {
       log.warn(
