@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.Node;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.List;
@@ -94,6 +95,17 @@ public final class BackupRunner {
       // otherwise empty dirs are left on destination
       destNodes.forEach(
           (key, destFile) -> {
+            // TODO WIP - minimal delete...
+            // TODO just make scan key a Path?
+            int parentI = key.lastIndexOf('/');
+            if (parentI > 0){
+              String parent = key.substring(0, key.lastIndexOf('/'));
+              if (destNodes.containsKey(parent) && !sourceNodes.containsKey(parent)){
+                // skip... deletion of parent will cover this node
+                return;
+              }
+            }
+
             if (!sourceNodes.containsKey(key)) {
               threadPool.submit(() -> delete(key, destFile));
             }
