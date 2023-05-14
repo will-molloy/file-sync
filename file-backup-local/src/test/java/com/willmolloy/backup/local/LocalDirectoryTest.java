@@ -46,7 +46,7 @@ class LocalDirectoryTest {
   }
 
   @Test
-  void constructor_requiresValidFile() {
+  void constructor_requiresValidDirectory() {
     IllegalArgumentException thrown =
         assertThrows(
             IllegalArgumentException.class,

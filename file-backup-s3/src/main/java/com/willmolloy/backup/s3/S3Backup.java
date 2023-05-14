@@ -63,9 +63,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
       return true;
     } catch (NoSuchFileException ignored) {
       log.warn(
-          "Skipped put: [{}] -> [{}]. Source file deleted since scan",
-          sourcePath,
-          destinationUri);
+          "Skipped put: [{}] -> [{}]. Source file deleted since scan", sourcePath, destinationUri);
       return true;
     } catch (RuntimeException | IOException e) {
       log.error("Error putting: [%s] -> [%s]".formatted(sourcePath, destinationUri), e);
