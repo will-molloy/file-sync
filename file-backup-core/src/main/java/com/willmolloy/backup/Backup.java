@@ -9,8 +9,7 @@ import java.util.Map;
  * @param <DestinationT> destination location type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup<
-    SourceT extends Backup.Location<?>, DestinationT extends Backup.Location<?>> {
+public interface Backup<SourceT extends Backup.Location, DestinationT extends Backup.Location> {
 
   SourceT source();
 
@@ -31,38 +30,41 @@ public interface Backup<
    */
   boolean delete(String key);
 
-  /**
-   * Backup location (source or destination).
-   *
-   * @param <FileT> type of file stored on this location
-   */
-  interface Location<FileT extends File> {
+  /** Backup location (source or destination). */
+  interface Location {
 
     /**
-     * Scans the location.
+     * Scans the location's file tree.
      *
-     * @return Map of relativized file path (key) to file.
+     * @return Map of (relativized) paths to nodes.
      */
-    Map<String, FileT> scan();
+    Map<String, Node> scan();
   }
 
-  /** Backup file. */
-  interface File {
+  /** Represents a node in a locations file tree. Either a file or directory. */
+  sealed interface Node permits Node.File, Node.Directory {
 
-    /** File size in bytes. */
-    long size();
+    /** File. */
+    non-sealed interface File extends Node {
 
-    /**
-     * {@code true} if the {@code other} file can be considered the same.
-     *
-     * @apiNote Used to determine if a file requires updating.
-     * @implNote The default implementation just looks at file size.
-     */
-    // for s3; considered last-modified, but it's really object-creation time.
-    // also considered e-tag, but it's calculated differently for large (> 16MB) files.
-    // file size is good enough?
-    default boolean same(File other) {
-      return size() == other.size();
+      /** File size in bytes. */
+      long size();
+
+      /**
+       * {@code true} if the {@code other} file can be considered the same.
+       *
+       * @apiNote Used to determine if a file requires updating.
+       * @implNote The default implementation just looks at file size.
+       */
+      // for s3; considered last-modified, but it's really object-creation time.
+      // also considered e-tag, but it's calculated differently for large (> 16MB) files.
+      // file size is good enough?
+      default boolean same(File other) {
+        return size() == other.size();
+      }
     }
+
+    /** Directory. */
+    non-sealed interface Directory extends Node {}
   }
 }

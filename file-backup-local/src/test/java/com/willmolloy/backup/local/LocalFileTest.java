@@ -83,17 +83,6 @@ class LocalFileTest {
         .isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
   }
 
-  @Test
-  void constructor_requiresValidFile() {
-    IllegalArgumentException thrown =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> new LocalFile(Files.createDirectory(root.resolve("A"))));
-    assertThat(thrown)
-        .hasMessageThat()
-        .isEqualTo("Requires a file: [%s]".formatted(root.resolve("A")));
-  }
-
   @ParameterizedTest
   @MethodSource
   void same_whenOtherIsLocalFile_onlyTrueWhenSizeAndLastModifiedEqual(
@@ -138,7 +127,7 @@ class LocalFileTest {
     Files.writeString(thisFilePath, thisContents);
     LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
-    Backup.File otherFile = mock(Backup.File.class);
+    Backup.Node.File otherFile = mock(Backup.Node.File.class);
     when(otherFile.size()).thenReturn((long) otherContents.length());
 
     // Then
@@ -158,5 +147,16 @@ class LocalFileTest {
     Path path = Files.createFile(root.resolve("ABCD"));
     LocalFile file = new LocalFile(path);
     assertThat(file.toString()).isEqualTo("LocalFile[%s]".formatted(path));
+  }
+
+  @Test
+  void constructor_requiresValidFile() {
+    IllegalArgumentException thrown =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new LocalFile(Files.createDirectory(root.resolve("A"))));
+    assertThat(thrown)
+        .hasMessageThat()
+        .isEqualTo("Requires a file: [%s]".formatted(root.resolve("A")));
   }
 }

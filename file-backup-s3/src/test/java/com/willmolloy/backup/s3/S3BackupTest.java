@@ -98,9 +98,24 @@ class S3BackupTest {
   }
 
   @Test
-  void put_failsGracefully() {
+  void put_whenFileNotOnSource_failsGracefully() {
     // When
     boolean result = assertDoesNotThrow(() -> sut.put(fakeFileName()));
+
+    // Then
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void put_whenS3Error_failsGracefully() throws IOException {
+    // Given
+    String key = fakeFileName();
+    createSourcePath(key);
+    when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
+        .thenThrow(new RuntimeException());
+
+    // When
+    boolean result = assertDoesNotThrow(() -> sut.put(key));
 
     // Then
     assertThat(result).isFalse();
@@ -125,7 +140,7 @@ class S3BackupTest {
   }
 
   @Test
-  void delete_failsGracefully() {
+  void delete_whenS3Error_failsGracefully() {
     // Given
     when(mockS3Client.deleteObject(any(DeleteObjectRequest.class)))
         .thenThrow(new RuntimeException());

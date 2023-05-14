@@ -6,6 +6,7 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,6 +60,10 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .build();
       s3Client.putObject(request, sourcePath);
       log.info("Put: [{}] -> [{}]", sourcePath, destinationUri);
+      return true;
+    } catch (NoSuchFileException ignored) {
+      log.warn(
+          "Skipped put: [{}] -> [{}]. Source file deleted since scan", sourcePath, destinationUri);
       return true;
     } catch (RuntimeException | IOException e) {
       log.error("Error putting: [%s] -> [%s]".formatted(sourcePath, destinationUri), e);

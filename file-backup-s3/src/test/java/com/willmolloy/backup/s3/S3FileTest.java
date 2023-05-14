@@ -57,7 +57,7 @@ class S3FileTest {
     // Given
     S3File thisFile = spy(new S3File(S3Object.builder().size(thisSize).build()));
 
-    Backup.File otherFile = mock(Backup.File.class);
+    Backup.Node.File otherFile = mock(Backup.Node.File.class);
     when(otherFile.size()).thenReturn(otherSize);
 
     // Then
