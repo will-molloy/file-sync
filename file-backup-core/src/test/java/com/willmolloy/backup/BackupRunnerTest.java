@@ -52,7 +52,7 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndNotDestination_createsFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", file()));
     when(mockDestination.scan()).thenReturn(Map.of());
     when(mockBackup.put(any())).thenReturn(true);
 
@@ -69,7 +69,7 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnSourceAndNotDestination_skipsCreate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", directory()));
     when(mockDestination.scan()).thenReturn(Map.of());
 
     // When
@@ -84,9 +84,9 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andNotSame_updatesFileOnDestination() {
     // Given
-    Node.File sourceFile = mock(Node.File.class);
+    Node.File sourceFile = file();
     when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
-    Node.File destFile = mock(Node.File.class);
+    Node.File destFile = file();
     when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
     when(mockBackup.put(any())).thenReturn(true);
     when(sourceFile.same(destFile)).thenReturn(false);
@@ -104,9 +104,9 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andSame_skipsUpdate() {
     // Given
-    Node.File sourceFile = mock(Node.File.class);
+    Node.File sourceFile = file();
     when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
-    Node.File destFile = mock(Node.File.class);
+    Node.File destFile = file();
     when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
     when(sourceFile.same(destFile)).thenReturn(true);
 
@@ -122,8 +122,8 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnSourceAndDestination_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", directory()));
+    when(mockDestination.scan()).thenReturn(Map.of("A", directory()));
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
@@ -137,8 +137,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDirectoryOnDestination_overwritesDirectoryOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", file()));
+    when(mockDestination.scan()).thenReturn(Map.of("A", directory()));
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -154,8 +154,8 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnSourceAndFileOnDestination_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", directory()));
+    when(mockDestination.scan()).thenReturn(Map.of("A", file()));
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
@@ -170,7 +170,7 @@ class BackupRunnerTest {
   void whenFileOnDestinationAndNotSource_deletesFileFromDestination() {
     // Given
     when(mockSource.scan()).thenReturn(Map.of());
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+    when(mockDestination.scan()).thenReturn(Map.of("A", file()));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -186,9 +186,9 @@ class BackupRunnerTest {
   @Test
   void whenFileOnDestinationAndSource_skipsDelete() {
     // Given
-    Node.File sourceFile = mock(Node.File.class);
+    Node.File sourceFile = file();
     when(mockSource.scan()).thenReturn(Map.of("A", sourceFile));
-    Node.File destFile = mock(Node.File.class);
+    Node.File destFile = file();
     when(mockDestination.scan()).thenReturn(Map.of("A", destFile));
     when(sourceFile.same(destFile)).thenReturn(true);
 
@@ -205,7 +205,7 @@ class BackupRunnerTest {
   void whenDirectoryOnDestinationAndNotSource_deletesDirectoryFromDestination() {
     // Given
     when(mockSource.scan()).thenReturn(Map.of());
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockDestination.scan()).thenReturn(Map.of("A", directory()));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -221,8 +221,8 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnDestinationAndSource_skipsDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.Directory.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", directory()));
+    when(mockDestination.scan()).thenReturn(Map.of("A", directory()));
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
@@ -236,7 +236,7 @@ class BackupRunnerTest {
   @Test
   void whenCreateFails_countsFailedCreate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", file()));
     when(mockDestination.scan()).thenReturn(Map.of());
     when(mockBackup.put(any())).thenReturn(false);
 
@@ -253,8 +253,8 @@ class BackupRunnerTest {
   @Test
   void whenUpdateFails_countsFailedUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
-    when(mockDestination.scan()).thenReturn(Map.of("A", mock(Node.File.class)));
+    when(mockSource.scan()).thenReturn(Map.of("A", file()));
+    when(mockDestination.scan()).thenReturn(Map.of("A", file()));
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -273,7 +273,7 @@ class BackupRunnerTest {
     // Given
     when(mockSource.scan()).thenReturn(Map.of());
     when(mockDestination.scan())
-        .thenReturn(Map.of("A", isDirectory ? mock(Node.Directory.class) : mock(Node.File.class)));
+        .thenReturn(Map.of("A", isDirectory ? directory() : file()));
     when(mockBackup.delete(any())).thenReturn(false);
 
     // When
@@ -284,5 +284,13 @@ class BackupRunnerTest {
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 1)));
+  }
+
+  private static Node.File file(){
+    return mock(Node.File.class);
+  }
+
+  private static Node.Directory directory(){
+    return mock(Node.Directory.class);
   }
 }

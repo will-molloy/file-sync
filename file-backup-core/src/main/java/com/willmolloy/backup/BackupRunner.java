@@ -78,25 +78,18 @@ public final class BackupRunner {
             if (nextKey != null && nextKey.startsWith(key)) {
               // 'nextKey' maps to a child of 'key'
               // skip put as put of child will cover this node
+              log.debug("Skipping put({}). Covered by child", key);
               return;
             }
 
-            switch (sourceNode) {
-              case Node.File sourceFile -> {
-                Node destNode = destNodes.get(key);
-                if (destNode == null || destNode instanceof Node.Directory) {
-                  threadPool.submit(() -> create(key, sourceFile));
-                } else if (destNode instanceof Node.File destFile && !sourceFile.same(destFile)) {
-                  threadPool.submit(() -> update(key, sourceFile, destFile));
-                } else {
-                  sameCount.incrementAndGet();
-                }
-              }
-              case Node.Directory sourceDir -> {
-                // limit to files only for now
-                // TODO what about backing up empty dirs (i.e. leaves)?
-                //  Would require expensive IO call to test 'is empty dir'...
-              }
+            log.debug("Attempting put({})", key);
+            Node destNode = destNodes.get(key);
+            if (destNode == null) {
+              threadPool.submit(() -> create(key, sourceNode));
+            } else if (!sourceNode.same(destNode)) {
+              threadPool.submit(() -> update(key, sourceNode, destNode));
+            } else {
+              sameCount.incrementAndGet();
             }
           });
 
@@ -115,13 +108,13 @@ public final class BackupRunner {
               String parent = key.substring(0, key.lastIndexOf('/'));
               if (destNodes.containsKey(parent)) {
                 // skip... deletion of parent will cover this node
+                log.debug("Skipping delete({}). Covered by parent", key);
                 return;
               }
             }
 
-            if (!sourceNodes.containsKey(key)) {
-              threadPool.submit(() -> delete(key, destFile));
-            }
+            log.debug("Attempting delete({})", key);
+            threadPool.submit(() -> delete(key, destFile));
           });
     }
     return getAndLogStats(runStartNanos);
@@ -148,20 +141,26 @@ public final class BackupRunner {
     return nodes;
   }
 
-  private void create(String key, Node.File sourceFile) {
+  private void create(String key, Node sourceNode) {
     if (backup.put(key)) {
       createCount.incrementAndGet();
-      bytesAdded.addAndGet(sourceFile.size());
+      if (sourceNode instanceof Node.File sourceFile) {
+        bytesAdded.addAndGet(sourceFile.size());
+      }
     } else {
       failedCreateCount.incrementAndGet();
     }
   }
 
-  private void update(String key, Node.File sourceFile, Node.File destFile) {
+  private void update(String key, Node sourceNode, Node destNode) {
     if (backup.put(key)) {
       updateCount.incrementAndGet();
-      bytesAdded.addAndGet(sourceFile.size());
-      bytesRemoved.addAndGet(destFile.size());
+      if (sourceNode instanceof Node.File sourceFile) {
+        bytesAdded.addAndGet(sourceFile.size());
+      }
+      if (destNode instanceof Node.File destFile) {
+        bytesRemoved.addAndGet(destFile.size());
+      }
     } else {
       failedUpdateCount.incrementAndGet();
     }
@@ -169,8 +168,8 @@ public final class BackupRunner {
 
   private void delete(String key, Node destNode) {
     if (backup.delete(key)) {
+      deleteCount.incrementAndGet();
       if (destNode instanceof Node.File destFile) {
-        deleteCount.incrementAndGet();
         bytesRemoved.addAndGet(destFile.size());
       }
     } else {
