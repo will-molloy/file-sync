@@ -13,6 +13,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.NavigableMap;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,23 +64,24 @@ class LocalStorageTest {
     Files.createFile(root.resolve("X/Y/Z"));
 
     // When
-    Map<String, Backup.Node> scan = sut.scan();
+    NavigableMap<Path, Backup.Node> scan = sut.scan();
 
     // Then
     assertThat(scan)
         .containsExactly(
-            "A", new LocalFile(root.resolve("A")),
-            "B", new LocalFile(root.resolve("B")),
-            "C", new LocalDirectory(root.resolve("C")),
-            "C/D", new LocalDirectory(root.resolve("C/D")),
-            "C/D/E", new LocalFile(root.resolve("C/D/E")),
-            "F", new LocalDirectory(root.resolve("F")),
-            "F/G", new LocalDirectory(root.resolve("F/G")),
-            "F/G/H", new LocalDirectory(root.resolve("F/G/H")),
-            "F/G/H/I", new LocalFile(root.resolve("F/G/H/I")),
-            "X", new LocalDirectory(root.resolve("X")),
-            "X/Y", new LocalDirectory(root.resolve("X/Y")),
-            "X/Y/Z", new LocalFile(root.resolve("X/Y/Z")));
+            Path.of("A"), new LocalFile(root.resolve("A")),
+            Path.of("B"), new LocalFile(root.resolve("B")),
+                Path.of("C"), new LocalDirectory(root.resolve("C")),
+                    Path.of("C/D"), new LocalDirectory(root.resolve("C/D")),
+                        Path.of("C/D/E"), new LocalFile(root.resolve("C/D/E")),
+                            Path.of("F"), new LocalDirectory(root.resolve("F")),
+                                Path.of("F/G"), new LocalDirectory(root.resolve("F/G")),
+                                    Path.of("F/G/H"), new LocalDirectory(root.resolve("F/G/H")),
+                                        Path.of("F/G/H/I"), new LocalFile(root.resolve("F/G/H/I")),
+                                            Path.of("X"), new LocalDirectory(root.resolve("X")),
+                                                Path.of("X/Y"), new LocalDirectory(root.resolve("X/Y")),
+                                                    Path.of("X/Y/Z"), new LocalFile(root.resolve("X/Y/Z")))
+        .inOrder();
   }
 
   @Test

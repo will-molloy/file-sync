@@ -5,11 +5,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.Node;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,13 +70,13 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      TreeMap<String, Node> sourceNodes = scanWithLog(backup.source()::scan, "source");
-      TreeMap<String, Node> destNodes = scanWithLog(backup.destination()::scan, "destination");
+      NavigableMap<Path, Node> sourceNodes = scanWithLog(backup.source()::scan, "source");
+      NavigableMap<Path, Node>destNodes = scanWithLog(backup.destination()::scan, "destination");
 
       sourceNodes.forEach(
           (key, sourceNode) -> {
             // TODO WIP - minimal ops...
-            String nextKey = sourceNodes.higherKey(key);
+            Path nextKey = sourceNodes.higherKey(key);
             // TODO it needs to check it's a prefix of PATH i.e. until a '/'...
             if (nextKey != null && nextKey.startsWith(key)) {
               // 'nextKey' maps to a child of 'key'
@@ -102,15 +105,11 @@ public final class BackupRunner {
             }
 
             // TODO WIP - minimal ops...
-            // TODO just make scan key a Path?
-            int parentI = key.lastIndexOf('/');
-            if (parentI > 0) {
-              String parent = key.substring(0, key.lastIndexOf('/'));
-              if (destNodes.containsKey(parent)) {
-                // skip... deletion of parent will cover this node
-                log.debug("Skipping delete({}). Covered by parent", key);
-                return;
-              }
+            Path parent = key.getParent();
+            if (parent != null && destNodes.containsKey(parent)){
+              // skip... deletion of parent will cover this node
+              log.debug("Skipping delete({}). Covered by parent", key);
+              return;
             }
 
             log.debug("Attempting delete({})", key);
@@ -120,11 +119,11 @@ public final class BackupRunner {
     return getAndLogStats(runStartNanos);
   }
 
-  private TreeMap<String, Node> scanWithLog(
-      Supplier<Map<String, Node>> scan, String locationForLog) {
+  private NavigableMap<Path, Node> scanWithLog(
+      Supplier<NavigableMap<Path, Node>> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
 
-    TreeMap<String, Node> nodes = new TreeMap<>(scan.get());
+    NavigableMap<Path, Node> nodes = scan.get();
 
     List<Node.File> files =
         nodes.values().stream()
@@ -141,7 +140,7 @@ public final class BackupRunner {
     return nodes;
   }
 
-  private void create(String key, Node sourceNode) {
+  private void create(Path key, Node sourceNode) {
     if (backup.put(key)) {
       createCount.incrementAndGet();
       if (sourceNode instanceof Node.File sourceFile) {
@@ -152,7 +151,7 @@ public final class BackupRunner {
     }
   }
 
-  private void update(String key, Node sourceNode, Node destNode) {
+  private void update(Path key, Node sourceNode, Node destNode) {
     if (backup.put(key)) {
       updateCount.incrementAndGet();
       if (sourceNode instanceof Node.File sourceFile) {
@@ -166,7 +165,7 @@ public final class BackupRunner {
     }
   }
 
-  private void delete(String key, Node destNode) {
+  private void delete(Path key, Node destNode) {
     if (backup.delete(key)) {
       deleteCount.incrementAndGet();
       if (destNode instanceof Node.File destFile) {

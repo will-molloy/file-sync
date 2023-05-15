@@ -3,6 +3,7 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
+import com.sun.source.tree.Tree;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.Backup.Location;
 import java.io.File;
@@ -16,8 +17,11 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -40,16 +44,15 @@ public record LocalStorage(Path root) implements Location {
   }
 
   @Override
-  public Map<String, Backup.Node> scan() {
+  public NavigableMap<Path, Backup.Node> scan() {
     log.info("Scanning directory: [{}]", root);
     try {
-      Map<String, Backup.Node> map = new HashMap<>();
+      TreeMap<Path, Backup.Node> map = new TreeMap<>();
 
-      Function<Path, String> keyFunc =
-          ((Function<Path, Path>) root::relativize).andThen(LocalStorage::ensureUnixSeparator);
+      Function<Path, Path> keyFunc = root::relativize;
 
       // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-      BiFunction<Backup.Node, Backup.Node, Backup.Node> mergeFunc =
+      BinaryOperator<Backup.Node> mergeFunc =
           (first, second) -> {
             log.warn("Scanned duplicate: [{}]", second);
             return second;
@@ -57,7 +60,7 @@ public record LocalStorage(Path root) implements Location {
 
       BiConsumer<Path, BasicFileAttributes> fileConsumer =
           (path, attributes) -> {
-            String key = keyFunc.apply(path);
+            Path key = keyFunc.apply(path);
             LocalFile localFile = new LocalFile(path, attributes);
             map.merge(key, localFile, mergeFunc);
           };
@@ -67,7 +70,7 @@ public record LocalStorage(Path root) implements Location {
             if (path == root) {
               return;
             }
-            String key = keyFunc.apply(path);
+            Path key = keyFunc.apply(path);
             LocalDirectory localFile = new LocalDirectory(path, attributes);
             map.merge(key, localFile, mergeFunc);
           };
@@ -76,16 +79,6 @@ public record LocalStorage(Path root) implements Location {
       return map;
     } catch (IOException e) {
       throw new UncheckedIOException(e);
-    }
-  }
-
-  private static String ensureUnixSeparator(Path path) {
-    if (File.separatorChar == '/') {
-      return path.toString();
-    } else {
-      return StreamSupport.stream(path.spliterator(), false)
-          .map(Path::toString)
-          .collect(Collectors.joining("/"));
     }
   }
 

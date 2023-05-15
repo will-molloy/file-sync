@@ -1,6 +1,7 @@
 package com.willmolloy.backup;
 
-import java.util.Map;
+import java.nio.file.Path;
+import java.util.NavigableMap;
 
 /**
  * Backup type definition.
@@ -22,7 +23,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * @return {@code true} if create/update was successful
    * @implSpec Must create parents as required
    */
-  boolean put(String key);
+  boolean put(Path key);
 
   /**
    * Deletes the file identified by {@code key} on destination.
@@ -30,7 +31,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * @return {@code true} if delete was successful
    * @implSpec Must delete children as required
    */
-  boolean delete(String key);
+  boolean delete(Path key);
 
   /** Backup location (source or destination). */
   interface Location {
@@ -40,7 +41,8 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
      *
      * @return Map of (relativized) paths to nodes.
      */
-    Map<String, Node> scan();
+    // TODO class wrapping the map
+    NavigableMap<Path, Node> scan();
   }
 
   /** Represents a node in a locations file tree. Either a file or directory. */
@@ -53,6 +55,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
      * @implNote The default implementation just looks at file size.
      */
     // TODO generify Node such that same is only called for same type. I.e. File vs File, Dir vs Dir
+    // TODO just combine the classes again...?
     boolean same(Node other);
 
     /** File. */

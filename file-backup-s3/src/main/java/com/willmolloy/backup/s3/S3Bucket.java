@@ -6,11 +6,18 @@ import static java.util.stream.Collectors.toMap;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.Backup.Location;
-import java.util.Map;
+
+import java.nio.file.Path;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 /**
@@ -37,19 +44,26 @@ class S3Bucket implements Location {
   }
 
   @Override
-  public Map<String, Backup.Node> scan() {
+  public NavigableMap<Path, Backup.Node> scan() {
     log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);
 
+    Function<S3Object, Path> keyFunc = ((Function<S3Object, String>) S3Object::key)
+        // strip prefix TODO make prefix a Path?
+        .andThen(path -> path.replaceFirst("^" + prefix, ""))
+        .andThen(Path::of);
+
+    BinaryOperator<Backup.Node> mergeFunc =
+        (first, second) -> {
+          log.warn("Scanned duplicate: [{}]", second);
+          return second;
+        };
+
     return response.stream()
         .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
-        .collect(
-            toMap(
-                // strip prefix
-                s3Object -> s3Object.key().replaceFirst("^" + prefix, ""),
-                S3File::new));
+        .collect(toMap(keyFunc, S3File::new, mergeFunc, TreeMap::new));
   }
 
   public String bucketName() {

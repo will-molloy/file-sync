@@ -8,7 +8,10 @@ import static org.mockito.Mockito.when;
 
 import com.willmolloy.backup.Backup;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +70,7 @@ class S3BucketTest {
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
-    Map<String, Backup.Node> scan = sut.scan();
+    NavigableMap<Path, Backup.Node> scan = sut.scan();
 
     // Then
     assertThat(scan)
