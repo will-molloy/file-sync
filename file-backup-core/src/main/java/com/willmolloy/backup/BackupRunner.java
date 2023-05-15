@@ -5,12 +5,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup.Node;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,11 +67,20 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      Map<String, Node> sourceNodes = scanWithLog(backup.source()::scan, "source");
-      Map<String, Node> destNodes = scanWithLog(backup.destination()::scan, "destination");
+      TreeMap<String, Node> sourceNodes = scanWithLog(backup.source()::scan, "source");
+      TreeMap<String, Node> destNodes = scanWithLog(backup.destination()::scan, "destination");
 
       sourceNodes.forEach(
           (key, sourceNode) -> {
+            // TODO WIP - minimal ops...
+            String nextKey = sourceNodes.higherKey(key);
+            // TODO it needs to check it's a prefix of PATH i.e. until a '/'...
+            if (nextKey != null && nextKey.startsWith(key)) {
+              // 'nextKey' maps to a child of 'key'
+              // skip put as put of child will cover this node
+              return;
+            }
+
             switch (sourceNode) {
               case Node.File sourceFile -> {
                 Node destNode = destNodes.get(key);
@@ -95,12 +104,16 @@ public final class BackupRunner {
       // otherwise empty dirs are left on destination
       destNodes.forEach(
           (key, destFile) -> {
-            // TODO WIP - minimal delete...
+            if (sourceNodes.containsKey(key)) {
+              return;
+            }
+
+            // TODO WIP - minimal ops...
             // TODO just make scan key a Path?
             int parentI = key.lastIndexOf('/');
-            if (parentI > 0){
+            if (parentI > 0) {
               String parent = key.substring(0, key.lastIndexOf('/'));
-              if (destNodes.containsKey(parent) && !sourceNodes.containsKey(parent)){
+              if (destNodes.containsKey(parent)) {
                 // skip... deletion of parent will cover this node
                 return;
               }
@@ -114,10 +127,11 @@ public final class BackupRunner {
     return getAndLogStats(runStartNanos);
   }
 
-  private Map<String, Node> scanWithLog(Supplier<Map<String, Node>> scan, String locationForLog) {
+  private TreeMap<String, Node> scanWithLog(
+      Supplier<Map<String, Node>> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
 
-    Map<String, Node> nodes = scan.get();
+    TreeMap<String, Node> nodes = new TreeMap<>(scan.get());
 
     List<Node.File> files =
         nodes.values().stream()
