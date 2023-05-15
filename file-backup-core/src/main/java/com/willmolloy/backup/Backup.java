@@ -52,6 +52,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
      * @apiNote Used to determine if a file requires updating.
      * @implNote The default implementation just looks at file size.
      */
+    // TODO generify Node such that same is only called for same type. I.e. File vs File, Dir vs Dir
     boolean same(Node other);
 
     /** File. */
