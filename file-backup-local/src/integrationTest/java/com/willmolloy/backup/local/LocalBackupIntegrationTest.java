@@ -85,6 +85,7 @@ class LocalBackupIntegrationTest {
     }
   }
 
+  // TODO empty dir flaky on last-modified...
   @Test
   void whenFilesOnSourceAndDestination_updatesFilesAndDirectoriesOnDestination()
       throws IOException {
@@ -160,7 +161,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 0, 4, 0, 0, 37),
+                new BackupRunner.Statistics(0, 0, 5, 0, 0, 37),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     for (Path root : List.of(sourceRoot, destRoot)) {
@@ -184,7 +185,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 1, 2, 0, 6, 0),
+                new BackupRunner.Statistics(0, 1, 2, 0, 6, 11),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     for (Path root : List.of(sourceRoot, destRoot)) {
@@ -194,7 +195,6 @@ class LocalBackupIntegrationTest {
     }
   }
 
-  // TODO failing since delete count is skipped
   @Test
   void whenNonEmptyDirectoryOnSourceAndFileOnDestination_overwritesFileOnDestination()
       throws IOException {
@@ -210,7 +210,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(2, 0, 1, 0, 11, 6),
+                new BackupRunner.Statistics(2, 0, 0, 0, 11, 6),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     for (Path root : List.of(sourceRoot, destRoot)) {

@@ -1,26 +1,30 @@
 package com.willmolloy.backup;
 
-import static java.util.function.Predicate.not;
-
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Represents a {@link Backup.Location}s file tree.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
+// TODO unit tests
 public final class FileTree {
+
+  private static final Logger log = LogManager.getLogger();
 
   public static FileTree create(Map<Path, ? extends File> map) {
     return new FileTree(map);
   }
 
-  private final TreeMap<Path, ? extends File> nodes;
+  private final TreeMap<Path, File> nodes;
 
   private FileTree(Map<Path, ? extends File> nodes) {
     this.nodes = new TreeMap<>(nodes);
@@ -43,23 +47,34 @@ public final class FileTree {
     return parent != null && nodes.containsKey(parent);
   }
 
-  // TODO unit tests
   boolean containsAnyChildOf(Path key) {
-    // log(n) prefix check
     Path nextKey = nodes.higherKey(key);
     return nextKey != null && nextKey.startsWith(key);
   }
 
-  long fileCount() {
-    return files().count();
+  boolean isLeaf(Path key) {
+    return !containsAnyChildOf(key);
+  }
+
+  long leafCount() {
+    return leaves().count();
   }
 
   long totalSize() {
-    return files().mapToLong(File::size).sum();
+    return leaves().mapToLong(e -> e.getValue().size()).sum();
   }
 
-  private Stream<? extends File> files() {
-    return nodes.values().stream().filter(not(File::isDirectory));
+  private Stream<Map.Entry<Path, File>> leaves() {
+    return nodes.entrySet().stream().filter(e -> isLeaf(e.getKey()));
+  }
+
+  FileTree childTree(Path key) {
+    var childrenOf =
+        nodes.tailMap(key).entrySet().stream()
+            .filter(e -> e.getKey().startsWith(key))
+            .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+    log.debug("childrenOf({}) = {}", key, childrenOf);
+    return new FileTree(childrenOf);
   }
 
   @Override

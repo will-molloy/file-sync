@@ -11,10 +11,9 @@ import java.time.Duration;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,13 +39,13 @@ public final class BackupRunner {
     return new BackupRunner(backup).run();
   }
 
-  private final AtomicInteger createCount = new AtomicInteger();
-  private final AtomicInteger failedCreateCount = new AtomicInteger();
-  private final AtomicInteger updateCount = new AtomicInteger();
-  private final AtomicInteger failedUpdateCount = new AtomicInteger();
-  private final AtomicInteger deleteCount = new AtomicInteger();
-  private final AtomicInteger failedDeleteCount = new AtomicInteger();
-  private final AtomicInteger sameCount = new AtomicInteger();
+  private final AtomicLong createCount = new AtomicLong();
+  private final AtomicLong failedCreateCount = new AtomicLong();
+  private final AtomicLong updateCount = new AtomicLong();
+  private final AtomicLong failedUpdateCount = new AtomicLong();
+  private final AtomicLong deleteCount = new AtomicLong();
+  private final AtomicLong failedDeleteCount = new AtomicLong();
+  private final AtomicLong sameCount = new AtomicLong();
   // long can represent up to 9.2 EB
   private final AtomicLong bytesAdded = new AtomicLong();
   private final AtomicLong bytesRemoved = new AtomicLong();
@@ -99,7 +98,7 @@ public final class BackupRunner {
             }
 
             log.debug("delete({})", key);
-            threadPool.submit(() -> delete(key, destFile));
+            threadPool.submit(() -> delete(key, destFiles));
           });
     }
     return getAndLogStats(runStartNanos);
@@ -113,7 +112,7 @@ public final class BackupRunner {
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,
         elapsed(scanStartNanos),
-        NUMBER_FORMAT.format(fileTree.fileCount()),
+        NUMBER_FORMAT.format(fileTree.leafCount()),
         NUMBER_FORMAT.format(fileTree.totalSize() / MEGA));
 
     return fileTree;
@@ -138,12 +137,14 @@ public final class BackupRunner {
     }
   }
 
-  private void delete(Path key, File destFile) {
+  private void delete(Path key, FileTree destFiles) {
     if (backup.delete(key)) {
-      deleteCount.incrementAndGet();
-      bytesRemoved.addAndGet(destFile.size());
+      FileTree childTree = destFiles.childTree(key);
+      deleteCount.addAndGet(childTree.leafCount());
+      bytesRemoved.addAndGet(childTree.totalSize());
     } else {
-      failedDeleteCount.incrementAndGet();
+      FileTree childTree = destFiles.childTree(key);
+      failedDeleteCount.addAndGet(childTree.leafCount());
     }
   }
 
@@ -183,10 +184,10 @@ public final class BackupRunner {
    * @param bytesRemoved bytes removed from destination
    */
   public record Statistics(
-      int filesCreated,
-      int filesUpdated,
-      int filesDeleted,
-      int filesSame,
+      long filesCreated,
+      long filesUpdated,
+      long filesDeleted,
+      long filesSame,
       long bytesAdded,
       long bytesRemoved) {
     public Statistics {
@@ -218,7 +219,7 @@ public final class BackupRunner {
    * @param failedUpdates failed updates
    * @param failedDeletes failed deletes
    */
-  public record ErrorStatistics(int failedCreates, int failedUpdates, int failedDeletes) {
+  public record ErrorStatistics(long failedCreates, long failedUpdates, long failedDeletes) {
     public ErrorStatistics {
       require(failedCreates >= 0);
       require(failedUpdates >= 0);
@@ -226,7 +227,7 @@ public final class BackupRunner {
     }
 
     public boolean any() {
-      return IntStream.of(failedCreates, failedUpdates, failedDeletes).anyMatch(i -> i > 0);
+      return LongStream.of(failedCreates, failedUpdates, failedDeletes).anyMatch(i -> i > 0);
     }
 
     @Override
