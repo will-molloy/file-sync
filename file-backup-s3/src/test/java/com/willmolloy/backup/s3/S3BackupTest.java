@@ -78,7 +78,7 @@ class S3BackupTest {
   @Test
   void put_makesPutRequest() throws IOException {
     // Given
-    String key = fakeFileName();
+    Path key = fakeFileName();
     Path sourcePath = createSourcePath(key);
 
     // When
@@ -109,7 +109,7 @@ class S3BackupTest {
   @Test
   void put_whenS3Error_failsGracefully() throws IOException {
     // Given
-    String key = fakeFileName();
+    Path key = fakeFileName();
     createSourcePath(key);
     when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
         .thenThrow(new RuntimeException());
@@ -124,7 +124,7 @@ class S3BackupTest {
   @Test
   void delete_makesDeleteRequest() {
     // Given
-    String key = fakeFileName();
+    Path key = fakeFileName();
 
     // When
     boolean result = sut.delete(key);
@@ -159,12 +159,12 @@ class S3BackupTest {
             "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/test-bucket?prefix=testing/backup/]]");
   }
 
-  private String fakeFileName() {
-    return new Faker().file().fileName(null, null, null, "/");
+  private Path fakeFileName() {
+    return Path.of(new Faker().file().fileName());
   }
 
-  private Path createSourcePath(String key) throws IOException {
-    Path sourcePath = sourceRoot.resolve(key);
+  private Path createSourcePath(Path path) throws IOException {
+    Path sourcePath = sourceRoot.resolve(path);
     Path parent = sourcePath.getParent();
     if (parent != null) {
       Files.createDirectories(parent);

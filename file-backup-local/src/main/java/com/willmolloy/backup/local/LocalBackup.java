@@ -33,7 +33,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   }
 
   @Override
-  public boolean put(String key) {
+  public boolean put(Path key) {
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
     try {
@@ -64,7 +64,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   }
 
   @Override
-  public boolean delete(String key) {
+  public boolean delete(Path key) {
     Path destPath = destination.root().resolve(key);
     try {
       Files.walkFileTree(destPath, new RecursiveDelete());

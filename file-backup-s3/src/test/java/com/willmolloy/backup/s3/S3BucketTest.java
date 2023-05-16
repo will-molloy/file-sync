@@ -6,12 +6,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.FileTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,16 +68,23 @@ class S3BucketTest {
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
-    NavigableMap<Path, Backup.Node> scan = sut.scan();
+    FileTree scan = sut.scan();
 
     // Then
     assertThat(scan)
-        .containsExactly(
-            "A", new S3File(a),
-            "B", new S3File(b),
-            "C/D/E", new S3File(e),
-            "F/G/H/I", new S3File(i),
-            "X/Y/Z", new S3File(z));
+        .isEqualTo(
+            FileTree.fromMap(
+                Map.of(
+                    Path.of("A"),
+                    new S3File(a),
+                    Path.of("B"),
+                    new S3File(b),
+                    Path.of("C/D/E"),
+                    new S3File(e),
+                    Path.of("F/G/H/I"),
+                    new S3File(i),
+                    Path.of("X/Y/Z"),
+                    new S3File(z))));
   }
 
   @Test

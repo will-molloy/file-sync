@@ -3,7 +3,7 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup.Node;
+import com.willmolloy.backup.FileTree;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +16,7 @@ import java.util.Objects;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class LocalFile implements Node.File {
+class LocalFile implements FileTree.Node.File {
 
   private final Path path;
   private final long size;
@@ -39,9 +39,9 @@ class LocalFile implements Node.File {
   }
 
   @Override
-  public boolean same(File other) {
+  public boolean same(FileTree.Node other) {
     if (other instanceof LocalFile localFile) {
-      return size() == other.size() && lastModified().equals(localFile.lastModified());
+      return size() == localFile.size() && lastModified().equals(localFile.lastModified());
     }
     return File.super.same(other);
   }

@@ -1,7 +1,6 @@
 package com.willmolloy.backup;
 
 import java.nio.file.Path;
-import java.util.NavigableMap;
 
 /**
  * Backup type definition.
@@ -42,44 +41,6 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
      * @return Map of (relativized) paths to nodes.
      */
     // TODO class wrapping the map
-    NavigableMap<Path, Node> scan();
-  }
-
-  /** Represents a node in a locations file tree. Either a file or directory. */
-  sealed interface Node permits Node.File, Node.Directory {
-
-    /**
-     * {@code true} if the {@code other} file can be considered the same.
-     *
-     * @apiNote Used to determine if a file requires updating.
-     * @implNote The default implementation just looks at file size.
-     */
-    // TODO generify Node such that same is only called for same type. I.e. File vs File, Dir vs Dir
-    // TODO just combine the classes again...?
-    boolean same(Node other);
-
-    /** File. */
-    non-sealed interface File extends Node {
-
-      /** File size in bytes. */
-      long size();
-
-      /**
-       * {@code true} if the {@code other} file can be considered the same.
-       *
-       * @apiNote Used to determine if a file requires updating.
-       * @implNote The default implementation just looks at file size.
-       */
-      // for s3; considered last-modified, but it's really object-creation time.
-      // also considered e-tag, but it's calculated differently for large (> 16MB) files.
-      // file size is good enough?
-      @Override
-      default boolean same(Node other) {
-        return other instanceof File file && size() == file.size();
-      }
-    }
-
-    /** Directory. */
-    non-sealed interface Directory extends Node {}
+    FileTree scan();
   }
 }

@@ -3,24 +3,18 @@ package com.willmolloy.backup;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup.Node;
+import com.willmolloy.backup.FileTree.Node;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.Duration;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,74 +64,60 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      NavigableMap<Path, Node> sourceNodes = scanWithLog(backup.source()::scan, "source");
-      NavigableMap<Path, Node>destNodes = scanWithLog(backup.destination()::scan, "destination");
+      FileTree sourceFileTree = scanWithLog(backup.source()::scan, "source");
+      FileTree destFileTree = scanWithLog(backup.destination()::scan, "destination");
 
-      sourceNodes.forEach(
+      sourceFileTree.forEach(
           (key, sourceNode) -> {
-            // TODO WIP - minimal ops...
-            Path nextKey = sourceNodes.higherKey(key);
-            // TODO it needs to check it's a prefix of PATH i.e. until a '/'...
-            if (nextKey != null && nextKey.startsWith(key)) {
-              // 'nextKey' maps to a child of 'key'
-              // skip put as put of child will cover this node
+            if (sourceFileTree.containsAnyChildOf(key)) {
               log.debug("Skipping put({}). Covered by child", key);
               return;
             }
 
-            log.debug("Attempting put({})", key);
-            Node destNode = destNodes.get(key);
+            Node destNode = destFileTree.get(key);
             if (destNode == null) {
+              log.debug("create({})", key);
               threadPool.submit(() -> create(key, sourceNode));
             } else if (!sourceNode.same(destNode)) {
+              log.debug("update({})", key);
               threadPool.submit(() -> update(key, sourceNode, destNode));
             } else {
+              log.debug("same({})", key);
               sameCount.incrementAndGet();
             }
           });
 
-      // for dest we need to attempt deletion of every path, including directories
-      // otherwise empty dirs are left on destination
-      destNodes.forEach(
+      destFileTree.forEach(
           (key, destFile) -> {
-            if (sourceNodes.containsKey(key)) {
+            if (sourceFileTree.contains(key)) {
               return;
             }
 
-            // TODO WIP - minimal ops...
-            Path parent = key.getParent();
-            if (parent != null && destNodes.containsKey(parent)){
-              // skip... deletion of parent will cover this node
+            // TODO test coverage for this... only skip if parent NOT in source
+            if (destFileTree.containsParentOf(key) && !sourceFileTree.containsParentOf(key)) {
               log.debug("Skipping delete({}). Covered by parent", key);
               return;
             }
 
-            log.debug("Attempting delete({})", key);
+            log.debug("delete({})", key);
             threadPool.submit(() -> delete(key, destFile));
           });
     }
     return getAndLogStats(runStartNanos);
   }
 
-  private NavigableMap<Path, Node> scanWithLog(
-      Supplier<NavigableMap<Path, Node>> scan, String locationForLog) {
+  private FileTree scanWithLog(Supplier<FileTree> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
 
-    NavigableMap<Path, Node> nodes = scan.get();
-
-    List<Node.File> files =
-        nodes.values().stream()
-            .flatMap(node -> node instanceof Node.File file ? Stream.of(file) : Stream.empty())
-            .toList();
-    long sizeMB = files.stream().mapToLong(Node.File::size).sum() / MEGA;
+    FileTree fileTree = scan.get();
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,
         elapsed(scanStartNanos),
-        NUMBER_FORMAT.format(files.size()),
-        NUMBER_FORMAT.format(sizeMB));
+        NUMBER_FORMAT.format(fileTree.fileCount()),
+        NUMBER_FORMAT.format(fileTree.totalSize() / MEGA));
 
-    return nodes;
+    return fileTree;
   }
 
   private void create(Path key, Node sourceNode) {

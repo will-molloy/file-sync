@@ -3,10 +3,8 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.sun.source.tree.Tree;
-import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.Backup.Location;
-import java.io.File;
+import com.willmolloy.backup.FileTree;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -15,16 +13,10 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,39 +36,35 @@ public record LocalStorage(Path root) implements Location {
   }
 
   @Override
-  public NavigableMap<Path, Backup.Node> scan() {
+  public FileTree scan() {
     log.info("Scanning directory: [{}]", root);
     try {
-      TreeMap<Path, Backup.Node> map = new TreeMap<>();
+      TreeMap<Path, FileTree.Node> map = new TreeMap<>();
 
       Function<Path, Path> keyFunc = root::relativize;
 
       // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-      BinaryOperator<Backup.Node> mergeFunc =
+      BinaryOperator<FileTree.Node> mergeFunc =
           (first, second) -> {
             log.warn("Scanned duplicate: [{}]", second);
             return second;
           };
 
-      BiConsumer<Path, BasicFileAttributes> fileConsumer =
-          (path, attributes) -> {
-            Path key = keyFunc.apply(path);
-            LocalFile localFile = new LocalFile(path, attributes);
-            map.merge(key, localFile, mergeFunc);
-          };
-
-      BiConsumer<Path, BasicFileAttributes> directoryConsumer =
+      BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
             if (path == root) {
               return;
             }
             Path key = keyFunc.apply(path);
-            LocalDirectory localFile = new LocalDirectory(path, attributes);
-            map.merge(key, localFile, mergeFunc);
+            FileTree.Node node =
+                attributes.isDirectory()
+                    ? new LocalDirectory(path, attributes)
+                    : new LocalFile(path, attributes);
+            map.merge(key, node, mergeFunc);
           };
 
-      Files.walkFileTree(root, new DirectoryScanner(fileConsumer, directoryConsumer));
-      return map;
+      Files.walkFileTree(root, new DirectoryWalker(consumer));
+      return FileTree.fromMap(map);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -87,20 +75,16 @@ public record LocalStorage(Path root) implements Location {
     return "%s[%s]".formatted(getClass().getSimpleName(), root);
   }
 
-  private static final class DirectoryScanner implements FileVisitor<Path> {
-    private final BiConsumer<Path, BasicFileAttributes> fileConsumer;
-    private final BiConsumer<Path, BasicFileAttributes> directoryConsumer;
+  private static final class DirectoryWalker implements FileVisitor<Path> {
+    private final BiConsumer<Path, BasicFileAttributes> consumer;
 
-    private DirectoryScanner(
-        BiConsumer<Path, BasicFileAttributes> fileConsumer,
-        BiConsumer<Path, BasicFileAttributes> directoryConsumer) {
-      this.fileConsumer = requireNonNull(fileConsumer);
-      this.directoryConsumer = requireNonNull(directoryConsumer);
+    private DirectoryWalker(BiConsumer<Path, BasicFileAttributes> fileConsumer) {
+      this.consumer = requireNonNull(fileConsumer);
     }
 
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
-      directoryConsumer.accept(dir, attributes);
+      consumer.accept(dir, attributes);
       return FileVisitResult.CONTINUE;
     }
 
@@ -111,7 +95,7 @@ public record LocalStorage(Path root) implements Location {
         log.warn("Skipped file (symlink): [{}]", file);
         return FileVisitResult.CONTINUE;
       }
-      fileConsumer.accept(file, attributes);
+      consumer.accept(file, attributes);
       return FileVisitResult.CONTINUE;
     }
 

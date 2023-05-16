@@ -3,7 +3,7 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.FileTree;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +15,7 @@ import java.util.Objects;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class LocalDirectory implements Backup.Node.Directory {
+class LocalDirectory implements FileTree.Node.Directory {
 
   private final Path path;
 

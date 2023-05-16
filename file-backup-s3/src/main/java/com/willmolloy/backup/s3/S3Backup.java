@@ -46,9 +46,10 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public boolean put(String key) {
+  public boolean put(Path key) {
     Path sourcePath = source.root().resolve(key);
-    String destinationUri = destination.objectUri(key);
+    // TODO ensure '/'
+    String destinationUri = destination.objectUri(key.toString());
     try {
       // TODO multipart upload for large files
       PutObjectRequest request =
@@ -72,8 +73,9 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public boolean delete(String key) {
-    String destinationUri = destination.objectUri(key);
+  public boolean delete(Path key) {
+    // TODO ensure '/'
+    String destinationUri = destination.objectUri(key.toString());
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()

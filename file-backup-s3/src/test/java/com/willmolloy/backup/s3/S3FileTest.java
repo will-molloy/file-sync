@@ -7,7 +7,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.github.javafaker.Faker;
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.FileTree;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,7 +57,7 @@ class S3FileTest {
     // Given
     S3File thisFile = spy(new S3File(S3Object.builder().size(thisSize).build()));
 
-    Backup.Node.File otherFile = mock(Backup.Node.File.class);
+    FileTree.Node.File otherFile = mock(FileTree.Node.File.class);
     when(otherFile.size()).thenReturn(otherSize);
 
     // Then

@@ -66,7 +66,7 @@ class LocalBackupTest {
     Files.writeString(sourceFile, "source");
 
     // When
-    boolean result = sut.put("A");
+    boolean result = sut.put(Path.of("A"));
 
     // Then
     assertThat(result).isTrue();
@@ -85,7 +85,7 @@ class LocalBackupTest {
     Files.writeString(sourceFile, "source");
 
     // When
-    boolean result = sut.put("A/B/C");
+    boolean result = sut.put(Path.of("A/B/C"));
 
     // Then
     assertThat(result).isTrue();
@@ -104,7 +104,7 @@ class LocalBackupTest {
     Files.writeString(destFile, "dest");
 
     // When
-    boolean result = sut.put("A");
+    boolean result = sut.put(Path.of("A"));
 
     // Then
     assertThat(result).isTrue();
@@ -127,7 +127,7 @@ class LocalBackupTest {
     Files.writeString(destFile, "dest");
 
     // When
-    boolean result = sut.put("A/B/C");
+    boolean result = sut.put(Path.of("A/B/C"));
 
     // Then
     assertThat(result).isTrue();
@@ -148,7 +148,7 @@ class LocalBackupTest {
     Files.createDirectories(destDir);
 
     // When
-    boolean result = sut.put("A/B/C");
+    boolean result = sut.put(Path.of("A/B/C"));
 
     // Then
     Path expectedDestFile = destRoot.resolve(fs.getPath("A/B/C"));
@@ -161,7 +161,7 @@ class LocalBackupTest {
   @Test
   void put_whenFileNotOnSource_failsGracefully() throws IOException {
     // When
-    boolean result = assertDoesNotThrow(() -> sut.put("A"));
+    boolean result = assertDoesNotThrow(() -> sut.put(Path.of("A")));
 
     // Then
     assertThat(result).isTrue();
@@ -174,7 +174,7 @@ class LocalBackupTest {
     Files.createFile(destRoot.resolve(fs.getPath("A")));
 
     // When
-    boolean result = sut.delete("A");
+    boolean result = sut.delete(Path.of("A"));
 
     // Then
     assertThat(result).isTrue();
@@ -187,7 +187,7 @@ class LocalBackupTest {
     Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
 
     // When
-    boolean result = sut.delete("A");
+    boolean result = sut.delete(Path.of("A"));
 
     // Then
     assertThat(result).isTrue();
@@ -197,7 +197,7 @@ class LocalBackupTest {
   @Test
   void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
     // When
-    boolean result = assertDoesNotThrow(() -> sut.delete("A"));
+    boolean result = assertDoesNotThrow(() -> sut.delete(Path.of("A")));
 
     // Then
     assertThat(result).isTrue();
