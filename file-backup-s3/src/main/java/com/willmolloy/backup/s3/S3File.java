@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record S3File(S3Object s3Object) implements FileTree.Node.File {
+record S3File(S3Object s3Object) implements FileTree.File {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -29,5 +29,10 @@ record S3File(S3Object s3Object) implements FileTree.Node.File {
       log.error("Error getting size of object: [%s]".formatted(s3Object), e);
       return 0;
     }
+  }
+
+  @Override
+  public boolean isDirectory() {
+    return false;
   }
 }

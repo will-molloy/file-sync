@@ -11,7 +11,7 @@ import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.BackupRunner.ErrorStatistics;
 import com.willmolloy.backup.BackupRunner.OverallStatistics;
 import com.willmolloy.backup.BackupRunner.Statistics;
-import com.willmolloy.backup.FileTree.Node;
+import com.willmolloy.backup.FileTree.File;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -32,63 +32,65 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BackupRunnerTest {
 
   @Mock private Location mockSource;
-  @Mock private Location mockDestination;
+  @Mock private Location mockDest;
   @Mock private Backup<Location, Location> mockBackup;
 
   @BeforeEach
   void setUp() {
     when(mockBackup.source()).thenReturn(mockSource);
-    when(mockBackup.destination()).thenReturn(mockDestination);
+    when(mockBackup.destination()).thenReturn(mockDest);
   }
 
   @AfterEach
   void tearDown() {
     verify(mockSource).scan();
-    verify(mockDestination).scan();
+    verify(mockDest).scan();
     verifyNoMoreInteractions(mockSource);
-    verifyNoMoreInteractions(mockDestination);
+    verifyNoMoreInteractions(mockDest);
     verifyNoMoreInteractions(mockBackup);
   }
 
   @Test
-  void whenFileOnSourceAndNotDestination_createsFileOnDestination() {
+  void whenFileOnlyOnSource_createsFileOnDestination() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of()));
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of()));
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
-    verify(mockBackup).put(Path.of("A"));
+    verify(mockBackup).put(Path.of("A/B/C"));
     assertThat(statistics)
         .isEqualTo(
             new OverallStatistics(new Statistics(1, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
-  void whenDirectoryOnSourceAndNotDestination_skipsCreate() {
+  void whenDirectoryOnlyOnSource_createsDirectoryOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of()));
+    when(mockSource.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A/B/C"), directory())));
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of()));
+    when(mockBackup.put(any())).thenReturn(true);
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
 
     // Then
+    verify(mockBackup).put(Path.of("A/B/C"));
     assertThat(statistics)
         .isEqualTo(
-            new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
+            new OverallStatistics(new Statistics(1, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 0)));
   }
 
   @Test
   void whenFileOnSourceAndDestination_andNotSame_updatesFileOnDestination() {
     // Given
-    Node.File sourceFile = file();
+    File sourceFile = file();
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), sourceFile)));
-    Node.File destFile = file();
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), destFile)));
+    File destFile = file();
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), destFile)));
     when(mockBackup.put(any())).thenReturn(true);
     when(sourceFile.same(destFile)).thenReturn(false);
 
@@ -105,10 +107,10 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andSame_skipsUpdate() {
     // Given
-    Node.File sourceFile = file();
+    File sourceFile = file();
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), sourceFile)));
-    Node.File destFile = file();
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), destFile)));
+    File destFile = file();
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), destFile)));
     when(sourceFile.same(destFile)).thenReturn(true);
 
     // When
@@ -123,8 +125,8 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnSourceAndDestination_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockSource.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockDest.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
@@ -139,7 +141,7 @@ class BackupRunnerTest {
   void whenFileOnSourceAndDirectoryOnDestination_overwritesDirectoryOnDestination() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockDest.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -155,8 +157,8 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnSourceAndFileOnDestination_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
+    when(mockSource.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
@@ -171,7 +173,7 @@ class BackupRunnerTest {
   void whenFileOnDestinationAndNotSource_deletesFileFromDestination() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of()));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -187,10 +189,10 @@ class BackupRunnerTest {
   @Test
   void whenFileOnDestinationAndSource_skipsDelete() {
     // Given
-    Node.File sourceFile = file();
+    File sourceFile = file();
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), sourceFile)));
-    Node.File destFile = file();
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), destFile)));
+    File destFile = file();
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), destFile)));
     when(sourceFile.same(destFile)).thenReturn(true);
 
     // When
@@ -206,7 +208,7 @@ class BackupRunnerTest {
   void whenDirectoryOnDestinationAndNotSource_deletesDirectoryFromDestination() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of()));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockDest.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -222,8 +224,8 @@ class BackupRunnerTest {
   @Test
   void whenDirectoryOnDestinationAndSource_skipsDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockSource.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
+    when(mockDest.scan()).thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), directory())));
 
     // When
     OverallStatistics statistics = BackupRunner.run(mockBackup);
@@ -238,7 +240,7 @@ class BackupRunnerTest {
   void whenCreateFails_countsFailedCreate() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of()));
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of()));
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -255,7 +257,7 @@ class BackupRunnerTest {
   void whenUpdateFails_countsFailedUpdate() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
-    when(mockDestination.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
+    when(mockDest.scan()).thenReturn(FileTree.create(Map.of(Path.of("A"), file())));
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -273,8 +275,8 @@ class BackupRunnerTest {
   void whenDeleteFails_countsFailedDelete(boolean isDirectory) {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.create(Map.of()));
-    when(mockDestination.scan())
-        .thenReturn(FileTree.create(Map.of(Path.of("A"), isDirectory ? directory() : file())));
+    when(mockDest.scan())
+        .thenAnswer(i -> FileTree.create(Map.of(Path.of("A"), isDirectory ? directory() : file())));
     when(mockBackup.delete(any())).thenReturn(false);
 
     // When
@@ -287,11 +289,13 @@ class BackupRunnerTest {
             new OverallStatistics(new Statistics(0, 0, 0, 0, 0, 0), new ErrorStatistics(0, 0, 1)));
   }
 
-  private static Node.File file() {
-    return mock(Node.File.class);
+  private static File file() {
+    return mock(File.class);
   }
 
-  private static Node.Directory directory() {
-    return mock(Node.Directory.class);
+  private static File directory() {
+    File mock = mock(File.class);
+    when(mock.isDirectory()).thenReturn(true);
+    return mock;
   }
 }

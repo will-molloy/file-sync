@@ -72,15 +72,15 @@ class LocalStorageTest {
                 Map.ofEntries(
                     entry(fs.getPath("A"), new LocalFile(root.resolve("A"))),
                     entry(fs.getPath("B"), new LocalFile(root.resolve("B"))),
-                    entry(fs.getPath("C"), new LocalDirectory(root.resolve("C"))),
-                    entry(fs.getPath("C/D"), new LocalDirectory(root.resolve("C/D"))),
+                    entry(fs.getPath("C"), new LocalFile(root.resolve("C"))),
+                    entry(fs.getPath("C/D"), new LocalFile(root.resolve("C/D"))),
                     entry(fs.getPath("C/D/E"), new LocalFile(root.resolve("C/D/E"))),
-                    entry(fs.getPath("F"), new LocalDirectory(root.resolve("F"))),
-                    entry(fs.getPath("F/G"), new LocalDirectory(root.resolve("F/G"))),
-                    entry(fs.getPath("F/G/H"), new LocalDirectory(root.resolve("F/G/H"))),
+                    entry(fs.getPath("F"), new LocalFile(root.resolve("F"))),
+                    entry(fs.getPath("F/G"), new LocalFile(root.resolve("F/G"))),
+                    entry(fs.getPath("F/G/H"), new LocalFile(root.resolve("F/G/H"))),
                     entry(fs.getPath("F/G/H/I"), new LocalFile(root.resolve("F/G/H/I"))),
-                    entry(fs.getPath("X"), new LocalDirectory(root.resolve("X"))),
-                    entry(fs.getPath("X/Y"), new LocalDirectory(root.resolve("X/Y"))),
+                    entry(fs.getPath("X"), new LocalFile(root.resolve("X"))),
+                    entry(fs.getPath("X/Y"), new LocalFile(root.resolve("X/Y"))),
                     entry(fs.getPath("X/Y/Z"), new LocalFile(root.resolve("X/Y/Z"))))));
   }
 

@@ -51,13 +51,23 @@ class S3FileTest {
     assertThat(result).isEqualTo(0);
   }
 
+  @Test
+  void isDirectory_alwaysFalse() {
+    // Given
+    S3Object s3Object = S3Object.builder().build();
+    S3File file = new S3File(s3Object);
+
+    // Then
+    assertThat(file.isDirectory()).isFalse();
+  }
+
   @ParameterizedTest
   @MethodSource
   void same_onlyTrueIfSizeEqual(long thisSize, long otherSize, boolean expected) {
     // Given
     S3File thisFile = spy(new S3File(S3Object.builder().size(thisSize).build()));
 
-    FileTree.Node.File otherFile = mock(FileTree.Node.File.class);
+    FileTree.File otherFile = mock(FileTree.File.class);
     when(otherFile.size()).thenReturn(otherSize);
 
     // Then

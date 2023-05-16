@@ -3,7 +3,7 @@ package com.willmolloy.backup;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.FileTree.Node;
+import com.willmolloy.backup.FileTree.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
 import java.text.NumberFormat;
@@ -68,19 +68,19 @@ public final class BackupRunner {
       FileTree destFiles = scanWithLog(backup.destination()::scan, "destination");
 
       sourceFiles.forEach(
-          (key, sourceNode) -> {
+          (key, sourceFile) -> {
             if (sourceFiles.containsAnyChildOf(key)) {
               log.debug("Skipping put({}). Covered by child", key);
               return;
             }
 
-            Node destNode = destFiles.get(key);
-            if (destNode == null) {
+            File destFile = destFiles.get(key);
+            if (destFile == null) {
               log.debug("create({})", key);
-              threadPool.submit(() -> create(key, sourceNode));
-            } else if (!sourceNode.same(destNode)) {
+              threadPool.submit(() -> create(key, sourceFile));
+            } else if (!sourceFile.same(destFile)) {
               log.debug("update({})", key);
-              threadPool.submit(() -> update(key, sourceNode, destNode));
+              threadPool.submit(() -> update(key, sourceFile, destFile));
             } else {
               log.debug("same({})", key);
               sameCount.incrementAndGet();
@@ -120,37 +120,29 @@ public final class BackupRunner {
     return fileTree;
   }
 
-  private void create(Path key, Node sourceNode) {
+  private void create(Path key, File sourceFile) {
     if (backup.put(key)) {
       createCount.incrementAndGet();
-      if (sourceNode instanceof Node.File sourceFile) {
-        bytesAdded.addAndGet(sourceFile.size());
-      }
+      bytesAdded.addAndGet(sourceFile.size());
     } else {
       failedCreateCount.incrementAndGet();
     }
   }
 
-  private void update(Path key, Node sourceNode, Node destNode) {
+  private void update(Path key, File sourceFile, File destFile) {
     if (backup.put(key)) {
       updateCount.incrementAndGet();
-      if (sourceNode instanceof Node.File sourceFile) {
-        bytesAdded.addAndGet(sourceFile.size());
-      }
-      if (destNode instanceof Node.File destFile) {
-        bytesRemoved.addAndGet(destFile.size());
-      }
+      bytesAdded.addAndGet(sourceFile.size());
+      bytesRemoved.addAndGet(destFile.size());
     } else {
       failedUpdateCount.incrementAndGet();
     }
   }
 
-  private void delete(Path key, Node destNode) {
+  private void delete(Path key, File destFile) {
     if (backup.delete(key)) {
       deleteCount.incrementAndGet();
-      if (destNode instanceof Node.File destFile) {
-        bytesRemoved.addAndGet(destFile.size());
-      }
+      bytesRemoved.addAndGet(destFile.size());
     } else {
       failedDeleteCount.incrementAndGet();
     }

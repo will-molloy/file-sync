@@ -39,12 +39,12 @@ public record LocalStorage(Path root) implements Location {
   public FileTree scan() {
     log.info("Scanning directory: [{}]", root);
     try {
-      TreeMap<Path, FileTree.Node> map = new TreeMap<>();
+      TreeMap<Path, LocalFile> map = new TreeMap<>();
 
       Function<Path, Path> keyFunc = root::relativize;
 
       // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-      BinaryOperator<FileTree.Node> mergeFunc =
+      BinaryOperator<LocalFile> mergeFunc =
           (first, second) -> {
             log.warn("Scanned duplicate: [{}]", second);
             return second;
@@ -56,11 +56,8 @@ public record LocalStorage(Path root) implements Location {
               return;
             }
             Path key = keyFunc.apply(path);
-            FileTree.Node node =
-                attributes.isDirectory()
-                    ? new LocalDirectory(path, attributes)
-                    : new LocalFile(path, attributes);
-            map.merge(key, node, mergeFunc);
+            LocalFile file = new LocalFile(path, attributes);
+            map.merge(key, file, mergeFunc);
           };
 
       Files.walkFileTree(root, new DirectoryWalker(consumer));

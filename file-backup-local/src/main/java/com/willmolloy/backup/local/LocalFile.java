@@ -16,17 +16,21 @@ import java.util.Objects;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class LocalFile implements FileTree.Node.File {
+class LocalFile implements FileTree.File {
 
   private final Path path;
   private final long size;
   private final Instant lastModified;
+  private final boolean isDirectory;
 
   LocalFile(Path path, BasicFileAttributes attributes) {
-    require(attributes.isRegularFile(), "Requires a file: [%s]".formatted(path));
+    require(
+        attributes.isRegularFile() || attributes.isDirectory(),
+        "Requires a file or directory: [%s]".formatted(path));
     this.path = requireNonNull(path);
     this.size = attributes.size();
     this.lastModified = attributes.lastModifiedTime().toInstant();
+    this.isDirectory = attributes.isDirectory();
   }
 
   LocalFile(Path path) throws IOException {
@@ -38,16 +42,21 @@ class LocalFile implements FileTree.Node.File {
     return size;
   }
 
-  @Override
-  public boolean same(FileTree.Node other) {
-    if (other instanceof LocalFile localFile) {
-      return size() == localFile.size() && lastModified().equals(localFile.lastModified());
-    }
-    return File.super.same(other);
-  }
-
   Instant lastModified() {
     return lastModified;
+  }
+
+  @Override
+  public boolean isDirectory() {
+    return isDirectory;
+  }
+
+  @Override
+  public boolean same(FileTree.File other) {
+    if (other instanceof LocalFile localFile) {
+      return FileTree.File.super.same(other) && lastModified.equals(localFile.lastModified);
+    }
+    return FileTree.File.super.same(other);
   }
 
   @Override

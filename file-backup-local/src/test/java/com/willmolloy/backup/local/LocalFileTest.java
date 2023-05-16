@@ -1,7 +1,6 @@
 package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -83,6 +82,23 @@ class LocalFileTest {
         .isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
   }
 
+  @Test
+  void isDirectory_whenDirectory_true() throws IOException {
+    // Given
+    LocalFile file = new LocalFile(Files.createDirectory(root.resolve("A")));
+    // Then
+    assertThat(file.isDirectory()).isTrue();
+  }
+
+  @Test
+  void isDirectory_whenFile_false() throws IOException {
+    // Given
+    LocalFile file = new LocalFile(Files.createFile(root.resolve("A")));
+
+    // Then
+    assertThat(file.isDirectory()).isFalse();
+  }
+
   @ParameterizedTest
   @MethodSource
   void same_whenOtherIsLocalFile_onlyTrueWhenSizeAndLastModifiedEqual(
@@ -127,13 +143,14 @@ class LocalFileTest {
     Files.writeString(thisFilePath, thisContents);
     LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
-    FileTree.Node.File otherFile = mock(FileTree.Node.File.class);
+    FileTree.File otherFile = mock(FileTree.File.class);
     when(otherFile.size()).thenReturn((long) otherContents.length());
 
     // Then
     assertThat(thisFile.same(otherFile)).isEqualTo(expected);
   }
 
+  // TODO coverage for isDirectory() == other.isDirectory()???
   static Stream<Arguments> same_whenOtherNotLocalFile_onlyTrueWhenSizeEqual() {
     return Stream.of(
         Arguments.of("ABC", "ABC", true),
@@ -147,16 +164,5 @@ class LocalFileTest {
     Path path = Files.createFile(root.resolve("ABCD"));
     LocalFile file = new LocalFile(path);
     assertThat(file.toString()).isEqualTo("LocalFile[%s]".formatted(path));
-  }
-
-  @Test
-  void constructor_requiresValidFile() {
-    IllegalArgumentException thrown =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> new LocalFile(Files.createDirectory(root.resolve("A"))));
-    assertThat(thrown)
-        .hasMessageThat()
-        .isEqualTo("Requires a file: [%s]".formatted(root.resolve("A")));
   }
 }

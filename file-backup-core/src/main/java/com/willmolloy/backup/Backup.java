@@ -20,7 +20,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * file on source.
    *
    * @return {@code true} if create/update was successful
-   * @implSpec Must create parents as required
+   * @implSpec Creates parents when necessary
    */
   boolean put(Path key);
 
@@ -28,7 +28,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * Deletes the file identified by {@code key} on destination.
    *
    * @return {@code true} if delete was successful
-   * @implSpec Must delete children as required
+   * @implSpec Deletes children when necessary
    */
   boolean delete(Path key);
 
@@ -37,10 +37,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
 
     /**
      * Scans the location's file tree.
-     *
-     * @return Map of (relativized) paths to nodes.
      */
-    // TODO class wrapping the map
     FileTree scan();
   }
 }
