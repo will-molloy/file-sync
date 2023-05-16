@@ -70,18 +70,18 @@ class LocalStorageTest {
         .isEqualTo(
             FileTree.create(
                 Map.ofEntries(
-                    entry(Path.of("A"), new LocalFile(root.resolve("A"))),
-                    entry(Path.of("B"), new LocalFile(root.resolve("B"))),
-                    entry(Path.of("C"), new LocalDirectory(root.resolve("C"))),
-                    entry(Path.of("C/D"), new LocalDirectory(root.resolve("C/D"))),
-                    entry(Path.of("C/D/E"), new LocalFile(root.resolve("C/D/E"))),
-                    entry(Path.of("F"), new LocalDirectory(root.resolve("F"))),
-                    entry(Path.of("F/G"), new LocalDirectory(root.resolve("F/G"))),
-                    entry(Path.of("F/G/H"), new LocalDirectory(root.resolve("F/G/H"))),
-                    entry(Path.of("F/G/H/I"), new LocalFile(root.resolve("F/G/H/I"))),
-                    entry(Path.of("X"), new LocalDirectory(root.resolve("X"))),
-                    entry(Path.of("X/Y"), new LocalDirectory(root.resolve("X/Y"))),
-                    entry(Path.of("X/Y/Z"), new LocalFile(root.resolve("X/Y/Z"))))));
+                    entry(fs.getPath("A"), new LocalFile(root.resolve("A"))),
+                    entry(fs.getPath("B"), new LocalFile(root.resolve("B"))),
+                    entry(fs.getPath("C"), new LocalDirectory(root.resolve("C"))),
+                    entry(fs.getPath("C/D"), new LocalDirectory(root.resolve("C/D"))),
+                    entry(fs.getPath("C/D/E"), new LocalFile(root.resolve("C/D/E"))),
+                    entry(fs.getPath("F"), new LocalDirectory(root.resolve("F"))),
+                    entry(fs.getPath("F/G"), new LocalDirectory(root.resolve("F/G"))),
+                    entry(fs.getPath("F/G/H"), new LocalDirectory(root.resolve("F/G/H"))),
+                    entry(fs.getPath("F/G/H/I"), new LocalFile(root.resolve("F/G/H/I"))),
+                    entry(fs.getPath("X"), new LocalDirectory(root.resolve("X"))),
+                    entry(fs.getPath("X/Y"), new LocalDirectory(root.resolve("X/Y"))),
+                    entry(fs.getPath("X/Y/Z"), new LocalFile(root.resolve("X/Y/Z"))))));
   }
 
   @Test
