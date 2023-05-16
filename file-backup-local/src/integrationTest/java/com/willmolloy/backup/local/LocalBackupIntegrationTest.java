@@ -116,7 +116,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 4, 0, 1, 45, 37),
+                new BackupRunner.Statistics(0, 5, 0, 0, 45, 37),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     for (Path root : List.of(sourceRoot, destRoot)) {
@@ -273,7 +273,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 0, 1, 1, 0, 0),
+                new BackupRunner.Statistics(0, 1, 1, 0, 0, 0),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     for (Path root : List.of(sourceRoot, destRoot)) {

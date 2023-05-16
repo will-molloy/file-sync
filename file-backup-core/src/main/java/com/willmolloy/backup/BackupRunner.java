@@ -93,7 +93,6 @@ public final class BackupRunner {
               return;
             }
 
-            // TODO test coverage for this... only skip if parent NOT in source
             if (destFiles.containsParentOf(key) && !sourceFiles.containsParentOf(key)) {
               log.debug("Skipping delete({}). Covered by parent", key);
               return;

@@ -35,9 +35,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
   /** Backup location (source or destination). */
   interface Location {
 
-    /**
-     * Scans the location's file tree.
-     */
+    /** Scans the location's file tree. */
     FileTree scan();
   }
 }
