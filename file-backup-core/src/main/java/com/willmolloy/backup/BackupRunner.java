@@ -64,17 +64,17 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      FileTree sourceFileTree = scanWithLog(backup.source()::scan, "source");
-      FileTree destFileTree = scanWithLog(backup.destination()::scan, "destination");
+      FileTree sourceFiles = scanWithLog(backup.source()::scan, "source");
+      FileTree destFiles = scanWithLog(backup.destination()::scan, "destination");
 
-      sourceFileTree.forEach(
+      sourceFiles.forEach(
           (key, sourceNode) -> {
-            if (sourceFileTree.containsAnyChildOf(key)) {
+            if (sourceFiles.containsAnyChildOf(key)) {
               log.debug("Skipping put({}). Covered by child", key);
               return;
             }
 
-            Node destNode = destFileTree.get(key);
+            Node destNode = destFiles.get(key);
             if (destNode == null) {
               log.debug("create({})", key);
               threadPool.submit(() -> create(key, sourceNode));
@@ -87,14 +87,14 @@ public final class BackupRunner {
             }
           });
 
-      destFileTree.forEach(
+      destFiles.forEach(
           (key, destFile) -> {
-            if (sourceFileTree.contains(key)) {
+            if (sourceFiles.contains(key)) {
               return;
             }
 
             // TODO test coverage for this... only skip if parent NOT in source
-            if (destFileTree.containsParentOf(key) && !sourceFileTree.containsParentOf(key)) {
+            if (destFiles.containsParentOf(key) && !sourceFiles.containsParentOf(key)) {
               log.debug("Skipping delete({}). Covered by parent", key);
               return;
             }
