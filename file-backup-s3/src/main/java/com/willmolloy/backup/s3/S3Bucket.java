@@ -1,17 +1,15 @@
 package com.willmolloy.backup.s3;
 
+import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.FileTree;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.TreeMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -87,15 +85,5 @@ class S3Bucket implements Location {
   String objectUri(Path key) {
     return S3_BASE_URI
         + "object/%s?prefix=%s".formatted(bucketName, ensureUnixSeparator(prefix.resolve(key)));
-  }
-
-  static String ensureUnixSeparator(Path path) {
-    if (File.separatorChar == '/') {
-      return path.toString();
-    } else {
-      return StreamSupport.stream(path.spliterator(), false)
-          .map(Path::toString)
-          .collect(Collectors.joining("/"));
-    }
   }
 }

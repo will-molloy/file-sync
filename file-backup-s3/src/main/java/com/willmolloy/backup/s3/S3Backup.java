@@ -1,7 +1,7 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.s3.S3Bucket.ensureUnixSeparator;
 import static com.willmolloy.backup.util.Md5Helper.md5Base64;
+import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
