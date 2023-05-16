@@ -1,5 +1,6 @@
 package com.willmolloy.backup.s3;
 
+import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BackupRunner;
@@ -31,7 +32,8 @@ final class Main {
       FileSystem fs = FileSystems.getDefault();
 
       LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
-      S3Bucket dest = new S3Bucket(s3Client, destBucket, destPrefix);
+      require(destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
+      S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
       S3Backup s3Backup = new S3Backup(s3Client, source, dest);
       BackupRunner.OverallStatistics statistics = BackupRunner.run(s3Backup);

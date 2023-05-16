@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.github.javafaker.Faker;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.local.LocalStorage;
@@ -44,8 +43,6 @@ class S3BackupTest {
 
   private FileSystem fs;
   private Path sourceRoot;
-  private static final String DEST_BUCKET = "test-bucket";
-  private static final String DEST_BUCKET_PREFIX = "testing/backup/";
 
   @BeforeEach
   void setUp() throws IOException {
@@ -55,7 +52,7 @@ class S3BackupTest {
     Files.createDirectory(sourceRoot);
 
     source = new LocalStorage(sourceRoot);
-    destination = new S3Bucket(mockS3Client, DEST_BUCKET, DEST_BUCKET_PREFIX);
+    destination = new S3Bucket(mockS3Client, "my-bucket", fs.getPath("my/bucket/prefix/backups/"));
     sut = new S3Backup(mockS3Client, source, destination);
   }
 
@@ -78,7 +75,7 @@ class S3BackupTest {
   @Test
   void put_makesPutRequest() throws IOException {
     // Given
-    Path key = fakeFileName();
+    Path key = fs.getPath("A/B/C");
     Path sourcePath = createSourcePath(key);
 
     // When
@@ -89,8 +86,8 @@ class S3BackupTest {
     verify(mockS3Client)
         .putObject(
             PutObjectRequest.builder()
-                .bucket(DEST_BUCKET)
-                .key(DEST_BUCKET_PREFIX + key)
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/backups/A/B/C")
                 .contentMD5(md5Base64(sourcePath))
                 .storageClass(StorageClass.DEEP_ARCHIVE)
                 .build(),
@@ -100,7 +97,7 @@ class S3BackupTest {
   @Test
   void put_whenFileNotOnSource_failsGracefully() {
     // When
-    boolean result = assertDoesNotThrow(() -> sut.put(fakeFileName()));
+    boolean result = assertDoesNotThrow(() -> sut.put(fs.getPath("A/B/C")));
 
     // Then
     assertThat(result).isTrue();
@@ -109,7 +106,7 @@ class S3BackupTest {
   @Test
   void put_whenS3Error_failsGracefully() throws IOException {
     // Given
-    Path key = fakeFileName();
+    Path key = fs.getPath("A/B/C");
     createSourcePath(key);
     when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
         .thenThrow(new RuntimeException());
@@ -124,7 +121,7 @@ class S3BackupTest {
   @Test
   void delete_makesDeleteRequest() {
     // Given
-    Path key = fakeFileName();
+    Path key = fs.getPath("X/Y/Z");
 
     // When
     boolean result = sut.delete(key);
@@ -134,8 +131,8 @@ class S3BackupTest {
     verify(mockS3Client)
         .deleteObject(
             DeleteObjectRequest.builder()
-                .bucket(DEST_BUCKET)
-                .key(DEST_BUCKET_PREFIX + key)
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/backups/X/Y/Z")
                 .build());
   }
 
@@ -146,7 +143,7 @@ class S3BackupTest {
         .thenThrow(new RuntimeException());
 
     // When
-    boolean result = assertDoesNotThrow(() -> sut.delete(fakeFileName()));
+    boolean result = assertDoesNotThrow(() -> sut.delete(fs.getPath("X/Y/Z")));
 
     // Then
     assertThat(result).isFalse();
@@ -156,11 +153,7 @@ class S3BackupTest {
   void toString_includesSourceAndDest() {
     assertThat(sut.toString())
         .isEqualTo(
-            "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/test-bucket?prefix=testing/backup/]]");
-  }
-
-  private Path fakeFileName() {
-    return Path.of(new Faker().file().fileName());
+            "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=my/bucket/prefix/backups/]]");
   }
 
   private Path createSourcePath(Path path) throws IOException {

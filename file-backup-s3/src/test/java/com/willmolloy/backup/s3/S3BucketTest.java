@@ -1,7 +1,6 @@
 package com.willmolloy.backup.s3;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -34,12 +33,10 @@ class S3BucketTest {
 
   @Mock private S3Client mockS3Client;
   private S3Bucket sut;
-  private static final String BUCKET = "my-bucket";
-  private static final String PREFIX = "testing/backup/";
 
   @BeforeEach
   void setUp() {
-    sut = new S3Bucket(mockS3Client, BUCKET, PREFIX);
+    sut = new S3Bucket(mockS3Client, "my-bucket", Path.of("my/bucket/prefix/"));
   }
 
   @AfterEach
@@ -50,21 +47,20 @@ class S3BucketTest {
   @Test
   void scan_returnsMapOfKeysToFiles() {
     // Given
-    S3Object a = S3Object.builder().key(PREFIX + "A").build();
-    S3Object b = S3Object.builder().key(PREFIX + "B").build();
+    S3Object a = S3Object.builder().key("my/bucket/prefix/A").build();
+    S3Object b = S3Object.builder().key("my/bucket/prefix/B").build();
     ListObjectsV2Response page1 = ListObjectsV2Response.builder().contents(a, b).build();
-    S3Object e = S3Object.builder().key(PREFIX + "C/D/E").build();
+    S3Object e = S3Object.builder().key("my/bucket/prefix/C/D/E").build();
     ListObjectsV2Response page2 = ListObjectsV2Response.builder().contents(e).build();
-    S3Object i = S3Object.builder().key(PREFIX + "F/G/H/I").build();
-    S3Object z = S3Object.builder().key(PREFIX + "X/Y/Z").build();
+    S3Object i = S3Object.builder().key("my/bucket/prefix/F/G/H/I").build();
+    S3Object z = S3Object.builder().key("my/bucket/prefix/X/Y/Z").build();
     ListObjectsV2Response page3 = ListObjectsV2Response.builder().contents(i, z).build();
 
-    // TODO how to create a real instance?
     ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
     when(response.stream()).thenReturn(Stream.of(page1, page2, page3));
 
     ListObjectsV2Request request =
-        ListObjectsV2Request.builder().bucket(BUCKET).prefix(PREFIX).build();
+        ListObjectsV2Request.builder().bucket("my-bucket").prefix("my/bucket/prefix/").build();
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
@@ -73,7 +69,7 @@ class S3BucketTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.fromMap(
+            FileTree.create(
                 Map.of(
                     Path.of("A"),
                     new S3File(a),
@@ -91,21 +87,13 @@ class S3BucketTest {
   void toString_includesBucketUri_whichLinksToBucketInAwsConsole() {
     assertThat(sut.toString())
         .isEqualTo(
-            "S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=testing/backup/]");
+            "S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=my/bucket/prefix/]");
   }
 
   @Test
   void objectUri_linksToObjectInAwsConsole() {
-    assertThat(sut.objectUri("A/B/C"))
+    assertThat(sut.objectUri(Path.of("A/B/C")))
         .isEqualTo(
-            "https://s3.console.aws.amazon.com/s3/object/my-bucket?prefix=testing/backup/A/B/C");
-  }
-
-  @Test
-  void constructor_checksPrefixMatchesFolder() {
-    IllegalArgumentException thrown =
-        assertThrows(
-            IllegalArgumentException.class, () -> new S3Bucket(mockS3Client, BUCKET, "prefix"));
-    assertThat(thrown).hasMessageThat().isEqualTo("Requires prefix to end with '/': prefix");
+            "https://s3.console.aws.amazon.com/s3/object/my-bucket?prefix=my/bucket/prefix/A/B/C");
   }
 }

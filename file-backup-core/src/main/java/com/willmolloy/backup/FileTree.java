@@ -14,7 +14,7 @@ import java.util.stream.Stream;
  */
 public final class FileTree {
 
-  public static FileTree fromMap(Map<Path, ? extends Node> map) {
+  public static FileTree create(Map<Path, ? extends Node> map) {
     return new FileTree(map);
   }
 

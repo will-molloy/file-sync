@@ -1,5 +1,6 @@
 package com.willmolloy.backup.s3;
 
+import static com.willmolloy.backup.s3.S3Bucket.ensureUnixSeparator;
 import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static java.util.Objects.requireNonNull;
 
@@ -48,14 +49,13 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   @Override
   public boolean put(Path key) {
     Path sourcePath = source.root().resolve(key);
-    // TODO ensure '/'
-    String destinationUri = destination.objectUri(key.toString());
+    String destinationUri = destination.objectUri(key);
     try {
       // TODO multipart upload for large files
       PutObjectRequest request =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(destination.prefix() + key)
+              .key(ensureUnixSeparator(destination.prefix().resolve(key)))
               .contentMD5(md5Base64(sourcePath))
               .storageClass(StorageClass.DEEP_ARCHIVE)
               .build();
@@ -74,13 +74,12 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
 
   @Override
   public boolean delete(Path key) {
-    // TODO ensure '/'
-    String destinationUri = destination.objectUri(key.toString());
+    String destinationUri = destination.objectUri(key);
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(destination.prefix() + key)
+              .key(ensureUnixSeparator(destination.prefix().resolve(key)))
               .build();
       s3Client.deleteObject(request);
       log.info("Deleted: [{}]", destinationUri);

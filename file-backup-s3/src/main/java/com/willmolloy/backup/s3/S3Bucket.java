@@ -1,15 +1,17 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.FileTree;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.TreeMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -31,27 +33,26 @@ class S3Bucket implements Location {
   private final S3Client s3Client;
 
   private final String bucketName;
-  private final String prefix;
+  private final Path prefix;
 
-  S3Bucket(S3Client s3Client, String bucketName, String prefix) {
+  S3Bucket(S3Client s3Client, String bucketName, Path prefix) {
     this.s3Client = requireNonNull(s3Client);
     this.bucketName = requireNonNull(bucketName);
     this.prefix = requireNonNull(prefix);
-    require(prefix.endsWith("/"), "Requires prefix to end with '/': " + prefix);
   }
 
   @Override
   public FileTree scan() {
     log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
-        ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
+        ListObjectsV2Request.builder()
+            .bucket(bucketName)
+            .prefix(ensureUnixSeparator(prefix) + "/")
+            .build();
     ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);
 
     Function<S3Object, Path> keyFunc =
-        ((Function<S3Object, String>) S3Object::key)
-            // strip prefix TODO make prefix a Path? Need to ensure '/'
-            .andThen(path -> path.replaceFirst("^" + prefix, ""))
-            .andThen(Path::of);
+        ((Function<S3Object, String>) S3Object::key).andThen(Path::of).andThen(prefix::relativize);
 
     BinaryOperator<S3File> mergeFunc =
         (first, second) -> {
@@ -63,14 +64,14 @@ class S3Bucket implements Location {
         response.stream()
             .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
             .collect(toMap(keyFunc, S3File::new, mergeFunc, TreeMap::new));
-    return FileTree.fromMap(map);
+    return FileTree.create(map);
   }
 
-  public String bucketName() {
+  String bucketName() {
     return bucketName;
   }
 
-  public String prefix() {
+  Path prefix() {
     return prefix;
   }
 
@@ -80,10 +81,21 @@ class S3Bucket implements Location {
   }
 
   private String bucketUri() {
-    return S3_BASE_URI + "buckets/%s?prefix=%s".formatted(bucketName, prefix);
+    return S3_BASE_URI + "buckets/%s?prefix=%s/".formatted(bucketName, ensureUnixSeparator(prefix));
   }
 
-  public String objectUri(String key) {
-    return S3_BASE_URI + "object/%s?prefix=%s%s".formatted(bucketName, prefix, key);
+  String objectUri(Path key) {
+    return S3_BASE_URI
+        + "object/%s?prefix=%s".formatted(bucketName, ensureUnixSeparator(prefix.resolve(key)));
+  }
+
+  static String ensureUnixSeparator(Path path) {
+    if (File.separatorChar == '/') {
+      return path.toString();
+    } else {
+      return StreamSupport.stream(path.spliterator(), false)
+          .map(Path::toString)
+          .collect(Collectors.joining("/"));
+    }
   }
 }

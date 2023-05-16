@@ -64,7 +64,7 @@ public record LocalStorage(Path root) implements Location {
           };
 
       Files.walkFileTree(root, new DirectoryWalker(consumer));
-      return FileTree.fromMap(map);
+      return FileTree.create(map);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
