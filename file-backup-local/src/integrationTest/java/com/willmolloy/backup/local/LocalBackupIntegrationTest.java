@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class LocalBackupIntegrationTest {
   }
 
   @Test
-  void createsFilesAndDirectoriesOnDestination() throws IOException {
+  void whenFilesOnlyOnSource_createsFilesAndDirectoriesOnDestination() throws IOException {
     // Given
     // simple file
     createFile(sourceRoot.resolve("A.txt"), "source text");
@@ -64,43 +65,29 @@ class LocalBackupIntegrationTest {
                 new BackupRunner.Statistics(5, 0, 0, 0, 45, 0),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
-    assertThat(Files.walk(sourceRoot))
-        .containsExactly(
-            sourceRoot,
-            sourceRoot.resolve("A.txt"),
-            sourceRoot.resolve("B"),
-            sourceRoot.resolve("B/C"),
-            sourceRoot.resolve("D"),
-            sourceRoot.resolve("D/E.mp4"),
-            sourceRoot.resolve("D/F.mp3"),
-            sourceRoot.resolve("X"),
-            sourceRoot.resolve("X/Y"),
-            sourceRoot.resolve("X/Y/Z.pdf"));
-    assertThat(Files.readString(sourceRoot.resolve("A.txt"))).isEqualTo("source text");
-    assertThat(Files.readString(sourceRoot.resolve("D/E.mp4"))).isEqualTo("source video");
-    assertThat(Files.readString(sourceRoot.resolve("D/F.mp3"))).isEqualTo("source audio");
-    assertThat(Files.readString(sourceRoot.resolve("X/Y/Z.pdf"))).isEqualTo("source pdf");
-
-    assertThat(Files.walk(destRoot))
-        .containsExactly(
-            destRoot,
-            destRoot.resolve("A.txt"),
-            destRoot.resolve("B"),
-            destRoot.resolve("B/C"),
-            destRoot.resolve("D"),
-            destRoot.resolve("D/E.mp4"),
-            destRoot.resolve("D/F.mp3"),
-            destRoot.resolve("X"),
-            destRoot.resolve("X/Y"),
-            destRoot.resolve("X/Y/Z.pdf"));
-    assertThat(Files.readString(destRoot.resolve("A.txt"))).isEqualTo("source text");
-    assertThat(Files.readString(destRoot.resolve("D/E.mp4"))).isEqualTo("source video");
-    assertThat(Files.readString(destRoot.resolve("D/F.mp3"))).isEqualTo("source audio");
-    assertThat(Files.readString(destRoot.resolve("X/Y/Z.pdf"))).isEqualTo("source pdf");
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root))
+          .containsExactly(
+              root,
+              root.resolve("A.txt"),
+              root.resolve("B"),
+              root.resolve("B/C"),
+              root.resolve("D"),
+              root.resolve("D/E.mp4"),
+              root.resolve("D/F.mp3"),
+              root.resolve("X"),
+              root.resolve("X/Y"),
+              root.resolve("X/Y/Z.pdf"));
+      assertThat(Files.readString(root.resolve("A.txt"))).isEqualTo("source text");
+      assertThat(Files.readString(root.resolve("D/E.mp4"))).isEqualTo("source video");
+      assertThat(Files.readString(root.resolve("D/F.mp3"))).isEqualTo("source audio");
+      assertThat(Files.readString(root.resolve("X/Y/Z.pdf"))).isEqualTo("source pdf");
+    }
   }
 
   @Test
-  void updatesFilesAndDirectoriesOnDestination() throws IOException {
+  void whenFilesOnSourceAndDestination_updatesFilesAndDirectoriesOnDestination()
+      throws IOException {
     // Given
     // simple file
     createFile(sourceRoot.resolve("A.txt"), "source text");
@@ -132,44 +119,29 @@ class LocalBackupIntegrationTest {
                 new BackupRunner.Statistics(0, 4, 0, 1, 45, 37),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
-    assertThat(Files.walk(sourceRoot))
-        .containsExactly(
-            sourceRoot,
-            sourceRoot.resolve("A.txt"),
-            sourceRoot.resolve("B"),
-            sourceRoot.resolve("B/C"),
-            sourceRoot.resolve("D"),
-            sourceRoot.resolve("D/E.mp4"),
-            sourceRoot.resolve("D/F.mp3"),
-            sourceRoot.resolve("X"),
-            sourceRoot.resolve("X/Y"),
-            sourceRoot.resolve("X/Y/Z.pdf"));
-    assertThat(Files.readString(sourceRoot.resolve("A.txt"))).isEqualTo("source text");
-    assertThat(Files.readString(sourceRoot.resolve("D/E.mp4"))).isEqualTo("source video");
-    assertThat(Files.readString(sourceRoot.resolve("D/F.mp3"))).isEqualTo("source audio");
-    assertThat(Files.readString(sourceRoot.resolve("X/Y/Z.pdf"))).isEqualTo("source pdf");
-
-    assertThat(Files.walk(destRoot))
-        .containsExactly(
-            destRoot,
-            destRoot.resolve("A.txt"),
-            destRoot.resolve("B"),
-            destRoot.resolve("B/C"),
-            destRoot.resolve("D"),
-            destRoot.resolve("D/E.mp4"),
-            destRoot.resolve("D/F.mp3"),
-            destRoot.resolve("X"),
-            destRoot.resolve("X/Y"),
-            destRoot.resolve("X/Y/Z.pdf"));
-    assertThat(Files.readString(destRoot.resolve("A.txt"))).isEqualTo("source text");
-    assertThat(Files.readString(destRoot.resolve("D/E.mp4"))).isEqualTo("source video");
-    assertThat(Files.readString(destRoot.resolve("D/F.mp3"))).isEqualTo("source audio");
-    assertThat(Files.readString(destRoot.resolve("X/Y/Z.pdf"))).isEqualTo("source pdf");
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root))
+          .containsExactly(
+              root,
+              root.resolve("A.txt"),
+              root.resolve("B"),
+              root.resolve("B/C"),
+              root.resolve("D"),
+              root.resolve("D/E.mp4"),
+              root.resolve("D/F.mp3"),
+              root.resolve("X"),
+              root.resolve("X/Y"),
+              root.resolve("X/Y/Z.pdf"));
+      assertThat(Files.readString(root.resolve("A.txt"))).isEqualTo("source text");
+      assertThat(Files.readString(root.resolve("D/E.mp4"))).isEqualTo("source video");
+      assertThat(Files.readString(root.resolve("D/F.mp3"))).isEqualTo("source audio");
+      assertThat(Files.readString(root.resolve("X/Y/Z.pdf"))).isEqualTo("source pdf");
+    }
   }
 
   // TODO failing since delete count is skipped
   @Test
-  void deletesFilesAndDirectoriesOnDestination() throws IOException {
+  void whenFilesOnlyOnDestination_deletesFilesAndDirectoriesOnDestination() throws IOException {
     // Given
     // simple file
     createFile(destRoot.resolve("A.txt"), "dest text");
@@ -191,17 +163,19 @@ class LocalBackupIntegrationTest {
                 new BackupRunner.Statistics(0, 0, 4, 0, 0, 37),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
-    assertThat(Files.walk(sourceRoot)).containsExactly(sourceRoot);
-    assertThat(Files.walk(destRoot)).containsExactly(destRoot);
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root)).containsExactly(root);
+    }
   }
 
   @Test
-  void overwritesDirectoryOnDestinationWithFileOnSource() throws IOException {
+  void whenFileOnSourceAndNonEmptyDirectoryOnDestination_overwritesDirectoryOnDestination()
+      throws IOException {
     // Given
     // bit of an edge case scenario... file matching dir name (i.e. no extension)
     createFile(sourceRoot.resolve("A/B/C"), "hello!");
-    createDirectory(destRoot.resolve("A/B/C/D/E/F"));
-    createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
+    createFile(destRoot.resolve("A/B/C/D/E/F.txt"), "Hello");
+    createFile(destRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
 
     // When
     BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
@@ -213,18 +187,99 @@ class LocalBackupIntegrationTest {
                 new BackupRunner.Statistics(0, 1, 2, 0, 6, 0),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
-    assertThat(Files.walk(sourceRoot))
-        .containsExactly(
-            sourceRoot,
-            sourceRoot.resolve("A"),
-            sourceRoot.resolve("A/B"),
-            sourceRoot.resolve("A/B/C"));
-    assertThat(Files.readString(sourceRoot.resolve("A/B/C"))).isEqualTo("hello!");
-    
-    assertThat(Files.walk(destRoot))
-        .containsExactly(
-            destRoot, destRoot.resolve("A"), destRoot.resolve("A/B"), destRoot.resolve("A/B/C"));
-    assertThat(Files.readString(destRoot.resolve("A/B/C"))).isEqualTo("hello!");
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root))
+          .containsExactly(root, root.resolve("A"), root.resolve("A/B"), root.resolve("A/B/C"));
+      assertThat(Files.readString(root.resolve("A/B/C"))).isEqualTo("hello!");
+    }
+  }
+
+  // TODO failing since delete count is skipped
+  @Test
+  void whenNonEmptyDirectoryOnSourceAndFileOnDestination_overwritesFileOnDestination()
+      throws IOException {
+    // Given
+    createFile(sourceRoot.resolve("A/B/C/D/E/F.txt"), "Hello");
+    createFile(sourceRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
+    createFile(destRoot.resolve("A/B/C"), "hello!");
+
+    // When
+    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+
+    // Then
+    assertThat(statistics)
+        .isEqualTo(
+            new BackupRunner.OverallStatistics(
+                new BackupRunner.Statistics(2, 0, 1, 0, 11, 6),
+                new BackupRunner.ErrorStatistics(0, 0, 0)));
+
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root))
+          .containsExactly(
+              root,
+              root.resolve("A"),
+              root.resolve("A/B"),
+              root.resolve("A/B/C"),
+              root.resolve("A/B/C/D"),
+              root.resolve("A/B/C/D/E"),
+              root.resolve("A/B/C/D/E/F.txt"),
+              root.resolve("A/B/C/X"),
+              root.resolve("A/B/C/X/Y"),
+              root.resolve("A/B/C/X/Y/Z.pdf"));
+      assertThat(Files.readString(root.resolve("A/B/C/D/E/F.txt"))).isEqualTo("Hello");
+      assertThat(Files.readString(root.resolve("A/B/C/X/Y/Z.pdf"))).isEqualTo("World.");
+    }
+  }
+
+  @Test
+  void whenChildDirectoryOnlyOnSource_createsDirectoriesOnDestination() throws IOException {
+    // Given
+    createDirectory(sourceRoot.resolve("A/B/C/X/Y/Z"));
+    createDirectory(destRoot.resolve("A/B/C"));
+
+    // When
+    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+
+    // Then
+    assertThat(statistics)
+        .isEqualTo(
+            new BackupRunner.OverallStatistics(
+                new BackupRunner.Statistics(1, 0, 0, 0, 0, 0),
+                new BackupRunner.ErrorStatistics(0, 0, 0)));
+
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root))
+          .containsExactly(
+              root,
+              root.resolve("A"),
+              root.resolve("A/B"),
+              root.resolve("A/B/C"),
+              root.resolve("A/B/C/X"),
+              root.resolve("A/B/C/X/Y"),
+              root.resolve("A/B/C/X/Y/Z"));
+    }
+  }
+
+  @Test
+  void whenChildDirectoryOnlyOnDestination_deletesDirectoriesOnDestination() throws IOException {
+    // Given
+    createDirectory(sourceRoot.resolve("A/B/C"));
+    createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
+
+    // When
+    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+
+    // Then
+    assertThat(statistics)
+        .isEqualTo(
+            new BackupRunner.OverallStatistics(
+                new BackupRunner.Statistics(0, 0, 1, 1, 0, 0),
+                new BackupRunner.ErrorStatistics(0, 0, 0)));
+
+    for (Path root : List.of(sourceRoot, destRoot)) {
+      assertThat(Files.walk(root))
+          .containsExactly(root, root.resolve("A"), root.resolve("A/B"), root.resolve("A/B/C"));
+    }
   }
 
   private void createFile(Path path, String contents) throws IOException {
