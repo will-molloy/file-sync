@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,9 @@ class LocalBackupIntegrationTest {
   private Path sourceRoot;
   private Path destRoot;
   private LocalBackup sut;
+
+  // set fixed value, otherwise tests are flaky
+  private final Instant lastModified = Instant.now();
 
   @BeforeEach
   void setUp() throws IOException {
@@ -117,7 +122,7 @@ class LocalBackupIntegrationTest {
     assertThat(statistics)
         .isEqualTo(
             new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 5, 0, 0, 45, 37),
+                new BackupRunner.Statistics(0, 4, 0, 1, 45, 37),
                 new BackupRunner.ErrorStatistics(0, 0, 0)));
 
     for (Path root : List.of(sourceRoot, destRoot)) {
@@ -140,7 +145,6 @@ class LocalBackupIntegrationTest {
     }
   }
 
-  // TODO failing since delete count is skipped
   @Test
   void whenFilesOnlyOnDestination_deletesFilesAndDirectoriesOnDestination() throws IOException {
     // Given
@@ -289,9 +293,11 @@ class LocalBackupIntegrationTest {
     }
     Files.createFile(path);
     Files.writeString(path, contents);
+    Files.setLastModifiedTime(path, FileTime.from(lastModified));
   }
 
   private void createDirectory(Path path) throws IOException {
     Files.createDirectories(path);
+    Files.setLastModifiedTime(path, FileTime.from(lastModified));
   }
 }
