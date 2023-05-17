@@ -7,6 +7,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.BackupRunner;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -296,8 +297,9 @@ class LocalBackupIntegrationTest {
     Files.setLastModifiedTime(path, FileTime.from(lastModified));
   }
 
-  private void createDirectory(Path path) throws IOException {
+  private Path createDirectory(Path path) throws IOException {
     Files.createDirectories(path);
     Files.setLastModifiedTime(path, FileTime.from(lastModified));
+    return path;
   }
 }

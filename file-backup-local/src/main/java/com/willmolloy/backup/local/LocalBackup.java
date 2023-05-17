@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.Backup;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -37,10 +38,35 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
     try {
+      return createParentDirs(key, sourcePath, destPath) && copy(key, sourcePath, destPath);
+    } catch (IOException e) {
+      log.error("Error copying: [%s] -> [%s]".formatted(sourcePath, destPath), e);
+      return false;
+    }
+  }
+
+  private boolean createParentDirs(Path key, Path sourcePath, Path destPath) throws IOException {
+    try {
       Path destParent = destPath.getParent();
       if (destParent != null) {
         Files.createDirectories(destParent);
       }
+      return true;
+    } catch (FileAlreadyExistsException e){
+      log.warn(
+          "Error copying: [{}] -> [{}]. Deleting file on destination to allow creation of directories first",
+          sourcePath,
+          destPath);
+
+      String fileToDelete = e.getFile();
+      // hack to convert string back to path under the same filesystem
+      Path pathToDelete = destination.root().relativize(destination.root().resolve(Path.of(destination.root().toString()).relativize(Path.of(fileToDelete)).toString()));
+      return delete(pathToDelete) && put(key);
+    }
+  }
+
+  private boolean copy(Path key, Path sourcePath, Path destPath) throws IOException {
+    try {
       Files.copy(
           sourcePath,
           destPath,
@@ -57,9 +83,6 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           sourcePath,
           destPath);
       return delete(key) && put(key);
-    } catch (IOException e) {
-      log.error("Error copying: [%s] -> [%s]".formatted(sourcePath, destPath), e);
-      return false;
     }
   }
 

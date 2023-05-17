@@ -62,63 +62,56 @@ class LocalBackupTest {
   @Test
   void put_copiesFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = Files.createFile(sourceRoot.resolve(fs.getPath("A")));
-    Files.writeString(sourceFile, "source");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A")),"source");
 
     // When
     boolean result = sut.put(fs.getPath("A"));
 
     // Then
     assertThat(result).isTrue();
-    Path destFile = destRoot.resolve(fs.getPath("A"));
-    assertThatFileSystem().containsExactly(sourceFile, destFile);
+    Path expectedDestFile = destRoot.resolve(fs.getPath("A"));
+    assertThatFileSystem().containsExactly(sourceFile, expectedDestFile);
     assertThat(Files.readString(sourceFile)).isEqualTo("source");
-    assertThat(Files.readString(destFile)).isEqualTo("source");
+    assertThat(Files.readString(expectedDestFile)).isEqualTo("source");
   }
 
   @Test
   void put_copiesNestedFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceFile.getParent());
-    Files.createFile(sourceFile);
-    Files.writeString(sourceFile, "source");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")),"source");
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
 
     // Then
     assertThat(result).isTrue();
-    Path destFile = destRoot.resolve(fs.getPath("A/B/C"));
-    assertThatFileSystem().containsExactly(sourceFile, destFile);
+    Path expectedDestFile = destRoot.resolve(fs.getPath("A/B/C"));
+    assertThatFileSystem().containsExactly(sourceFile, expectedDestFile);
     assertThat(Files.readString(sourceFile)).isEqualTo("source");
-    assertThat(Files.readString(destFile)).isEqualTo("source");
+    assertThat(Files.readString(expectedDestFile)).isEqualTo("source");
   }
 
   @Test
   void put_copiesDirectoryFromSourceToDestination() throws IOException {
     // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
+    Path sourceDir = createDirectory(sourceRoot.resolve(fs.getPath("A/B/C")));
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
 
     // Then
     assertThat(result).isTrue();
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
-    assertThatFileSystem().containsExactly(sourceDir, destDir);
+    Path expectedDestDir = destRoot.resolve(fs.getPath("A/B/C"));
+    assertThatFileSystem().containsExactly(sourceDir, expectedDestDir);
     assertThat(Files.isDirectory(sourceDir)).isTrue();
-    assertThat(Files.isDirectory(destDir)).isTrue();
+    assertThat(Files.isDirectory(expectedDestDir)).isTrue();
   }
 
   @Test
   void put_updatesFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = Files.createFile(sourceRoot.resolve(fs.getPath("A")));
-    Files.writeString(sourceFile, "source");
-    Path destFile = Files.createFile(destRoot.resolve(fs.getPath("A")));
-    Files.writeString(destFile, "dest");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A")),"source");
+    Path destFile = createFile(destRoot.resolve(fs.getPath("A")),"dest");
 
     // When
     boolean result = sut.put(fs.getPath("A"));
@@ -133,15 +126,8 @@ class LocalBackupTest {
   @Test
   void put_updatesNestedFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceFile.getParent());
-    Files.createFile(sourceFile);
-    Files.writeString(sourceFile, "source");
-
-    Path destFile = destRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(destFile.getParent());
-    Files.createFile(destFile);
-    Files.writeString(destFile, "dest");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")),"source");
+    Path destFile = createFile(destRoot.resolve(fs.getPath("A/B/C")),"dest");
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
@@ -156,11 +142,8 @@ class LocalBackupTest {
   @Test
   void put_updatesDirectoryFromSourceToDestination() throws IOException {
     // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
-
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
+    Path sourceDir = createDirectory(sourceRoot.resolve(fs.getPath("A/B/C")));
+    Path destDir = createDirectory(destRoot.resolve(fs.getPath("A/B/C")));
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
@@ -173,47 +156,56 @@ class LocalBackupTest {
   }
 
   @Test
-  void put_overwritesNonEmptyDirectoryOnDestinationWithFileOnSource() throws IOException {
+  void put_replacesNonEmptyDirectoryOnDestinationWithFileOnSource() throws IOException {
     // Given
-    Path sourceFile = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceFile.getParent());
-    Files.createFile(sourceFile);
-    Files.writeString(sourceFile, "source");
-
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C/D"));
-    Files.createDirectories(destDir);
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")), "source");
+    createFile(destRoot.resolve(fs.getPath("A/B/C/D/E/F")), "dest");
+    createFile(destRoot.resolve(fs.getPath("A/B/C/X/Y/Z")), "dest2");
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
 
     // Then
-    Path destFile = destRoot.resolve(fs.getPath("A/B/C"));
     assertThat(result).isTrue();
-    assertThatFileSystem().containsExactly(sourceFile, destFile);
+    Path expectedDestFile = destRoot.resolve(fs.getPath("A/B/C"));
+    assertThatFileSystem().containsExactly(sourceFile, expectedDestFile);
     assertThat(Files.readString(sourceFile)).isEqualTo("source");
-    assertThat(Files.readString(destFile)).isEqualTo("source");
+    assertThat(Files.readString(expectedDestFile)).isEqualTo("source");
   }
 
   @Test
-  void put_overwritesFileOnDestinationWithDirectoryOnSource() throws IOException {
+  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_FileAlreadyExistsException() throws IOException {
     // Given
-    Path sourceDir = sourceRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(sourceDir);
-
-    Path destFile = destRoot.resolve(fs.getPath("A/B/C"));
-    Files.createDirectories(destFile.getParent());
-    Files.createFile(destFile);
-    Files.writeString(destFile, "dest");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C/D")), "source");
+    createFile(destRoot.resolve(fs.getPath("A/B/C")), "dest");
 
     // When
-    boolean result = sut.put(fs.getPath("A/B/C"));
+    boolean result = sut.put(fs.getPath("A/B/C/D"));
 
     // Then
     assertThat(result).isTrue();
-    Path destDir = destRoot.resolve(fs.getPath("A/B/C"));
-    assertThatFileSystem().containsExactly(sourceDir, destDir);
-    assertThat(Files.isDirectory(sourceDir)).isTrue();
-    assertThat(Files.isDirectory(destDir)).isTrue();
+    Path expectedDestFile = destRoot.resolve(fs.getPath("A/B/C/D"));
+    assertThatFileSystem().containsExactly(sourceFile, expectedDestFile);
+    assertThat(Files.readString(sourceFile)).isEqualTo("source");
+    assertThat(Files.readString(expectedDestFile)).isEqualTo("source");
+  }
+
+  @Test
+  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_NoSuchFileException() throws IOException {
+    // Given
+    // this is when we get NoSuchFileException from Files.createDirectories...
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C/D/E")), "source");
+    createFile(destRoot.resolve(fs.getPath("A/B/C")), "dest");
+
+    // When
+    boolean result = sut.put(fs.getPath("A/B/C/D/E"));
+
+    // Then
+    assertThat(result).isTrue();
+    Path expectedDestFile = destRoot.resolve(fs.getPath("A/B/C/D/E"));
+    assertThatFileSystem().containsExactly(sourceFile, expectedDestFile);
+    assertThat(Files.readString(sourceFile)).isEqualTo("source");
+    assertThat(Files.readString(expectedDestFile)).isEqualTo("source");
   }
 
   @Test
@@ -229,7 +221,7 @@ class LocalBackupTest {
   @Test
   void delete_deletesFileFromDestination() throws IOException {
     // Given
-    Files.createFile(destRoot.resolve(fs.getPath("A")));
+    createFile(destRoot.resolve(fs.getPath("A")), "");
 
     // When
     boolean result = sut.delete(fs.getPath("A"));
@@ -242,8 +234,8 @@ class LocalBackupTest {
   @Test
   void delete_deletesDirectoryFromDestination() throws IOException {
     // Given
-    Files.createDirectories(destRoot.resolve(fs.getPath("A/B/C")));
-    Files.createDirectories(destRoot.resolve(fs.getPath("A/X/Y/Z")));
+    createDirectory(destRoot.resolve(fs.getPath("A/B/C")));
+    createDirectory(destRoot.resolve(fs.getPath("A/X/Y/Z")));
 
     // When
     boolean result = sut.delete(fs.getPath("A"));
@@ -286,5 +278,20 @@ class LocalBackupTest {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private Path createFile(Path path, String contents) throws IOException {
+    Path parent = path.getParent();
+    if (parent != null) {
+      Files.createDirectories(parent);
+    }
+    Files.createFile(path);
+    Files.writeString(path, contents);
+    return path;
+  }
+
+  private Path createDirectory(Path path) throws IOException {
+    Files.createDirectories(path);
+    return path;
   }
 }
