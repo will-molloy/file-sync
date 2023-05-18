@@ -62,7 +62,7 @@ class LocalBackupTest {
   @Test
   void put_copiesFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A")),"source");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A")), "source");
 
     // When
     boolean result = sut.put(fs.getPath("A"));
@@ -78,7 +78,7 @@ class LocalBackupTest {
   @Test
   void put_copiesNestedFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")),"source");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")), "source");
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
@@ -110,8 +110,8 @@ class LocalBackupTest {
   @Test
   void put_updatesFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A")),"source");
-    Path destFile = createFile(destRoot.resolve(fs.getPath("A")),"dest");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A")), "source");
+    Path destFile = createFile(destRoot.resolve(fs.getPath("A")), "dest");
 
     // When
     boolean result = sut.put(fs.getPath("A"));
@@ -126,8 +126,8 @@ class LocalBackupTest {
   @Test
   void put_updatesNestedFileFromSourceToDestination() throws IOException {
     // Given
-    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")),"source");
-    Path destFile = createFile(destRoot.resolve(fs.getPath("A/B/C")),"dest");
+    Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C")), "source");
+    Path destFile = createFile(destRoot.resolve(fs.getPath("A/B/C")), "dest");
 
     // When
     boolean result = sut.put(fs.getPath("A/B/C"));
@@ -174,7 +174,8 @@ class LocalBackupTest {
   }
 
   @Test
-  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_FileAlreadyExistsException() throws IOException {
+  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_FileAlreadyExistsException()
+      throws IOException {
     // Given
     Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C/D")), "source");
     createFile(destRoot.resolve(fs.getPath("A/B/C")), "dest");
@@ -191,7 +192,8 @@ class LocalBackupTest {
   }
 
   @Test
-  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_NoSuchFileException() throws IOException {
+  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_NoSuchFileException()
+      throws IOException {
     // Given
     // this is when we get NoSuchFileException from Files.createDirectories...
     Path sourceFile = createFile(sourceRoot.resolve(fs.getPath("A/B/C/D/E")), "source");

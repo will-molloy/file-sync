@@ -7,7 +7,6 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.BackupRunner;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,8 +37,8 @@ class LocalBackupIntegrationTest {
   @BeforeEach
   void setUp() throws IOException {
     fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
-    sourceRoot = Files.createDirectory(fs.getPath("Documents"));
-    destRoot = Files.createDirectory(fs.getPath("Backup"));
+    sourceRoot = createDirectory(fs.getPath("Documents"));
+    destRoot = createDirectory(fs.getPath("Backup"));
     sut = new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
   }
 

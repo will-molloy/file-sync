@@ -6,6 +6,7 @@ import com.willmolloy.backup.Backup;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -37,35 +38,50 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   public boolean put(Path key) {
     Path sourcePath = source.root().resolve(key);
     Path destPath = destination.root().resolve(key);
+    return robustCopy(sourcePath, destPath);
+  }
+
+  private boolean robustCopy(Path sourcePath, Path destPath) {
     try {
-      return createParentDirs(key, sourcePath, destPath) && copy(key, sourcePath, destPath);
+      return createParentDirs(sourcePath, destPath) && doCopy(sourcePath, destPath);
     } catch (IOException e) {
       log.error("Error copying: [%s] -> [%s]".formatted(sourcePath, destPath), e);
       return false;
     }
   }
 
-  private boolean createParentDirs(Path key, Path sourcePath, Path destPath) throws IOException {
+  private boolean createParentDirs(Path sourcePath, Path destPath) throws IOException {
     try {
       Path destParent = destPath.getParent();
       if (destParent != null) {
         Files.createDirectories(destParent);
       }
       return true;
-    } catch (FileAlreadyExistsException e){
+    } catch (FileAlreadyExistsException e) {
+      // failed to create directory since it already exists as a file
+      FileSystem fs = destination.root().getFileSystem();
+      Path badPath = fs.getPath(e.getFile());
       log.warn(
-          "Error copying: [{}] -> [{}]. Deleting file on destination to allow creation of directories first",
+          "Error copying: [{}] -> [{}]. Deleting file [{}] to allow creation of directories first",
           sourcePath,
-          destPath);
-
-      String fileToDelete = e.getFile();
-      // hack to convert string back to path under the same filesystem
-      Path pathToDelete = destination.root().relativize(destination.root().resolve(Path.of(destination.root().toString()).relativize(Path.of(fileToDelete)).toString()));
-      return delete(pathToDelete) && put(key);
+          destPath,
+          badPath);
+      return robustDelete(badPath) && createParentDirs(sourcePath, destPath);
+    } catch (NoSuchFileException e) {
+      // same as above, except its thrown when the parent already exists as a file
+      // (see https://stackoverflow.com/a/76278968/6122976)
+      FileSystem fs = destination.root().getFileSystem();
+      Path badPath = fs.getPath(e.getFile()).getParent();
+      log.warn(
+          "Error copying: [{}] -> [{}]. Deleting file [{}] to allow creation of directories first",
+          sourcePath,
+          destPath,
+          badPath);
+      return robustDelete(badPath) && createParentDirs(sourcePath, destPath);
     }
   }
 
-  private boolean copy(Path key, Path sourcePath, Path destPath) throws IOException {
+  private boolean doCopy(Path sourcePath, Path destPath) throws IOException {
     try {
       Files.copy(
           sourcePath,
@@ -82,18 +98,23 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           "Error copying: [{}] -> [{}]. Deleting non-empty directory on destination first",
           sourcePath,
           destPath);
-      return delete(key) && put(key);
+      return robustDelete(destPath) && doCopy(sourcePath, destPath);
     }
   }
 
   @Override
   public boolean delete(Path key) {
     Path destPath = destination.root().resolve(key);
+    return robustDelete(destPath);
+  }
+
+  private boolean robustDelete(Path destPath) {
     try {
       Files.walkFileTree(destPath, new RecursiveDelete());
       log.info("Deleted: [{}]", destPath);
       return true;
     } catch (NoSuchFileException ignored) {
+      log.debug("Already deleted: [{}]", destPath);
       return true;
     } catch (IOException e) {
       log.error("Error deleting: [%s]".formatted(destPath), e);
