@@ -96,7 +96,7 @@ public final class FileTree {
 
   @Override
   public String toString() {
-    return "FileTree[%s]".formatted(nodes);
+    return "%s[%s]".formatted(getClass().getSimpleName(), nodes);
   }
 
   /** Represents a file in the {@link FileTree}. */

@@ -62,12 +62,15 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
       s3Client.putObject(request, sourcePath);
       log.info("Put: [{}] -> [{}]", sourcePath, destinationUri);
       return true;
-    } catch (NoSuchFileException ignored) {
+    } catch (NoSuchFileException e) {
       log.warn(
-          "Skipped put: [{}] -> [{}]. Source file deleted since scan", sourcePath, destinationUri);
+          "Skipped put: [{}] -> [{}]. Source file deleted since scan",
+          sourcePath,
+          destinationUri,
+          e);
       return true;
     } catch (RuntimeException | IOException e) {
-      log.error("Error putting: [%s] -> [%s]".formatted(sourcePath, destinationUri), e);
+      log.error("Error putting: [{}] -> [{}]", sourcePath, destinationUri, e);
       return false;
     }
   }
@@ -85,13 +88,14 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
       log.info("Deleted: [{}]", destinationUri);
       return true;
     } catch (RuntimeException e) {
-      log.error("Error deleting: [%s]".formatted(destinationUri), e);
+      log.error("Error deleting: [{}]", destinationUri, e);
       return false;
     }
   }
 
   @Override
   public String toString() {
-    return "S3Backup[source=%s, destination=%s]".formatted(source, destination);
+    return "%s[source=%s, destination=%s]"
+        .formatted(getClass().getSimpleName(), source, destination);
   }
 }

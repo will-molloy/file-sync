@@ -45,7 +45,7 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     try {
       return createParentDirs(sourcePath, destPath) && doCopy(sourcePath, destPath);
     } catch (IOException e) {
-      log.error("Error copying: [%s] -> [%s]".formatted(sourcePath, destPath), e);
+      log.error("Error copying: [{}] -> [{}]", sourcePath, destPath, e);
       return false;
     }
   }
@@ -65,7 +65,8 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           "Error copying: [{}] -> [{}]. Deleting file [{}] to allow creation of directories first",
           sourcePath,
           destPath,
-          badPath);
+          badPath,
+          e);
       return robustDelete(badPath) && createParentDirs(sourcePath, destPath);
     } catch (NoSuchFileException e) {
       // same as above, except its thrown when the parent already exists as a file
@@ -76,7 +77,8 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           "Error copying: [{}] -> [{}]. Deleting file [{}] to allow creation of directories first",
           sourcePath,
           destPath,
-          badPath);
+          badPath,
+          e);
       return robustDelete(badPath) && createParentDirs(sourcePath, destPath);
     }
   }
@@ -90,14 +92,16 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
           StandardCopyOption.REPLACE_EXISTING);
       log.info("Copied: [{}] -> [{}]", sourcePath, destPath);
       return true;
-    } catch (NoSuchFileException ignored) {
-      log.warn("Skipped copy: [{}] -> [{}]. Source file deleted since scan", sourcePath, destPath);
+    } catch (NoSuchFileException e) {
+      log.warn(
+          "Skipped copy: [{}] -> [{}]. Source file deleted since scan", sourcePath, destPath, e);
       return true;
     } catch (DirectoryNotEmptyException e) {
       log.warn(
           "Error copying: [{}] -> [{}]. Deleting non-empty directory on destination first",
           sourcePath,
-          destPath);
+          destPath,
+          e);
       return robustDelete(destPath) && doCopy(sourcePath, destPath);
     }
   }
@@ -113,11 +117,11 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
       Files.walkFileTree(destPath, new RecursiveDelete());
       log.info("Deleted: [{}]", destPath);
       return true;
-    } catch (NoSuchFileException ignored) {
-      log.debug("Already deleted: [{}]", destPath);
+    } catch (NoSuchFileException e) {
+      log.debug("Already deleted: [{}]", destPath, e);
       return true;
     } catch (IOException e) {
-      log.error("Error deleting: [%s]".formatted(destPath), e);
+      log.error("Error deleting: [{}]", destPath, e);
       return false;
     }
   }
@@ -140,9 +144,10 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     @Override
     public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
       if (e instanceof NoSuchFileException) {
+        log.debug("Already deleted file: [{}]", file, e);
         return FileVisitResult.CONTINUE;
       } else {
-        log.error("Error visiting file: [%s]".formatted(file), e);
+        log.error("Error visiting file: [{}]", file, e);
         throw e;
       }
     }
@@ -151,9 +156,10 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
       if (e != null) {
         if (e instanceof NoSuchFileException) {
+          log.debug("Already deleted directory: [{}]", dir, e);
           return FileVisitResult.CONTINUE;
         }
-        log.error("Error visiting directory: [%s]".formatted(dir), e);
+        log.error("Error visiting directory: [{}]", dir, e);
         throw e;
       }
       Files.deleteIfExists(dir);

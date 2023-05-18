@@ -101,7 +101,7 @@ public record LocalStorage(Path root) implements Location {
       if (e instanceof AccessDeniedException) {
         log.warn("Skipped file (access denied): [{}]", file);
       } else {
-        log.error("Error visiting file: [%s]".formatted(file), e);
+        log.error("Error visiting file: [{}]", file, e);
       }
       return FileVisitResult.CONTINUE;
     }
@@ -109,7 +109,7 @@ public record LocalStorage(Path root) implements Location {
     @Override
     public FileVisitResult postVisitDirectory(Path dir, IOException e) {
       if (e != null) {
-        log.error("Error visiting directory: [%s]".formatted(dir), e);
+        log.error("Error visiting directory: [{}]", dir, e);
       }
       return FileVisitResult.CONTINUE;
     }

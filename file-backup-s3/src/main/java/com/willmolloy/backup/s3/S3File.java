@@ -26,7 +26,7 @@ record S3File(S3Object s3Object) implements FileTree.File {
     try {
       return s3Object.size();
     } catch (RuntimeException e) {
-      log.error("Error getting size of object: [%s]".formatted(s3Object), e);
+      log.error("Error getting size of object: [{}]", s3Object, e);
       return 0;
     }
   }

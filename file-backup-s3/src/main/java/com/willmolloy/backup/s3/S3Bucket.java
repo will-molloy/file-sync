@@ -75,7 +75,7 @@ class S3Bucket implements Location {
 
   @Override
   public String toString() {
-    return "S3Bucket[%s]".formatted(bucketUri());
+    return "%s[%s]".formatted(getClass().getSimpleName(), bucketUri());
   }
 
   private String bucketUri() {
