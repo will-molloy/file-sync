@@ -15,7 +15,6 @@ import java.util.stream.Stream;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-// TODO unit tests
 public final class FileTree {
 
   public static FileTree from(Map<Path, ? extends File> map) {

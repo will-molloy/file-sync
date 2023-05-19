@@ -27,7 +27,6 @@ public final class BackupRunner {
   private static final Logger log = LogManager.getLogger();
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
-  private static final int THREADS = 10;
 
   /** Runs the backup. */
   public static boolean run(Backup<?, ?> backup) {
@@ -37,7 +36,7 @@ public final class BackupRunner {
     AtomicBoolean allSuccess = new AtomicBoolean(true);
 
     try (ExecutorService threadPool =
-        Executors.newFixedThreadPool(THREADS, Thread.ofVirtual().name("worker-", 1).factory())) {
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
       FileTree sourceFiles = scanWithLog(backup.source()::scan, "source");
       FileTree destFiles = scanWithLog(backup.destination()::scan, "destination");
