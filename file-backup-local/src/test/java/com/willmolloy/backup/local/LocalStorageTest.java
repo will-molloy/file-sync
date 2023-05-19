@@ -68,7 +68,7 @@ class LocalStorageTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.create(
+            FileTree.from(
                 Map.ofEntries(
                     entry(fs.getPath("A"), new LocalFile(root.resolve("A"))),
                     entry(fs.getPath("B"), new LocalFile(root.resolve("B"))),

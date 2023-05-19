@@ -61,14 +61,10 @@ class LocalBackupIntegrationTest {
     createFile(sourceRoot.resolve("X/Y/Z.pdf"), "source pdf");
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(5, 0, 0, 0, 45, 0),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root))
@@ -90,7 +86,6 @@ class LocalBackupIntegrationTest {
     }
   }
 
-  // TODO empty dir flaky on last-modified...
   @Test
   void whenFilesOnSourceAndDestination_updatesFilesAndDirectoriesOnDestination()
       throws IOException {
@@ -116,14 +111,10 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("X/Y/Z.pdf"), "dest pdf");
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 4, 0, 1, 45, 37),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root))
@@ -159,14 +150,10 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("X/Y/Z.pdf"), "dest pdf");
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 0, 5, 0, 0, 37),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root)).containsExactly(root);
@@ -183,14 +170,10 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 1, 2, 0, 6, 11),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root))
@@ -208,14 +191,10 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("A/B/C"), "hello!");
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(2, 0, 0, 0, 11, 6),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root))
@@ -242,14 +221,10 @@ class LocalBackupIntegrationTest {
     createDirectory(destRoot.resolve("A/B/C"));
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(1, 0, 0, 0, 0, 0),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root))
@@ -271,14 +246,10 @@ class LocalBackupIntegrationTest {
     createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
 
     // When
-    BackupRunner.OverallStatistics statistics = BackupRunner.run(sut);
+    boolean result = BackupRunner.run(sut);
 
     // Then
-    assertThat(statistics)
-        .isEqualTo(
-            new BackupRunner.OverallStatistics(
-                new BackupRunner.Statistics(0, 1, 1, 0, 0, 0),
-                new BackupRunner.ErrorStatistics(0, 0, 0)));
+    assertThat(result).isTrue();
 
     for (Path root : List.of(sourceRoot, destRoot)) {
       assertThat(Files.walk(root))

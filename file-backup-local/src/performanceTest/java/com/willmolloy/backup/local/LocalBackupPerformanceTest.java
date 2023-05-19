@@ -83,11 +83,12 @@ class LocalBackupPerformanceTest {
     long start = System.nanoTime();
     LocalBackup localBackup =
         new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
-    BackupRunner.run(localBackup);
+    boolean result = BackupRunner.run(localBackup);
     Duration duration = Duration.ofNanos(System.nanoTime() - start);
 
     // Then
     assertThat(duration).isLessThan(Duration.ofMinutes(1));
+    assertThat(result).isTrue();
     assertThat(Files.walk(sourceRoot).filter(Files::isRegularFile))
         .containsExactlyElementsIn(fileNames.stream().map(sourceRoot::resolve).toList());
     assertThat(Files.walk(destRoot).filter(Files::isRegularFile))

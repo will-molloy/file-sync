@@ -20,7 +20,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * file on source.
    *
    * @return {@code true} if create/update was successful
-   * @implSpec Creates parents when necessary
+   * @implSpec Creates parent directories when necessary
    */
   boolean put(Path key);
 
@@ -28,7 +28,7 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * Deletes the file identified by {@code key} on destination.
    *
    * @return {@code true} if delete was successful
-   * @implSpec Deletes children when necessary
+   * @implSpec Deletes children directories/files when necessary
    */
   boolean delete(Path key);
 

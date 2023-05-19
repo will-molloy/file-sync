@@ -69,7 +69,7 @@ class S3BucketTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.create(
+            FileTree.from(
                 Map.of(
                     Path.of("A"),
                     new S3File(a),

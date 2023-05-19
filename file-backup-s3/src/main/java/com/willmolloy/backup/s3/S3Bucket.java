@@ -62,7 +62,7 @@ class S3Bucket implements Location {
         response.stream()
             .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
             .collect(toMap(keyFunc, S3File::new, mergeFunc, TreeMap::new));
-    return FileTree.create(map);
+    return FileTree.from(map);
   }
 
   String bucketName() {

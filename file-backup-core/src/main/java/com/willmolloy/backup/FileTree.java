@@ -1,14 +1,14 @@
 package com.willmolloy.backup;
 
+import static java.util.function.Predicate.not;
+
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Represents a {@link Backup.Location}s file tree.
@@ -18,13 +18,11 @@ import org.apache.logging.log4j.Logger;
 // TODO unit tests
 public final class FileTree {
 
-  private static final Logger log = LogManager.getLogger();
-
-  public static FileTree create(Map<Path, ? extends File> map) {
+  public static FileTree from(Map<Path, ? extends File> map) {
     return new FileTree(map);
   }
 
-  private final TreeMap<Path, File> nodes;
+  private final TreeMap<Path, ? extends File> nodes;
 
   private FileTree(Map<Path, ? extends File> nodes) {
     this.nodes = new TreeMap<>(nodes);
@@ -34,8 +32,8 @@ public final class FileTree {
     nodes.forEach(consumer);
   }
 
-  File get(Path key) {
-    return nodes.get(key);
+  Optional<File> get(Path key) {
+    return Optional.ofNullable(nodes.get(key));
   }
 
   boolean contains(Path key) {
@@ -52,29 +50,16 @@ public final class FileTree {
     return nextKey != null && nextKey.startsWith(key);
   }
 
-  boolean isLeaf(Path key) {
-    return !containsAnyChildOf(key);
-  }
-
-  long leafCount() {
-    return leaves().count();
+  long fileCount() {
+    return files().count();
   }
 
   long totalSize() {
-    return leaves().mapToLong(e -> e.getValue().size()).sum();
+    return files().mapToLong(File::size).sum();
   }
 
-  private Stream<Map.Entry<Path, File>> leaves() {
-    return nodes.entrySet().stream().filter(e -> isLeaf(e.getKey()));
-  }
-
-  FileTree childTree(Path key) {
-    var childrenOf =
-        nodes.tailMap(key).entrySet().stream()
-            .filter(e -> e.getKey().startsWith(key))
-            .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-    log.debug("childrenOf({}) = {}", key, childrenOf);
-    return new FileTree(childrenOf);
+  private Stream<? extends File> files() {
+    return nodes.values().stream().filter(not(File::isDirectory));
   }
 
   @Override
