@@ -83,7 +83,21 @@ public final class BackupRunner {
     }
 
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));
+    if (isRunningInsideDocker()) {
+      try {
+        log.info("Sleep 1 hour to view logs");
+        Thread.sleep(Duration.ofHours(1));
+      } catch (InterruptedException e) {
+        log.error("Interrupted", e);
+        Thread.currentThread().interrupt();
+      }
+    }
     return allSuccess.get();
+  }
+
+  @SuppressFBWarnings("DMI_HARDCODED_ABSOLUTE_FILENAME")
+  private static boolean isRunningInsideDocker() {
+    return new java.io.File("/.dockerenv").exists();
   }
 
   private static FileTree scanWithLog(Supplier<FileTree> scan, String locationForLog) {
