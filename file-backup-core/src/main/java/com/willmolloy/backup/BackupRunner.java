@@ -43,8 +43,8 @@ public final class BackupRunner {
 
       sourceFiles.forEach(
           (key, sourceFile) -> {
-            if (sourceFiles.containsAnyChildOf(key)) {
-              log.debug("Skipping put({}). Covered by child", key);
+            if (sourceFiles.descendants(key).anyMatch(descendant -> true)) {
+              log.debug("Skipping put({}). Covered by descendant", key);
               return;
             }
 
@@ -68,8 +68,8 @@ public final class BackupRunner {
               return;
             }
 
-            if (destFiles.containsParentOf(key) && !sourceFiles.containsParentOf(key)) {
-              log.debug("Skipping delete({}). Covered by parent", key);
+            if (destFiles.ancestors(key).anyMatch(ancestor -> !sourceFiles.contains(ancestor))) {
+              log.debug("Skipping delete({}). Covered by ancestor", key);
               return;
             }
 

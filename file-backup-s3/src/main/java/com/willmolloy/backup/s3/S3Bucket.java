@@ -7,7 +7,7 @@ import static java.util.stream.Collectors.toMap;
 import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.FileTree;
 import java.nio.file.Path;
-import java.util.TreeMap;
+import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -58,10 +58,10 @@ class S3Bucket implements Location {
           return second;
         };
 
-    TreeMap<Path, S3File> map =
+    Map<Path, S3File> map =
         response.stream()
             .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
-            .collect(toMap(keyFunc, S3File::new, mergeFunc, TreeMap::new));
+            .collect(toMap(keyFunc, S3File::new, mergeFunc));
     return FileTree.from(map);
   }
 

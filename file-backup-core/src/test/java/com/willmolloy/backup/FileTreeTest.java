@@ -22,7 +22,8 @@ class FileTreeTest {
   @Test
   void forEach_visitsEachNodeExactlyOnce() {
     // Given
-    var expected = Stream.of("A", "A/B", "A/B/C", "D", "D/E", "D/F").map(s -> file(s)).toList();
+    var expected =
+        Stream.of("A", "A/B", "A/B/C", "D", "D/E", "D/F", "X/Y/Z").map(s -> file(s)).toList();
     FileTree fileTree =
         FileTree.from(
             expected.stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
@@ -38,65 +39,87 @@ class FileTreeTest {
   @Test
   void get_presentWhenNodePresent() {
     var expected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), expected));
+    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), expected, file("A/B/C")));
     assertThat(fileTree.get(expected.getKey())).hasValue(expected.getValue());
   }
 
   @Test
   void get_emptyWhenNodeAbsent() {
     var notExpected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A")));
+    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B/C")));
     assertThat(fileTree.get(notExpected.getKey())).isEmpty();
   }
 
   @Test
   void contains_trueWhenNodePresent() {
     var expected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), expected));
+    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), expected, file("A/B/C")));
     assertThat(fileTree.contains(expected.getKey())).isTrue();
   }
 
   @Test
   void contains_falseWhenNodeAbsent() {
     var notExpected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A")));
+    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B/C")));
     assertThat(fileTree.contains(notExpected.getKey())).isFalse();
   }
 
   @Test
-  void containsParentOf_trueWhenParentPresent() {
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B")));
-    assertThat(fileTree.containsParentOf(Path.of("A/B"))).isTrue();
+  void ancestors_returnsAncestors() {
+    FileTree fileTree =
+        FileTree.from(
+            Map.ofEntries(
+                file("A"),
+                file("A/B"),
+                file("A/B/C"),
+                file("A/B/C/D/E"),
+                file("A/B/C/D/sibling"),
+                file("A/B/C/D/E/child")));
+    assertThat(fileTree.ancestors(Path.of("A/B/C/D/E")))
+        .containsExactly(Path.of("A"), Path.of("A/B"), Path.of("A/B/C"));
   }
 
   @Test
-  void containsParentOf_falseWhenParentAbsent() {
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B")));
-    assertThat(fileTree.containsParentOf(Path.of("A"))).isFalse();
+  void ancestors_emptyWhenNodeNotInTree() {
+    FileTree fileTree =
+        FileTree.from(
+            Map.ofEntries(
+                file("A"),
+                file("A/B"),
+                file("A/B/C"),
+                file("A/B/C/D/E"),
+                file("A/B/C/D/sibling"),
+                file("A/B/C/D/E/child")));
+    assertThat(fileTree.ancestors(Path.of("A/B/C/D"))).isEmpty();
   }
 
   @Test
-  void containsAnyChildOf_trueWhenChildPresent() {
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B")));
-    assertThat(fileTree.containsAnyChildOf(Path.of("A"))).isTrue();
+  void descendants_returnsDescendants() {
+    FileTree fileTree =
+        FileTree.from(
+            Map.ofEntries(
+                file("A"),
+                file("A/B"),
+                file("A/sibling"),
+                file("A/B/C"),
+                file("A/B/C/D/E"),
+                file("A/B/C/D/F")));
+    assertThat(fileTree.descendants(Path.of("A/B")))
+        .containsExactly(Path.of("A/B/C"), Path.of("A/B/C/D/E"), Path.of("A/B/C/D/F"));
   }
 
   @Test
-  void containsAnyChildOf_falseWhenChildAbsent() {
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B")));
-    assertThat(fileTree.containsAnyChildOf(Path.of("A/B"))).isFalse();
-  }
-
-  @Test
-  void containsAnyChildOf_falseWhenPrefixOfNextSiblingAndChildAbsent() {
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("AB")));
-    assertThat(fileTree.containsAnyChildOf(Path.of("A"))).isFalse();
-  }
-
-  @Test
-  void containsAnyChildOf_trueWhenPrefixOfNextSiblingAndChildPresent() {
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("AB"), file("A/B")));
-    assertThat(fileTree.containsAnyChildOf(Path.of("A"))).isTrue();
+  void descendants_emptyWhenNodeNotInTree() {
+    FileTree fileTree =
+        FileTree.from(
+            Map.ofEntries(
+                file("A"),
+                file("A/B"),
+                file("A/sibling"),
+                file("A/B/C"),
+                file("A/B/C/D/E"),
+                file("A/B/C/D/F")));
+    assertThat(fileTree.descendants(Path.of("A/B/C/D"))).isEmpty();
   }
 
   @Test

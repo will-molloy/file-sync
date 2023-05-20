@@ -174,10 +174,9 @@ class BackupRunnerTest {
   }
 
   @Test
-  void whenPutCoveredByChild_skipsPut() {
+  void whenChildExists_skipsPut() {
     // Given
-    when(mockSource.scan())
-        .thenReturn(FileTree.from(Map.ofEntries(file("A"), file("A/B"), file("A/B/C"))));
+    when(mockSource.scan()).thenReturn(FileTree.from(Map.ofEntries(file("A"), file("A/B"))));
     when(mockDest.scan()).thenReturn(emptyFileTree());
     when(mockBackup.put(any())).thenReturn(true);
 
@@ -187,20 +186,65 @@ class BackupRunnerTest {
     // Then
     assertThat(result).isTrue();
     verify(mockBackup, never()).put(Path.of("A"));
-    verify(mockBackup, never()).put(Path.of("A/B"));
+    verify(mockBackup).put(Path.of("A/B"));
+  }
+
+  @Test
+  void whenGrandChildExists_skipsPut() {
+    // Given
+    when(mockSource.scan()).thenReturn(FileTree.from(Map.ofEntries(file("A"), file("A/B/C"))));
+    when(mockDest.scan()).thenReturn(emptyFileTree());
+    when(mockBackup.put(any())).thenReturn(true);
+
+    // When
+    boolean result = BackupRunner.run(mockBackup);
+
+    // Then
+    assertThat(result).isTrue();
+    verify(mockBackup, never()).put(Path.of("A"));
     verify(mockBackup).put(Path.of("A/B/C"));
   }
 
   @Test
-  void whenDeleteCoveredByParent_skipsDelete() {
+  void whenParentExists_skipsDelete() {
     // Given
-    var root = file("A");
-    when(root.getValue().same(root.getValue())).thenReturn(true);
+    when(mockSource.scan()).thenReturn(emptyFileTree());
+    when(mockDest.scan()).thenReturn(FileTree.from(Map.ofEntries(file("A"), file("A/B"))));
+    when(mockBackup.delete(any())).thenReturn(true);
 
-    // cover 'parent NOT in source'
-    when(mockSource.scan()).thenReturn(FileTree.from(Map.ofEntries(root)));
-    when(mockDest.scan())
-        .thenReturn(FileTree.from(Map.ofEntries(root, file("A/B"), file("A/B/C"))));
+    // When
+    boolean result = BackupRunner.run(mockBackup);
+
+    // Then
+    assertThat(result).isTrue();
+    verify(mockBackup).delete(Path.of("A"));
+    verify(mockBackup, never()).delete(Path.of("A/B"));
+  }
+
+  @Test
+  void whenGrandParentExists_skipsDelete() {
+    // Given
+    when(mockSource.scan()).thenReturn(emptyFileTree());
+    when(mockDest.scan()).thenReturn(FileTree.from(Map.ofEntries(file("A"), file("A/B/C"))));
+    when(mockBackup.delete(any())).thenReturn(true);
+
+    // When
+    boolean result = BackupRunner.run(mockBackup);
+
+    // Then
+    assertThat(result).isTrue();
+    verify(mockBackup).delete(Path.of("A"));
+    verify(mockBackup, never()).delete(Path.of("A/B/C"));
+  }
+
+  @Test
+  void whenParentExistsButParentInSource_stillDeletes() {
+    // Given
+    var sameFile = file("A");
+    when(sameFile.getValue().same(sameFile.getValue())).thenReturn(true);
+
+    when(mockSource.scan()).thenReturn(FileTree.from(Map.ofEntries(sameFile)));
+    when(mockDest.scan()).thenReturn(FileTree.from(Map.ofEntries(sameFile, file("A/B"))));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -210,7 +254,25 @@ class BackupRunnerTest {
     assertThat(result).isTrue();
     verify(mockBackup, never()).delete(Path.of("A"));
     verify(mockBackup).delete(Path.of("A/B"));
-    verify(mockBackup, never()).delete(Path.of("A/B/C"));
+  }
+
+  @Test
+  void whenGrandParentExistsButGrandParentInSource_stillDeletes() {
+    // Given
+    var sameFile = file("A");
+    when(sameFile.getValue().same(sameFile.getValue())).thenReturn(true);
+
+    when(mockSource.scan()).thenReturn(FileTree.from(Map.ofEntries(sameFile)));
+    when(mockDest.scan()).thenReturn(FileTree.from(Map.ofEntries(sameFile, file("A/B/C"))));
+    when(mockBackup.delete(any())).thenReturn(true);
+
+    // When
+    boolean result = BackupRunner.run(mockBackup);
+
+    // Then
+    assertThat(result).isTrue();
+    verify(mockBackup, never()).delete(Path.of("A"));
+    verify(mockBackup).delete(Path.of("A/B/C"));
   }
 
   private static Map.Entry<Path, File> file(String path) {

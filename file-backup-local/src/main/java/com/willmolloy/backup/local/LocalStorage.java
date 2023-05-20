@@ -13,7 +13,8 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.TreeMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -39,7 +40,7 @@ public record LocalStorage(Path root) implements Location {
   public FileTree scan() {
     log.info("Scanning directory: [{}]", root);
     try {
-      TreeMap<Path, LocalFile> map = new TreeMap<>();
+      Map<Path, LocalFile> map = new HashMap<>();
 
       Function<Path, Path> keyFunc = root::relativize;
 

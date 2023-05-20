@@ -3,10 +3,10 @@ package com.willmolloy.backup;
 import static java.util.function.Predicate.not;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -17,36 +17,41 @@ import java.util.stream.Stream;
  */
 public final class FileTree {
 
+  /** Constructs a new {@link FileTree}; inserts each entry of the given map. */
   public static FileTree from(Map<Path, ? extends File> map) {
-    return new FileTree(map);
+    Trie trie = new Trie();
+    map.forEach(trie::insert);
+    return new FileTree(trie);
   }
 
-  private final TreeMap<Path, ? extends File> nodes;
+  private final Trie trie;
 
-  private FileTree(Map<Path, ? extends File> nodes) {
-    this.nodes = new TreeMap<>(nodes);
+  private FileTree(Trie trie) {
+    this.trie = trie;
   }
 
-  void forEach(BiConsumer<? super Path, ? super File> consumer) {
-    nodes.forEach(consumer);
+  void forEach(BiConsumer<Path, File> consumer) {
+    trie.root.stream().forEach(node -> consumer.accept(node.path, node.file));
   }
 
   Optional<File> get(Path key) {
-    return Optional.ofNullable(nodes.get(key));
+    return trie.get(key).map(node -> node.file);
   }
 
   boolean contains(Path key) {
-    return nodes.containsKey(key);
+    return trie.get(key).isPresent();
   }
 
-  boolean containsParentOf(Path key) {
-    Path parent = key.getParent();
-    return parent != null && nodes.containsKey(parent);
+  Stream<Path> ancestors(Path key) {
+    return trie.get(key).stream()
+        .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
+        .takeWhile(node -> node != trie.root)
+        .filter(node -> node.path != null)
+        .map(node -> node.path);
   }
 
-  boolean containsAnyChildOf(Path key) {
-    Path nextKey = nodes.higherKey(key);
-    return nextKey != null && nextKey.startsWith(key);
+  Stream<Path> descendants(Path key) {
+    return trie.get(key).stream().flatMap(Trie.Node::stream).skip(1).map(node -> node.path);
   }
 
   long fileCount() {
@@ -58,7 +63,7 @@ public final class FileTree {
   }
 
   private Stream<? extends File> files() {
-    return nodes.values().stream().filter(not(File::isDirectory));
+    return trie.root.stream().map(node -> node.file).filter(not(File::isDirectory));
   }
 
   @Override
@@ -70,17 +75,93 @@ public final class FileTree {
       return false;
     }
     FileTree fileTree = (FileTree) o;
-    return Objects.equals(nodes, fileTree.nodes);
+    return Objects.equals(trie.root, fileTree.trie.root);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nodes);
+    return Objects.hash(trie.root);
   }
 
   @Override
   public String toString() {
-    return "%s[%s]".formatted(getClass().getSimpleName(), nodes);
+    return "FileTree[root=%s]".formatted(trie.root);
+  }
+
+  /** Trie over {@link Path} {@linkplain Path#iterator name components}. */
+  private static final class Trie {
+    private final Node root = new Node(null);
+
+    void insert(Path path, File file) {
+      Node node = root;
+      for (Path c : path) {
+        Node child = node.children.get(c);
+        if (child == null) {
+          child = new Node(node);
+          node.children.put(c, child);
+        }
+        node = child;
+      }
+      node.path = path;
+      node.file = file;
+    }
+
+    Optional<Node> get(Path path) {
+      Node node = root;
+      for (Path c : path) {
+        Node child = node.children.get(c);
+        if (child == null) {
+          return Optional.empty();
+        }
+        node = child;
+      }
+      return node.path != null ? Optional.of(node) : Optional.empty();
+    }
+
+    /** {@link Trie} node. */
+    private static final class Node {
+      // data fields
+      // non-null if the node represents a file
+      // null if the node exists only for trie traversal
+      private Path path;
+      private File file;
+
+      // trie fields
+      private final Node parent;
+      private final HashMap<Path, Node> children;
+
+      Node(Node parent) {
+        this.parent = parent;
+        this.children = new HashMap<>();
+      }
+
+      Stream<Node> stream() {
+        return Stream.concat(Stream.of(this), children.values().stream().flatMap(Node::stream))
+            .filter(node -> node.path != null);
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) {
+          return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
+        Node node = (Node) o;
+        return Objects.equals(path, node.path) && Objects.equals(children, node.children);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(path, children);
+      }
+
+      @Override
+      public String toString() {
+        return "Node[path=%s, children=%s]".formatted(path, children);
+      }
+    }
   }
 
   /** Represents a file in the {@link FileTree}. */
