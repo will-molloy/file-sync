@@ -36,27 +36,27 @@ final class TrieBasedFileTree implements FileTree {
   }
 
   @Override
-  public Optional<File> get(Path key) {
-    return trie.get(key).map(node -> node.file);
+  public Optional<File> get(Path path) {
+    return trie.get(path).map(Trie.Node::file);
   }
 
   @Override
-  public boolean contains(Path key) {
-    return trie.get(key).isPresent();
+  public boolean contains(Path path) {
+    return trie.get(path).isPresent();
   }
 
   @Override
-  public Stream<Path> ancestors(Path key) {
-    return trie.get(key).stream()
+  public Stream<Path> ancestors(Path path) {
+    return trie.get(path).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
         .takeWhile(node -> node != trie.root)
-        .filter(node -> node.path != null)
-        .map(node -> node.path);
+        .filter(Trie.Node::containsData)
+        .map(Trie.Node::path);
   }
 
   @Override
-  public Stream<Path> descendants(Path key) {
-    return trie.get(key).stream().flatMap(Trie.Node::stream).skip(1).map(node -> node.path);
+  public Stream<Path> descendants(Path path) {
+    return trie.get(path).stream().flatMap(Trie.Node::stream).skip(1).map(Trie.Node::path);
   }
 
   @Override
@@ -70,7 +70,7 @@ final class TrieBasedFileTree implements FileTree {
   }
 
   private Stream<? extends File> files() {
-    return trie.root.stream().map(node -> node.file).filter(not(File::isDirectory));
+    return trie.root.stream().map(Trie.Node::file).filter(not(File::isDirectory));
   }
 
   @Override
@@ -122,7 +122,7 @@ final class TrieBasedFileTree implements FileTree {
         }
         node = child;
       }
-      return node.path != null ? Optional.of(node) : Optional.empty();
+      return node.containsData() ? Optional.of(node) : Optional.empty();
     }
 
     /** {@link Trie} node. */
@@ -144,7 +144,19 @@ final class TrieBasedFileTree implements FileTree {
 
       Stream<Node> stream() {
         return Stream.concat(Stream.of(this), children.values().stream().flatMap(Node::stream))
-            .filter(node -> node.path != null);
+            .filter(Node::containsData);
+      }
+
+      boolean containsData() {
+        return path != null;
+      }
+
+      Path path() {
+        return path;
+      }
+
+      File file() {
+        return file;
       }
 
       @Override

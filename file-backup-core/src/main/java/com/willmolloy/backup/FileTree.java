@@ -20,13 +20,13 @@ public interface FileTree {
 
   void forEach(BiConsumer<Path, File> consumer);
 
-  Optional<File> get(Path key);
+  Optional<File> get(Path path);
 
-  boolean contains(Path key);
+  boolean contains(Path path);
 
-  Stream<Path> ancestors(Path key);
+  Stream<Path> ancestors(Path path);
 
-  Stream<Path> descendants(Path key);
+  Stream<Path> descendants(Path path);
 
   long fileCount();
 
