@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -143,7 +143,7 @@ class LocalFileTest {
     Files.writeString(thisFilePath, thisContents);
     LocalFile thisFile = spy(new LocalFile(thisFilePath));
 
-    FileTree.File otherFile = mock(FileTree.File.class);
+    File otherFile = mock(File.class);
     when(otherFile.size()).thenReturn((long) otherContents.length());
 
     // Then

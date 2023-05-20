@@ -1,6 +1,5 @@
 package com.willmolloy.backup;
 
-import com.willmolloy.backup.FileTree.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.text.NumberFormat;
 import java.time.Duration;

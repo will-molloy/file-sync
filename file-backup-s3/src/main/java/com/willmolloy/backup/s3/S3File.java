@@ -2,7 +2,7 @@ package com.willmolloy.backup.s3;
 
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.File;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record S3File(S3Object s3Object) implements FileTree.File {
+record S3File(S3Object s3Object) implements File {
 
   private static final Logger log = LogManager.getLogger();
 

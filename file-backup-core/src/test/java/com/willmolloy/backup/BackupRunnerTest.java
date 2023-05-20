@@ -8,8 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.willmolloy.backup.Backup.Location;
-import com.willmolloy.backup.FileTree.File;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;

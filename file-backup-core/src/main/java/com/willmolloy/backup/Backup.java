@@ -9,7 +9,7 @@ import java.nio.file.Path;
  * @param <DestinationT> destination location type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup<SourceT extends Backup.Location, DestinationT extends Backup.Location> {
+public interface Backup<SourceT extends Location, DestinationT extends Location> {
 
   SourceT source();
 
@@ -31,11 +31,4 @@ public interface Backup<SourceT extends Backup.Location, DestinationT extends Ba
    * @implSpec Deletes children directories/files when necessary
    */
   boolean delete(Path key);
-
-  /** Backup location (source or destination). */
-  interface Location {
-
-    /** Scans the location's file tree. */
-    FileTree scan();
-  }
 }

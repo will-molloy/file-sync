@@ -13,11 +13,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * FileTreeTest.
+ * TrieBasedFileTreeTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class FileTreeTest {
+class TrieBasedFileTreeTest {
 
   @Test
   void forEach_visitsEachNodeExactlyOnce() {
@@ -25,7 +25,7 @@ class FileTreeTest {
     var expected =
         Stream.of("A", "A/B", "A/B/C", "D", "D/E", "D/F", "X/Y/Z").map(s -> file(s)).toList();
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             expected.stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
     // When
@@ -39,35 +39,35 @@ class FileTreeTest {
   @Test
   void get_presentWhenNodePresent() {
     var expected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), expected, file("A/B/C")));
+    FileTree fileTree = TrieBasedFileTree.from(Map.ofEntries(file("A"), expected, file("A/B/C")));
     assertThat(fileTree.get(expected.getKey())).hasValue(expected.getValue());
   }
 
   @Test
   void get_emptyWhenNodeAbsent() {
     var notExpected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B/C")));
+    FileTree fileTree = TrieBasedFileTree.from(Map.ofEntries(file("A"), file("A/B/C")));
     assertThat(fileTree.get(notExpected.getKey())).isEmpty();
   }
 
   @Test
   void contains_trueWhenNodePresent() {
     var expected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), expected, file("A/B/C")));
+    FileTree fileTree = TrieBasedFileTree.from(Map.ofEntries(file("A"), expected, file("A/B/C")));
     assertThat(fileTree.contains(expected.getKey())).isTrue();
   }
 
   @Test
   void contains_falseWhenNodeAbsent() {
     var notExpected = file("A/B");
-    FileTree fileTree = FileTree.from(Map.ofEntries(file("A"), file("A/B/C")));
+    FileTree fileTree = TrieBasedFileTree.from(Map.ofEntries(file("A"), file("A/B/C")));
     assertThat(fileTree.contains(notExpected.getKey())).isFalse();
   }
 
   @Test
   void ancestors_returnsAncestors() {
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             Map.ofEntries(
                 file("A"),
                 file("A/B"),
@@ -82,7 +82,7 @@ class FileTreeTest {
   @Test
   void ancestors_emptyWhenNodeNotInTree() {
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             Map.ofEntries(
                 file("A"),
                 file("A/B"),
@@ -96,7 +96,7 @@ class FileTreeTest {
   @Test
   void descendants_returnsDescendants() {
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             Map.ofEntries(
                 file("A"),
                 file("A/B"),
@@ -111,7 +111,7 @@ class FileTreeTest {
   @Test
   void descendants_emptyWhenNodeNotInTree() {
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             Map.ofEntries(
                 file("A"),
                 file("A/B"),
@@ -125,7 +125,7 @@ class FileTreeTest {
   @Test
   void fileCount_countsFiles() {
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             Map.ofEntries(
                 directory("A"),
                 directory("A/B"),
@@ -140,7 +140,7 @@ class FileTreeTest {
   @Test
   void totalSize_sumsFileSize() {
     FileTree fileTree =
-        FileTree.from(
+        TrieBasedFileTree.from(
             Map.ofEntries(
                 directory("A"),
                 directory("A/B"),
@@ -152,14 +152,14 @@ class FileTreeTest {
     assertThat(fileTree.totalSize()).isEqualTo(6);
   }
 
-  private static Map.Entry<Path, FileTree.File> file(String path) {
-    FileTree.File file = mock(FileTree.File.class);
+  private static Map.Entry<Path, File> file(String path) {
+    File file = mock(File.class);
     when(file.size()).thenReturn(2L);
     return Map.entry(Path.of(path), file);
   }
 
-  private static Map.Entry<Path, FileTree.File> directory(String path) {
-    FileTree.File dir = mock(FileTree.File.class);
+  private static Map.Entry<Path, File> directory(String path) {
+    File dir = mock(File.class);
     when(dir.isDirectory()).thenReturn(true);
     return Map.entry(Path.of(path), dir);
   }

@@ -4,8 +4,8 @@ import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.Location;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.BinaryOperator;

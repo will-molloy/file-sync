@@ -3,8 +3,8 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup.Location;
 import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.Location;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
