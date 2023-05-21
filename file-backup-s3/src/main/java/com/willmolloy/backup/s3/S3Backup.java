@@ -5,13 +5,14 @@ import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.File;
 import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -48,34 +49,30 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public boolean put(Path key) {
+  public boolean put(File sourceFile) {
+    Path key = sourceFile.relativizedPath();
     Path sourcePath = source.root().resolve(key);
-    String destinationUri = destination.objectUri(key);
+    String destinationUri =
+        sourceFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
     try {
-      // redundant IO call? Think it's fine considering we compute md5 here
-      if (Files.isRegularFile(sourcePath)) {
+      PutObjectRequest.Builder baseRequest =
+          PutObjectRequest.builder()
+              .bucket(destination.bucketName())
+              .key(
+                  ensureUnixSeparator(destination.prefix().resolve(key))
+                      + (sourceFile.isDirectory() ? "/" : ""))
+              .storageClass(StorageClass.DEEP_ARCHIVE);
+
+      if (!sourceFile.isDirectory()) {
         // TODO multipart upload for large files
-        PutObjectRequest request =
-            PutObjectRequest.builder()
-                .bucket(destination.bucketName())
-                .key(ensureUnixSeparator(destination.prefix().resolve(key)))
-                .storageClass(StorageClass.DEEP_ARCHIVE)
-                .contentMD5(md5Base64(sourcePath))
-                .build();
+        PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
-        log.info("Put object: [{}] -> [{}]", sourcePath, destinationUri);
-
-      } else if (Files.isDirectory(sourcePath)) {
-        // Skipping backup of empty-dirs to S3.
-        // If we do this we don't have to handle cleaning up empty dirs; S3 is smart enough to
-        // delete them when all the objects are deleted https://stackoverflow.com/a/76298046/6122976
-        // If we did create empty dirs, S3 preserves them when the objects are deleted, so we'd need
-        // to handle the cleanup ourselves.
-        log.warn("Skipping put: [{}] -> [{}]. Empty directory", sourcePath, destinationUri);
-
       } else {
-        throw new NoSuchFileException(sourcePath.toString());
+        PutObjectRequest request = baseRequest.build();
+        s3Client.putObject(request, RequestBody.empty());
       }
+      // TODO waiter
+      log.info("Put: [{}] -> [{}]", sourcePath, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
       log.warn(
@@ -91,15 +88,20 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public boolean delete(Path key) {
-    String destinationUri = destination.objectUri(key);
+  public boolean delete(File destFile) {
+    Path key = destFile.relativizedPath();
+    String destinationUri =
+        destFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(ensureUnixSeparator(destination.prefix().resolve(key)))
+              .key(
+                  ensureUnixSeparator(destination.prefix().resolve(key))
+                      + (destFile.isDirectory() ? "/" : ""))
               .build();
       s3Client.deleteObject(request);
+      // TODO waiter
       log.info("Deleted: [{}]", destinationUri);
       return true;
     } catch (RuntimeException e) {

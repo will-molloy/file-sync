@@ -1,7 +1,5 @@
 package com.willmolloy.backup;
 
-import java.nio.file.Path;
-
 /**
  * Backup type definition.
  *
@@ -22,7 +20,7 @@ public interface Backup<SourceT extends Location, DestinationT extends Location>
    * @return {@code true} if create/update was successful
    * @implSpec Creates parent directories when necessary
    */
-  boolean put(Path key);
+  boolean put(File sourceFile);
 
   /**
    * Deletes the file identified by {@code key} on destination.
@@ -30,5 +28,5 @@ public interface Backup<SourceT extends Location, DestinationT extends Location>
    * @return {@code true} if delete was successful
    * @implSpec Deletes children directories/files when necessary
    */
-  boolean delete(Path key);
+  boolean delete(File destFile);
 }

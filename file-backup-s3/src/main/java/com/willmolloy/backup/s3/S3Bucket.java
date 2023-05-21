@@ -86,4 +86,9 @@ class S3Bucket implements Location {
     return S3_BASE_URI
         + "object/%s?prefix=%s".formatted(bucketName, ensureUnixSeparator(prefix.resolve(key)));
   }
+
+  String folderUri(Path key) {
+    return S3_BASE_URI
+        + "buckets/%s?prefix=%s/".formatted(bucketName, ensureUnixSeparator(prefix.resolve(key)));
+  }
 }

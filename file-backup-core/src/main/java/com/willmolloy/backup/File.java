@@ -1,11 +1,15 @@
 package com.willmolloy.backup;
 
+import java.nio.file.Path;
+
 /**
  * Represents a file in the {@link FileTree}.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public interface File {
+
+  Path relativizedPath();
 
   /** File size in bytes. */
   long size();

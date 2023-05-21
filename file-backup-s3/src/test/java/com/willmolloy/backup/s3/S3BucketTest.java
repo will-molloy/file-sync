@@ -96,4 +96,11 @@ class S3BucketTest {
         .isEqualTo(
             "https://s3.console.aws.amazon.com/s3/object/my-bucket?prefix=my/bucket/prefix/A/B/C");
   }
+
+  @Test
+  void folderUri_linksToFolderInAwsConsole() {
+    assertThat(sut.folderUri(Path.of("A/B/C")))
+        .isEqualTo(
+            "https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=my/bucket/prefix/A/B/C/");
+  }
 }
