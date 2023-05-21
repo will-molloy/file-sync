@@ -4,6 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -20,8 +21,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+// CHECKSTYLE IGNORE RegexpSinglelineJava FOR NEXT 1 LINES
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -73,10 +77,10 @@ class S3BackupTest {
   }
 
   @Test
-  void put_makesPutRequest() throws IOException {
+  void put_whenFile_makesPutRequest() throws IOException {
     // Given
     Path key = fs.getPath("A/B/C");
-    Path sourcePath = createSourcePath(key);
+    Path sourcePath = createFile(sourceRoot.resolve(key));
 
     // When
     boolean result = sut.put(key);
@@ -95,6 +99,28 @@ class S3BackupTest {
   }
 
   @Test
+  void put_whenDirectory_makesPutRequest() throws IOException {
+    // Given
+    Path key = fs.getPath("A/B/C");
+    createDirectory(sourceRoot.resolve(key));
+
+    // When
+    boolean result = sut.put(key);
+
+    // Then
+    assertThat(result).isTrue();
+    verify(mockS3Client)
+        .putObject(
+            eq(
+                PutObjectRequest.builder()
+                    .bucket("my-bucket")
+                    .key("my/bucket/prefix/backups/A/B/C/")
+                    .build()),
+            // CHECKSTYLE IGNORE RegexpSinglelineJava FOR NEXT 1 LINES
+            ArgumentMatchers.<RequestBody>argThat(body -> body.contentLength() == 0));
+  }
+
+  @Test
   void put_whenFileNotOnSource_failsGracefully() {
     // When
     boolean result = assertDoesNotThrow(() -> sut.put(fs.getPath("A/B/C")));
@@ -107,7 +133,7 @@ class S3BackupTest {
   void put_whenS3Error_failsGracefully() throws IOException {
     // Given
     Path key = fs.getPath("A/B/C");
-    createSourcePath(key);
+    createFile(sourceRoot.resolve(key));
     when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
         .thenThrow(new RuntimeException());
 
@@ -156,12 +182,15 @@ class S3BackupTest {
             "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=my/bucket/prefix/backups/]]");
   }
 
-  private Path createSourcePath(Path path) throws IOException {
-    Path sourcePath = sourceRoot.resolve(path);
-    Path parent = sourcePath.getParent();
+  private Path createFile(Path path) throws IOException {
+    Path parent = path.getParent();
     if (parent != null) {
       Files.createDirectories(parent);
     }
-    return Files.createFile(sourcePath);
+    return Files.createFile(path);
+  }
+
+  private Path createDirectory(Path path) throws IOException {
+    return Files.createDirectories(path);
   }
 }

@@ -7,10 +7,12 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -51,16 +53,31 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
     Path sourcePath = source.root().resolve(key);
     String destinationUri = destination.objectUri(key);
     try {
-      // TODO multipart upload for large files
-      PutObjectRequest request =
-          PutObjectRequest.builder()
-              .bucket(destination.bucketName())
-              .key(ensureUnixSeparator(destination.prefix().resolve(key)))
-              .contentMD5(md5Base64(sourcePath))
-              .storageClass(StorageClass.DEEP_ARCHIVE)
-              .build();
-      s3Client.putObject(request, sourcePath);
-      log.info("Put: [{}] -> [{}]", sourcePath, destinationUri);
+      // redundant IO call? Think it's fine considering we compute md5 here
+      if (Files.isRegularFile(sourcePath)) {
+        // TODO multipart upload for large files
+        PutObjectRequest request =
+            PutObjectRequest.builder()
+                .bucket(destination.bucketName())
+                .key(ensureUnixSeparator(destination.prefix().resolve(key)))
+                .storageClass(StorageClass.DEEP_ARCHIVE)
+                .contentMD5(md5Base64(sourcePath))
+                .build();
+        s3Client.putObject(request, sourcePath);
+        log.info("Put object: [{}] -> [{}]", sourcePath, destinationUri);
+
+      } else if (Files.isDirectory(sourcePath)) {
+        PutObjectRequest request =
+            PutObjectRequest.builder()
+                .bucket(destination.bucketName())
+                .key(ensureUnixSeparator(destination.prefix().resolve(key)) + "/")
+                .build();
+        s3Client.putObject(request, RequestBody.empty());
+        log.info("Put folder: [{}] -> [{}]", sourcePath, destinationUri);
+
+      } else {
+        throw new NoSuchFileException(sourcePath.toString());
+      }
       return true;
     } catch (NoSuchFileException e) {
       log.warn(
