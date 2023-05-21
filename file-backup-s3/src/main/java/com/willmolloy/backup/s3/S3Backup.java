@@ -12,7 +12,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -67,13 +66,12 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
         log.info("Put object: [{}] -> [{}]", sourcePath, destinationUri);
 
       } else if (Files.isDirectory(sourcePath)) {
-        PutObjectRequest request =
-            PutObjectRequest.builder()
-                .bucket(destination.bucketName())
-                .key(ensureUnixSeparator(destination.prefix().resolve(key)) + "/")
-                .build();
-        s3Client.putObject(request, RequestBody.empty());
-        log.info("Put folder: [{}] -> [{}]", sourcePath, destinationUri);
+        // Skipping backup of empty-dirs to S3.
+        // If we do this we don't have to handle cleaning up empty dirs; S3 is smart enough to
+        // delete them when all the objects are deleted https://stackoverflow.com/a/76298046/6122976
+        // If we did create empty dirs, S3 preserves them when the objects are deleted, so we'd need
+        // to handle the cleanup ourselves.
+        log.warn("Skipping put: [{}] -> [{}]. Empty directory", sourcePath, destinationUri);
 
       } else {
         throw new NoSuchFileException(sourcePath.toString());
