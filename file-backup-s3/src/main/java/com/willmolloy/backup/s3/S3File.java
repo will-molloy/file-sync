@@ -1,38 +1,57 @@
 package com.willmolloy.backup.s3;
 
+import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.BaseFile;
 import com.willmolloy.backup.File;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.util.Optional;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * A file in AWS S3.
  *
- * @param s3Object the underlying S3 object
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record S3File(S3Object s3Object) implements File {
+final class S3File extends BaseFile implements File {
 
-  private static final Logger log = LogManager.getLogger();
+  private final S3Bucket s3Bucket;
+  private final Path relativePath;
+  private final long size;
+  private final boolean isDirectory;
 
-  S3File {
-    requireNonNull(s3Object);
+  S3File(S3Bucket s3Bucket, S3Object s3Object) {
+    FileSystem fs = s3Bucket.prefix().getFileSystem();
+    Path path = fs.getPath(s3Object.key());
+    require(
+        path.startsWith(s3Bucket.prefix()),
+        "Requires object key [%s] to be under bucket prefix [%s]"
+            .formatted(path, s3Bucket.prefix()));
+    this.s3Bucket = requireNonNull(s3Bucket);
+    this.relativePath = s3Bucket.prefix().relativize(path);
+    this.size = Optional.ofNullable(s3Object.size()).orElse(0L);
+    this.isDirectory = s3Object.key().endsWith("/");
+  }
+
+  @Override
+  public String uri() {
+    return isDirectory ? s3Bucket.folderUri(relativePath) : s3Bucket.objectUri(relativePath);
+  }
+
+  @Override
+  public Path relativePath() {
+    return relativePath;
   }
 
   @Override
   public long size() {
-    try {
-      return s3Object.size();
-    } catch (RuntimeException e) {
-      log.error("Error getting size of object: [{}]", s3Object, e);
-      return 0;
-    }
+    return size;
   }
 
   @Override
   public boolean isDirectory() {
-    return false;
+    return isDirectory;
   }
 }

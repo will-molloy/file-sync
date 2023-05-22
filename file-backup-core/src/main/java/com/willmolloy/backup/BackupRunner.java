@@ -1,6 +1,9 @@
 package com.willmolloy.backup;
 
+import static java.util.function.Predicate.not;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.Locale;
@@ -41,7 +44,9 @@ public final class BackupRunner {
       FileTree destFiles = scanWithLog(backup.destination()::scan, "destination");
 
       sourceFiles.forEach(
-          (key, sourceFile) -> {
+          (sourceFile) -> {
+            Path key = sourceFile.relativePath();
+
             if (sourceFiles.descendants(key).anyMatch(descendant -> true)) {
               log.debug("Skipping put({}). Covered by descendant", key);
               return;
@@ -52,7 +57,7 @@ public final class BackupRunner {
               threadPool.submit(
                   () -> {
                     log.debug("put({})", key);
-                    if (!backup.put(key)) {
+                    if (!backup.put(sourceFile)) {
                       allSuccess.set(false);
                     }
                   });
@@ -62,12 +67,17 @@ public final class BackupRunner {
           });
 
       destFiles.forEach(
-          (key, destFile) -> {
+          (destFile) -> {
+            Path key = destFile.relativePath();
+
             if (sourceFiles.contains(key)) {
               return;
             }
 
-            if (destFiles.ancestors(key).anyMatch(ancestor -> !sourceFiles.contains(ancestor))) {
+            if (destFiles
+                .ancestors(key)
+                .map(File::relativePath)
+                .anyMatch(not(sourceFiles::contains))) {
               log.debug("Skipping delete({}). Covered by ancestor", key);
               return;
             }
@@ -75,7 +85,7 @@ public final class BackupRunner {
             threadPool.submit(
                 () -> {
                   log.debug("delete({})", key);
-                  if (!backup.delete(key)) {
+                  if (!backup.delete(destFile)) {
                     allSuccess.set(false);
                   }
                 });
@@ -85,6 +95,7 @@ public final class BackupRunner {
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));
     if (isRunningInsideDocker()) {
       try {
+        // TODO remove
         log.info("Sleep 1 hour to view logs");
         Thread.sleep(Duration.ofHours(1));
       } catch (InterruptedException e) {

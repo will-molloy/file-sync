@@ -5,10 +5,10 @@ import static java.util.function.Predicate.not;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -18,9 +18,9 @@ import java.util.stream.Stream;
  */
 final class TrieBasedFileTree implements FileTree {
 
-  static TrieBasedFileTree from(Map<Path, ? extends File> map) {
+  static TrieBasedFileTree from(Set<? extends File> set) {
     Trie trie = new Trie();
-    map.forEach(trie::insert);
+    set.forEach(trie::insert);
     return new TrieBasedFileTree(trie);
   }
 
@@ -31,32 +31,32 @@ final class TrieBasedFileTree implements FileTree {
   }
 
   @Override
-  public void forEach(BiConsumer<Path, File> consumer) {
-    trie.root.stream().forEach(node -> consumer.accept(node.path, node.file));
+  public void forEach(Consumer<File> consumer) {
+    trie.root.stream().map(Trie.Node::file).forEach(consumer);
   }
 
   @Override
-  public Optional<File> get(Path path) {
-    return trie.get(path).map(Trie.Node::file);
+  public Optional<File> get(Path relativePath) {
+    return trie.get(relativePath).map(Trie.Node::file);
   }
 
   @Override
-  public boolean contains(Path path) {
-    return trie.get(path).isPresent();
+  public boolean contains(Path relativePath) {
+    return trie.get(relativePath).isPresent();
   }
 
   @Override
-  public Stream<Path> ancestors(Path path) {
-    return trie.get(path).stream()
+  public Stream<File> ancestors(Path relativePath) {
+    return trie.get(relativePath).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
         .takeWhile(node -> node != trie.root)
         .filter(Trie.Node::containsData)
-        .map(Trie.Node::path);
+        .map(Trie.Node::file);
   }
 
   @Override
-  public Stream<Path> descendants(Path path) {
-    return trie.get(path).stream().flatMap(Trie.Node::stream).skip(1).map(Trie.Node::path);
+  public Stream<File> descendants(Path relativePath) {
+    return trie.get(relativePath).stream().flatMap(Trie.Node::stream).skip(1).map(Trie.Node::file);
   }
 
   @Override
@@ -78,11 +78,13 @@ final class TrieBasedFileTree implements FileTree {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null) {
       return false;
     }
-    TrieBasedFileTree fileTree = (TrieBasedFileTree) o;
-    return Objects.equals(trie.root, fileTree.trie.root);
+    if (o instanceof TrieBasedFileTree fileTree) {
+      return Objects.equals(trie.root, fileTree.trie.root);
+    }
+    return false;
   }
 
   @Override
@@ -99,9 +101,9 @@ final class TrieBasedFileTree implements FileTree {
   private static final class Trie {
     private final Node root = new Node(null);
 
-    void insert(Path path, File file) {
+    void insert(File file) {
       Node node = root;
-      for (Path c : path) {
+      for (Path c : file.relativePath()) {
         Node child = node.children.get(c);
         if (child == null) {
           child = new Node(node);
@@ -109,7 +111,6 @@ final class TrieBasedFileTree implements FileTree {
         }
         node = child;
       }
-      node.path = path;
       node.file = file;
     }
 
@@ -127,10 +128,8 @@ final class TrieBasedFileTree implements FileTree {
 
     /** {@link Trie} node. */
     private static final class Node {
-      // data fields
       // non-null if the node represents a file
       // null if the node exists only for trie traversal
-      private Path path;
       private File file;
 
       // trie fields
@@ -147,12 +146,9 @@ final class TrieBasedFileTree implements FileTree {
             .filter(Node::containsData);
       }
 
+      // TODO remove, fill with dummy 'directory' nodes
       boolean containsData() {
-        return path != null;
-      }
-
-      Path path() {
-        return path;
+        return file != null;
       }
 
       File file() {
@@ -164,21 +160,23 @@ final class TrieBasedFileTree implements FileTree {
         if (this == o) {
           return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null) {
           return false;
         }
-        Node node = (Node) o;
-        return Objects.equals(path, node.path) && Objects.equals(children, node.children);
+        if (o instanceof Node node) {
+          return Objects.equals(file, node.file) && Objects.equals(children, node.children);
+        }
+        return false;
       }
 
       @Override
       public int hashCode() {
-        return Objects.hash(path, children);
+        return Objects.hash(file, children);
       }
 
       @Override
       public String toString() {
-        return "Node[path=%s, children=%s]".formatted(path, children);
+        return "Node[file=%s, children=%s]".formatted(file, children);
       }
     }
   }

@@ -50,7 +50,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
 
   @Override
   public boolean put(File sourceFile) {
-    Path key = sourceFile.relativizedPath();
+    Path key = sourceFile.relativePath();
     Path sourcePath = source.root().resolve(key);
     String destinationUri =
         sourceFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
@@ -89,7 +89,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
 
   @Override
   public boolean delete(File destFile) {
-    Path key = destFile.relativizedPath();
+    Path key = destFile.relativePath();
     String destinationUri =
         destFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
     try {

@@ -2,18 +2,17 @@ package com.willmolloy.backup.s3;
 
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toMap;
 
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
@@ -47,22 +46,18 @@ class S3Bucket implements Location {
             .bucket(bucketName)
             .prefix(ensureUnixSeparator(prefix) + "/")
             .build();
-    ListObjectsV2Iterable response = s3Client.listObjectsV2Paginator(request);
+    ListObjectsV2Iterable paginatedResponse = s3Client.listObjectsV2Paginator(request);
 
-    Function<S3Object, Path> keyFunc =
-        ((Function<S3Object, String>) S3Object::key).andThen(Path::of).andThen(prefix::relativize);
-
-    BinaryOperator<S3File> mergeFunc =
-        (first, second) -> {
-          log.warn("Scanned duplicate: [{}]", second);
-          return second;
-        };
-
-    Map<Path, S3File> map =
-        response.stream()
-            .flatMap(listObjectsResponse -> listObjectsResponse.contents().stream())
-            .collect(toMap(keyFunc, S3File::new, mergeFunc));
-    return FileTree.from(map);
+    Set<S3File> set = new HashSet<>();
+    for (ListObjectsV2Response response : paginatedResponse) {
+      for (S3Object s3Object : response.contents()) {
+        S3File file = new S3File(this, s3Object);
+        if (!set.add(file)) {
+          log.warn("Scanned duplicate: [{}]", file);
+        }
+      }
+    }
+    return FileTree.from(set);
   }
 
   String bucketName() {

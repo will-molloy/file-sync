@@ -13,71 +13,64 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Represents a local storage location.
  *
- * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalStorage(Path root) implements Location {
+public class LocalStorage implements Location {
 
   private static final Logger log = LogManager.getLogger();
 
-  public LocalStorage {
-    requireNonNull(root);
-    require(Files.isDirectory(root), "Requires a directory: [%s]".formatted(root));
+  private final Path rootDir;
+
+  public LocalStorage(Path rootDir) {
+    this.rootDir = requireNonNull(rootDir);
+    require(Files.isDirectory(rootDir), "Requires a directory: [%s]".formatted(rootDir));
   }
 
   @Override
   public FileTree scan() {
-    log.info("Scanning directory: [{}]", root);
+    log.info("Scanning directory: [{}]", rootDir);
     try {
-      Map<Path, LocalFile> map = new HashMap<>();
-
-      Function<Path, Path> keyFunc = root::relativize;
-
-      // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-      BinaryOperator<LocalFile> mergeFunc =
-          (first, second) -> {
-            log.warn("Scanned duplicate: [{}]", second);
-            return second;
-          };
-
+      Set<LocalFile> set = new HashSet<>();
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
-            if (path == root) {
+            if (path == rootDir) {
               return;
             }
-            Path key = keyFunc.apply(path);
-            LocalFile file = new LocalFile(path, attributes);
-            map.merge(key, file, mergeFunc);
+            LocalFile file = new LocalFile(this, path, attributes);
+            if (!set.add(file)) {
+              log.warn("Scanned duplicate: [{}]", file);
+            }
           };
-
-      Files.walkFileTree(root, new DirectoryWalker(consumer));
-      return FileTree.from(map);
+      Files.walkFileTree(rootDir, new DirectoryWalker(consumer));
+      return FileTree.from(set);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
+  public Path root() {
+    return rootDir;
+  }
+
   @Override
   public String toString() {
-    return "%s[%s]".formatted(getClass().getSimpleName(), root);
+    return "%s[%s]".formatted(getClass().getSimpleName(), rootDir);
   }
 
   private static final class DirectoryWalker implements FileVisitor<Path> {
     private final BiConsumer<Path, BasicFileAttributes> consumer;
 
-    private DirectoryWalker(BiConsumer<Path, BasicFileAttributes> fileConsumer) {
-      this.consumer = requireNonNull(fileConsumer);
+    private DirectoryWalker(BiConsumer<Path, BasicFileAttributes> consumer) {
+      this.consumer = requireNonNull(consumer);
     }
 
     @Override

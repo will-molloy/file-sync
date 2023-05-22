@@ -2,7 +2,6 @@ package com.willmolloy.backup.local;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.jimfs.Configuration;
@@ -13,7 +12,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,19 +68,19 @@ class LocalStorageTest {
     assertThat(scan)
         .isEqualTo(
             FileTree.from(
-                Map.ofEntries(
-                    entry(fs.getPath("A"), new LocalFile(root.resolve("A"))),
-                    entry(fs.getPath("B"), new LocalFile(root.resolve("B"))),
-                    entry(fs.getPath("C"), new LocalFile(root.resolve("C"))),
-                    entry(fs.getPath("C/D"), new LocalFile(root.resolve("C/D"))),
-                    entry(fs.getPath("C/D/E"), new LocalFile(root.resolve("C/D/E"))),
-                    entry(fs.getPath("F"), new LocalFile(root.resolve("F"))),
-                    entry(fs.getPath("F/G"), new LocalFile(root.resolve("F/G"))),
-                    entry(fs.getPath("F/G/H"), new LocalFile(root.resolve("F/G/H"))),
-                    entry(fs.getPath("F/G/H/I"), new LocalFile(root.resolve("F/G/H/I"))),
-                    entry(fs.getPath("X"), new LocalFile(root.resolve("X"))),
-                    entry(fs.getPath("X/Y"), new LocalFile(root.resolve("X/Y"))),
-                    entry(fs.getPath("X/Y/Z"), new LocalFile(root.resolve("X/Y/Z"))))));
+                Set.of(
+                    new LocalFile(sut, root.resolve("A")),
+                    new LocalFile(sut, root.resolve("B")),
+                    new LocalFile(sut, root.resolve("C")),
+                    new LocalFile(sut, root.resolve("C/D")),
+                    new LocalFile(sut, root.resolve("C/D/E")),
+                    new LocalFile(sut, root.resolve("F")),
+                    new LocalFile(sut, root.resolve("F/G")),
+                    new LocalFile(sut, root.resolve("F/G/H")),
+                    new LocalFile(sut, root.resolve("F/G/H/I")),
+                    new LocalFile(sut, root.resolve("X")),
+                    new LocalFile(sut, root.resolve("X/Y")),
+                    new LocalFile(sut, root.resolve("X/Y/Z")))));
   }
 
   @Test

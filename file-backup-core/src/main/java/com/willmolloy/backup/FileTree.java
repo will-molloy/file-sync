@@ -1,9 +1,9 @@
 package com.willmolloy.backup;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -13,20 +13,26 @@ import java.util.stream.Stream;
  */
 public interface FileTree {
 
-  /** Constructs a new {@link FileTree}; inserts each entry of the given map. */
-  static FileTree from(Map<Path, ? extends File> map) {
-    return TrieBasedFileTree.from(map);
+  // TODO generic File
+
+  /** Constructs a new {@link FileTree}; containing each {@link File} from the given set. */
+  static FileTree from(Set<? extends File> set) {
+    return TrieBasedFileTree.from(set);
   }
 
-  void forEach(BiConsumer<Path, File> consumer);
+  static FileTree empty() {
+    return FileTree.from(Set.of());
+  }
 
-  Optional<File> get(Path path);
+  void forEach(Consumer<File> consumer);
 
-  boolean contains(Path path);
+  Optional<File> get(Path relativePath);
 
-  Stream<Path> ancestors(Path path);
+  boolean contains(Path relativePath);
 
-  Stream<Path> descendants(Path path);
+  Stream<File> ancestors(Path relativePath);
+
+  Stream<File> descendants(Path relativePath);
 
   long fileCount();
 

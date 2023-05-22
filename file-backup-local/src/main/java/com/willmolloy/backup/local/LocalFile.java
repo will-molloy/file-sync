@@ -3,47 +3,54 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.BaseFile;
 import com.willmolloy.backup.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * Local file on disk.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class LocalFile implements File {
+public final class LocalFile extends BaseFile implements File {
 
-  private final Path path;
+  private final LocalStorage localStorage;
+  private final Path relativePath;
   private final long size;
-  private final Instant lastModified;
   private final boolean isDirectory;
+  private final Instant lastModified;
 
-  LocalFile(Path path, BasicFileAttributes attributes) {
+  LocalFile(LocalStorage localStorage, Path path, BasicFileAttributes attributes) {
+    require(
+        path.startsWith(localStorage.root()),
+        "Requires path [%s] to be under root [%s]".formatted(path, localStorage.root()));
+    this.localStorage = requireNonNull(localStorage);
+    this.relativePath = localStorage.root().relativize(path);
+
     require(
         attributes.isRegularFile() || attributes.isDirectory(),
         "Requires a file or directory: [%s]".formatted(path));
-    this.path = requireNonNull(path);
     this.size = attributes.size();
-    this.lastModified = attributes.lastModifiedTime().toInstant();
     this.isDirectory = attributes.isDirectory();
+    this.lastModified = attributes.lastModifiedTime().toInstant();
   }
 
-  LocalFile(Path path) throws IOException {
-    this(path, Files.readAttributes(path, BasicFileAttributes.class));
+  public LocalFile(LocalStorage localStorage, Path path) throws IOException {
+    this(localStorage, path, Files.readAttributes(path, BasicFileAttributes.class));
   }
 
   @Override
-  public long size() {
-    return size;
+  public String uri() {
+    return fullPath().toString();
   }
 
-  Instant lastModified() {
-    return lastModified;
+  @Override
+  public Path relativePath() {
+    return relativePath;
   }
 
   @Override
@@ -52,32 +59,23 @@ class LocalFile implements File {
   }
 
   @Override
+  public long size() {
+    return size;
+  }
+
+  public Path fullPath() {
+    return localStorage.root().resolve(relativePath);
+  }
+
+  Instant lastModified() {
+    return lastModified;
+  }
+
+  @Override
   public boolean same(File other) {
     if (other instanceof LocalFile localFile) {
-      return File.super.same(other) && lastModified.equals(localFile.lastModified);
+      return super.same(other) && lastModified.equals(localFile.lastModified);
     }
-    return File.super.same(other);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    LocalFile localFile = (LocalFile) o;
-    return Objects.equals(path, localFile.path);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(path);
-  }
-
-  @Override
-  public String toString() {
-    return "%s[%s]".formatted(getClass().getSimpleName(), path);
+    return super.same(other);
   }
 }

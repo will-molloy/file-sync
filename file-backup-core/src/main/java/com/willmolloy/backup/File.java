@@ -9,13 +9,21 @@ import java.nio.file.Path;
  */
 public interface File {
 
-  Path relativizedPath();
+  /** Unique identifier. */
+  String uri();
 
-  /** File size in bytes. */
-  long size();
+  /**
+   * {@linkplain Path#relativize Relative path}.
+   *
+   * @apiNote Enables a consistent key across different {@link Location}s.
+   */
+  Path relativePath();
 
   /** {@code true} if directory. {@code false} if regular file. */
   boolean isDirectory();
+
+  /** File size in bytes. */
+  long size();
 
   /**
    * {@code true} if the {@code other} file can be considered the same.

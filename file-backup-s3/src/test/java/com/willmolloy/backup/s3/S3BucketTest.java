@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 import com.willmolloy.backup.FileTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,7 @@ class S3BucketTest {
     ListObjectsV2Response page3 = ListObjectsV2Response.builder().contents(i, z).build();
 
     ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
-    when(response.stream()).thenReturn(Stream.of(page1, page2, page3));
+    when(response.iterator()).thenReturn(List.of(page1, page2, page3).iterator());
 
     ListObjectsV2Request request =
         ListObjectsV2Request.builder().bucket("my-bucket").prefix("my/bucket/prefix/").build();
@@ -70,17 +70,12 @@ class S3BucketTest {
     assertThat(scan)
         .isEqualTo(
             FileTree.from(
-                Map.of(
-                    Path.of("A"),
-                    new S3File(a),
-                    Path.of("B"),
-                    new S3File(b),
-                    Path.of("C/D/E"),
-                    new S3File(e),
-                    Path.of("F/G/H/I"),
-                    new S3File(i),
-                    Path.of("X/Y/Z"),
-                    new S3File(z))));
+                Set.of(
+                    new S3File(sut, a),
+                    new S3File(sut, b),
+                    new S3File(sut, e),
+                    new S3File(sut, i),
+                    new S3File(sut, z))));
   }
 
   @Test

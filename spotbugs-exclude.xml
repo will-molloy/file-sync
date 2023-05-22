@@ -4,5 +4,8 @@
   <Match>
     <Bug pattern="EI_EXPOSE_REP2" />
   </Match>
+  <Match>
+    <Bug pattern="RI_REDUNDANT_INTERFACES" />
+  </Match>
 
 </FindBugsFilter>

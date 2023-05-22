@@ -14,8 +14,7 @@ public interface Backup<SourceT extends Location, DestinationT extends Location>
   DestinationT destination();
 
   /**
-   * Creates or updates the file identified by {@code key} on destination with the corresponding
-   * file on source.
+   * Creates or updates the corresponding file on destination.
    *
    * @return {@code true} if create/update was successful
    * @implSpec Creates parent directories when necessary
@@ -23,7 +22,7 @@ public interface Backup<SourceT extends Location, DestinationT extends Location>
   boolean put(File sourceFile);
 
   /**
-   * Deletes the file identified by {@code key} on destination.
+   * Deletes the file on destination.
    *
    * @return {@code true} if delete was successful
    * @implSpec Deletes children directories/files when necessary
