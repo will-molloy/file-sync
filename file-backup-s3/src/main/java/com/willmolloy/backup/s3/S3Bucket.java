@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class S3Bucket implements Location {
+class S3Bucket implements Location<S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -39,7 +39,7 @@ class S3Bucket implements Location {
   }
 
   @Override
-  public FileTree scan() {
+  public FileTree<S3File> scan() {
     log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder()

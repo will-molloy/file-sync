@@ -64,7 +64,7 @@ class S3BucketTest {
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
-    FileTree scan = sut.scan();
+    FileTree<S3File> scan = sut.scan();
 
     // Then
     assertThat(scan)

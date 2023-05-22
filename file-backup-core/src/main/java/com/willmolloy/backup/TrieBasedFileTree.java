@@ -14,29 +14,30 @@ import java.util.stream.Stream;
 /**
  * {@link FileTree} implemented via {@linkplain Trie trie data structure}.
  *
+ * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class TrieBasedFileTree implements FileTree {
+final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
-  static TrieBasedFileTree from(Set<? extends File> set) {
-    Trie trie = new Trie();
+  static <FileT extends File> TrieBasedFileTree<FileT> from(Set<FileT> set) {
+    Trie<FileT> trie = new Trie<>();
     set.forEach(trie::insert);
-    return new TrieBasedFileTree(trie);
+    return new TrieBasedFileTree<>(trie);
   }
 
-  private final Trie trie;
+  private final Trie<FileT> trie;
 
-  private TrieBasedFileTree(Trie trie) {
+  private TrieBasedFileTree(Trie<FileT> trie) {
     this.trie = requireNonNull(trie);
   }
 
   @Override
-  public void forEach(Consumer<File> consumer) {
+  public void forEach(Consumer<FileT> consumer) {
     trie.root.stream().map(Trie.Node::file).forEach(consumer);
   }
 
   @Override
-  public Optional<File> get(Path relativePath) {
+  public Optional<FileT> get(Path relativePath) {
     return trie.get(relativePath).map(Trie.Node::file);
   }
 
@@ -46,7 +47,7 @@ final class TrieBasedFileTree implements FileTree {
   }
 
   @Override
-  public Stream<File> ancestors(Path relativePath) {
+  public Stream<FileT> ancestors(Path relativePath) {
     return trie.get(relativePath).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
         .takeWhile(node -> node != trie.root)
@@ -55,7 +56,7 @@ final class TrieBasedFileTree implements FileTree {
   }
 
   @Override
-  public Stream<File> descendants(Path relativePath) {
+  public Stream<FileT> descendants(Path relativePath) {
     return trie.get(relativePath).stream().flatMap(Trie.Node::stream).skip(1).map(Trie.Node::file);
   }
 
@@ -81,7 +82,7 @@ final class TrieBasedFileTree implements FileTree {
     if (o == null) {
       return false;
     }
-    if (o instanceof TrieBasedFileTree fileTree) {
+    if (o instanceof TrieBasedFileTree<?> fileTree) {
       return Objects.equals(trie.root, fileTree.trie.root);
     }
     return false;
@@ -97,16 +98,20 @@ final class TrieBasedFileTree implements FileTree {
     return "FileTree[root=%s]".formatted(trie.root);
   }
 
-  /** Trie over {@link Path} {@linkplain Path#iterator name components}. */
-  private static final class Trie {
-    private final Node root = new Node(null);
+  /**
+   * Trie over {@link Path} {@linkplain Path#iterator name components}.
+   *
+   * @param <FileT> type of file stored in the trie nodes
+   */
+  private static final class Trie<FileT extends File> {
+    private final Node<FileT> root = new Node<>(null);
 
-    void insert(File file) {
-      Node node = root;
+    void insert(FileT file) {
+      Node<FileT> node = root;
       for (Path c : file.relativePath()) {
-        Node child = node.children.get(c);
+        Node<FileT> child = node.children.get(c);
         if (child == null) {
-          child = new Node(node);
+          child = new Node<>(node);
           node.children.put(c, child);
         }
         node = child;
@@ -114,10 +119,10 @@ final class TrieBasedFileTree implements FileTree {
       node.file = file;
     }
 
-    Optional<Node> get(Path path) {
-      Node node = root;
+    Optional<Node<FileT>> get(Path path) {
+      Node<FileT> node = root;
       for (Path c : path) {
-        Node child = node.children.get(c);
+        Node<FileT> child = node.children.get(c);
         if (child == null) {
           return Optional.empty();
         }
@@ -126,22 +131,26 @@ final class TrieBasedFileTree implements FileTree {
       return node.containsData() ? Optional.of(node) : Optional.empty();
     }
 
-    /** {@link Trie} node. */
-    private static final class Node {
+    /**
+     * {@link Trie} node.
+     *
+     * @param <FileT> type of file stored in the node
+     */
+    private static final class Node<FileT extends File> {
       // non-null if the node represents a file
       // null if the node exists only for trie traversal
-      private File file;
+      private FileT file;
 
       // trie fields
-      private final Node parent;
-      private final HashMap<Path, Node> children;
+      private final Node<FileT> parent;
+      private final HashMap<Path, Node<FileT>> children;
 
-      Node(Node parent) {
+      Node(Node<FileT> parent) {
         this.parent = parent;
         this.children = new HashMap<>();
       }
 
-      Stream<Node> stream() {
+      Stream<Node<FileT>> stream() {
         return Stream.concat(Stream.of(this), children.values().stream().flatMap(Node::stream))
             .filter(Node::containsData);
       }
@@ -151,7 +160,7 @@ final class TrieBasedFileTree implements FileTree {
         return file != null;
       }
 
-      File file() {
+      FileT file() {
         return file;
       }
 
@@ -163,7 +172,7 @@ final class TrieBasedFileTree implements FileTree {
         if (o == null) {
           return false;
         }
-        if (o instanceof Node node) {
+        if (o instanceof Node<?> node) {
           return Objects.equals(file, node.file) && Objects.equals(children, node.children);
         }
         return false;

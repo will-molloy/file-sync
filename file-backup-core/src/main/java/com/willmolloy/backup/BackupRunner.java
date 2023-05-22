@@ -40,8 +40,8 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      FileTree sourceFiles = scanWithLog(backup.source()::scan, "source");
-      FileTree destFiles = scanWithLog(backup.destination()::scan, "destination");
+      FileTree<File> sourceFiles = scanWithLog(backup.source()::scan, "source");
+      FileTree<File> destFiles = scanWithLog(backup.destination()::scan, "destination");
 
       sourceFiles.forEach(
           (sourceFile) -> {
@@ -111,9 +111,9 @@ public final class BackupRunner {
     return new java.io.File("/.dockerenv").exists();
   }
 
-  private static FileTree scanWithLog(Supplier<FileTree> scan, String locationForLog) {
+  private static FileTree<File> scanWithLog(Supplier<FileTree<File>> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
-    FileTree fileTree = scan.get();
+    FileTree<File> fileTree = scan.get();
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,

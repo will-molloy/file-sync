@@ -28,7 +28,7 @@ class TrieBasedFileTreeTest {
             file("D/E"),
             file("D/F"),
             file("X/Y/Z"));
-    FileTree fileTree = TrieBasedFileTree.from(expected);
+    FileTree<File> fileTree = TrieBasedFileTree.from(expected);
 
     // When
     List<File> actual = new ArrayList<>();
@@ -41,34 +41,34 @@ class TrieBasedFileTreeTest {
   @Test
   void get_presentWhenNodePresent() {
     File expected = file("A/B");
-    FileTree fileTree = TrieBasedFileTree.from(Set.of(file("A"), expected, file("A/B/C")));
+    FileTree<File> fileTree = TrieBasedFileTree.from(Set.of(file("A"), expected, file("A/B/C")));
     assertThat(fileTree.get(expected.relativePath())).hasValue(expected);
   }
 
   @Test
   void get_emptyWhenNodeAbsent() {
     File notExpected = file("A/B");
-    FileTree fileTree = TrieBasedFileTree.from(Set.of(file("A"), file("A/B/C")));
+    FileTree<File> fileTree = TrieBasedFileTree.from(Set.of(file("A"), file("A/B/C")));
     assertThat(fileTree.get(notExpected.relativePath())).isEmpty();
   }
 
   @Test
   void contains_trueWhenNodePresent() {
     File expected = file("A/B");
-    FileTree fileTree = TrieBasedFileTree.from(Set.of(file("A"), expected, file("A/B/C")));
+    FileTree<File> fileTree = TrieBasedFileTree.from(Set.of(file("A"), expected, file("A/B/C")));
     assertThat(fileTree.contains(expected.relativePath())).isTrue();
   }
 
   @Test
   void contains_falseWhenNodeAbsent() {
     File notExpected = file("A/B");
-    FileTree fileTree = TrieBasedFileTree.from(Set.of(file("A"), file("A/B/C")));
+    FileTree<File> fileTree = TrieBasedFileTree.from(Set.of(file("A"), file("A/B/C")));
     assertThat(fileTree.contains(notExpected.relativePath())).isFalse();
   }
 
   @Test
   void ancestors_returnsAncestors() {
-    FileTree fileTree =
+    FileTree<File> fileTree =
         TrieBasedFileTree.from(
             Set.of(
                 file("A"),
@@ -83,7 +83,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void ancestors_emptyWhenNodeNotInTree() {
-    FileTree fileTree =
+    FileTree<File> fileTree =
         TrieBasedFileTree.from(
             Set.of(
                 file("A"),
@@ -97,7 +97,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void descendants_returnsDescendants() {
-    FileTree fileTree =
+    FileTree<File> fileTree =
         TrieBasedFileTree.from(
             Set.of(
                 file("A"),
@@ -112,7 +112,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void descendants_emptyWhenNodeNotInTree() {
-    FileTree fileTree =
+    FileTree<File> fileTree =
         TrieBasedFileTree.from(
             Set.of(
                 file("A"),
@@ -126,7 +126,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void fileCount_countsFiles() {
-    FileTree fileTree =
+    FileTree<File> fileTree =
         TrieBasedFileTree.from(
             Set.of(
                 directory("A"),
@@ -141,7 +141,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void totalSize_sumsFileSize() {
-    FileTree fileTree =
+    FileTree<File> fileTree =
         TrieBasedFileTree.from(
             Set.of(
                 directory("A"),

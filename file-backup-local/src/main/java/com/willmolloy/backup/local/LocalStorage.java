@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class LocalStorage implements Location {
+public class LocalStorage implements Location<LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -36,7 +36,7 @@ public class LocalStorage implements Location {
   }
 
   @Override
-  public FileTree scan() {
+  public FileTree<LocalFile> scan() {
     log.info("Scanning directory: [{}]", rootDir);
     try {
       Set<LocalFile> set = new HashSet<>();

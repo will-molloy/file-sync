@@ -9,30 +9,29 @@ import java.util.stream.Stream;
 /**
  * Represents a {@link Location}s file tree.
  *
+ * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface FileTree {
-
-  // TODO generic File
+public interface FileTree<FileT extends File> {
 
   /** Constructs a new {@link FileTree}; containing each {@link File} from the given set. */
-  static FileTree from(Set<? extends File> set) {
+  static <FileT extends File> FileTree<FileT> from(Set<FileT> set) {
     return TrieBasedFileTree.from(set);
   }
 
-  static FileTree empty() {
+  static FileTree<?> empty() {
     return FileTree.from(Set.of());
   }
 
-  void forEach(Consumer<File> consumer);
+  void forEach(Consumer<FileT> consumer);
 
-  Optional<File> get(Path relativePath);
+  Optional<FileT> get(Path relativePath);
 
   boolean contains(Path relativePath);
 
-  Stream<File> ancestors(Path relativePath);
+  Stream<FileT> ancestors(Path relativePath);
 
-  Stream<File> descendants(Path relativePath);
+  Stream<FileT> descendants(Path relativePath);
 
   long fileCount();
 
