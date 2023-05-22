@@ -19,7 +19,7 @@ public interface FileTree<FileT extends File> {
     return TrieBasedFileTree.from(set);
   }
 
-  static FileTree<?> empty() {
+  static <FileT extends File> FileTree<FileT> empty() {
     return FileTree.from(Set.of());
   }
 

@@ -3,7 +3,6 @@ package com.willmolloy.backup.local;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
-import com.willmolloy.backup.File;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
@@ -26,7 +25,7 @@ import org.apache.logging.log4j.Logger;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 record LocalBackup(LocalStorage source, LocalStorage destination)
-    implements Backup<LocalStorage, LocalStorage> {
+    implements Backup<LocalFile, LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -36,10 +35,9 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   }
 
   @Override
-  public boolean put(File sourceFile) {
-    Path key = sourceFile.relativePath();
-    Path sourcePath = source.root().resolve(key);
-    Path destPath = destination.root().resolve(key);
+  public boolean put(LocalFile sourceFile) {
+    Path sourcePath = sourceFile.fullPath();
+    Path destPath = destination.root().resolve(sourceFile.relativePath());
     return robustCopy(sourcePath, destPath);
   }
 
@@ -109,10 +107,8 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
   }
 
   @Override
-  public boolean delete(File destFile) {
-    Path key = destFile.relativePath();
-    Path destPath = destination.root().resolve(key);
-    return robustDelete(destPath);
+  public boolean delete(LocalFile destFile) {
+    return robustDelete(destFile.fullPath());
   }
 
   private boolean robustDelete(Path destPath) {

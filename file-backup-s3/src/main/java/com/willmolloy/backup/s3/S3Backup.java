@@ -5,7 +5,7 @@ import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
-import com.willmolloy.backup.File;
+import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.s3.model.StorageClass;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class S3Backup implements Backup<LocalStorage, S3Bucket> {
+class S3Backup implements Backup<LocalFile, S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -49,9 +49,9 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public boolean put(File sourceFile) {
+  public boolean put(LocalFile sourceFile) {
+    Path sourcePath = sourceFile.fullPath();
     Path key = sourceFile.relativePath();
-    Path sourcePath = source.root().resolve(key);
     String destinationUri =
         sourceFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
     try {
@@ -72,7 +72,7 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
         s3Client.putObject(request, RequestBody.empty());
       }
       // TODO waiter
-      log.info("Put: [{}] -> [{}]", sourcePath, destinationUri);
+      log.info("Put: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
       log.warn(
@@ -88,10 +88,8 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
   }
 
   @Override
-  public boolean delete(File destFile) {
+  public boolean delete(S3File destFile) {
     Path key = destFile.relativePath();
-    String destinationUri =
-        destFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
     try {
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
@@ -102,10 +100,10 @@ class S3Backup implements Backup<LocalStorage, S3Bucket> {
               .build();
       s3Client.deleteObject(request);
       // TODO waiter
-      log.info("Deleted: [{}]", destinationUri);
+      log.info("Deleted: [{}]", destFile.uri());
       return true;
     } catch (RuntimeException e) {
-      log.error("Error deleting: [{}]", destinationUri, e);
+      log.error("Error deleting: [{}]", destFile.uri(), e);
       return false;
     }
   }

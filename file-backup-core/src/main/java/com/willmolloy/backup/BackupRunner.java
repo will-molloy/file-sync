@@ -31,7 +31,8 @@ public final class BackupRunner {
   private static final int MEGA = 1_000_000;
 
   /** Runs the backup. */
-  public static boolean run(Backup<?, ?> backup) {
+  public static <SourceFileT extends File, DestFileT extends File> boolean run(
+      Backup<SourceFileT, DestFileT> backup) {
     log.info("Running: {}", backup);
     long runStartNanos = System.nanoTime();
 
@@ -40,8 +41,8 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      FileTree<File> sourceFiles = scanWithLog(backup.source()::scan, "source");
-      FileTree<File> destFiles = scanWithLog(backup.destination()::scan, "destination");
+      FileTree<SourceFileT> sourceFiles = scanWithLog(backup.source()::scan, "source");
+      FileTree<DestFileT> destFiles = scanWithLog(backup.destination()::scan, "destination");
 
       sourceFiles.forEach(
           (sourceFile) -> {
@@ -52,7 +53,7 @@ public final class BackupRunner {
               return;
             }
 
-            Optional<File> maybeDestFile = destFiles.get(key);
+            Optional<DestFileT> maybeDestFile = destFiles.get(key);
             if (maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get())) {
               threadPool.submit(
                   () -> {
@@ -111,9 +112,10 @@ public final class BackupRunner {
     return new java.io.File("/.dockerenv").exists();
   }
 
-  private static FileTree<File> scanWithLog(Supplier<FileTree<File>> scan, String locationForLog) {
+  private static <FileT extends File> FileTree<FileT> scanWithLog(
+      Supplier<FileTree<FileT>> scan, String locationForLog) {
     long scanStartNanos = System.nanoTime();
-    FileTree<File> fileTree = scan.get();
+    FileTree<FileT> fileTree = scan.get();
     log.info(
         "Scanned {} in: {}. {} files. {}MB",
         locationForLog,

@@ -24,9 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BackupRunnerTest {
 
-  @Mock private Location mockSource;
-  @Mock private Location mockDest;
-  @Mock private Backup<Location, Location> mockBackup;
+  @Mock private Location<File> mockSource;
+  @Mock private Location<File> mockDest;
+  @Mock private Backup<File, File> mockBackup;
 
   @BeforeEach
   void setUp() {

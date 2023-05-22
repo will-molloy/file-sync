@@ -134,7 +134,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
     /**
      * {@link Trie} node.
      *
-     * @param <FileT> type of file stored in the node
+     * @param <FileT> type of file stored in this node
      */
     private static final class Node<FileT extends File> {
       // non-null if the node represents a file

@@ -3,15 +3,15 @@ package com.willmolloy.backup;
 /**
  * Backup type definition.
  *
- * @param <SourceT> source location type
- * @param <DestinationT> destination location type
+ * @param <SourceFileT> source file type
+ * @param <DestFileT> destination file type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup<SourceT extends Location, DestinationT extends Location> {
+public interface Backup<SourceFileT extends File, DestFileT extends File> {
 
-  SourceT source();
+  Location<SourceFileT> source();
 
-  DestinationT destination();
+  Location<DestFileT> destination();
 
   /**
    * Creates or updates the corresponding file on destination.
@@ -19,7 +19,7 @@ public interface Backup<SourceT extends Location, DestinationT extends Location>
    * @return {@code true} if create/update was successful
    * @implSpec Creates parent directories when necessary
    */
-  boolean put(File sourceFile);
+  boolean put(SourceFileT sourceFile);
 
   /**
    * Deletes the file on destination.
@@ -27,5 +27,5 @@ public interface Backup<SourceT extends Location, DestinationT extends Location>
    * @return {@code true} if delete was successful
    * @implSpec Deletes children directories/files when necessary
    */
-  boolean delete(File destFile);
+  boolean delete(DestFileT destFile);
 }
