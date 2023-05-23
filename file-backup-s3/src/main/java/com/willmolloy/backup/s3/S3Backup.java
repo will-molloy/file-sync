@@ -15,8 +15,11 @@ import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeletedObject;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
  * For backups to AWS S3.
@@ -71,7 +74,7 @@ class S3Backup implements Backup<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.build();
         s3Client.putObject(request, RequestBody.empty());
       }
-      // TODO waiter
+      // TODO waiter?
       log.info("Put: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
@@ -91,6 +94,7 @@ class S3Backup implements Backup<LocalFile, S3File> {
   public boolean delete(S3File destFile) {
     Path key = destFile.relativePath();
     try {
+      // TODO DeleteObjectsRequest for folders... currently does not work.
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
               .bucket(destination.bucketName())
@@ -99,7 +103,7 @@ class S3Backup implements Backup<LocalFile, S3File> {
                       + (destFile.isDirectory() ? "/" : ""))
               .build();
       s3Client.deleteObject(request);
-      // TODO waiter
+      // TODO waiter?
       log.info("Deleted: [{}]", destFile.uri());
       return true;
     } catch (RuntimeException e) {
