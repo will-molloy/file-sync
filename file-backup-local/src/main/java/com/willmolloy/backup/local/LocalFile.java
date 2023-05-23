@@ -10,7 +10,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Instant;
 
 /**
  * Local file on disk.
@@ -32,7 +31,7 @@ public final class LocalFile extends BaseFile implements File {
         localStorage.root().relativize(path),
         attributes.isDirectory(),
         attributes.size(),
-        attributes.lastModifiedTime().toInstant());
+        attributes.lastModifiedTime().toMillis());
   }
 
   public static LocalFile fromPath(LocalStorage localStorage, Path path) throws IOException {
@@ -42,27 +41,27 @@ public final class LocalFile extends BaseFile implements File {
 
   static LocalFile directoryFiller(LocalStorage localStorage, String relativePath) {
     FileSystem fs = localStorage.root().getFileSystem();
-    return new LocalFile(localStorage, fs.getPath(relativePath), true, 0, Instant.MIN);
+    return new LocalFile(localStorage, fs.getPath(relativePath), true, 0, 0);
   }
 
   private final LocalStorage localStorage;
   private final Path relativePath;
   private final boolean isDirectory;
   private final long size;
-  private final Instant lastModified;
+  private final long lastModified;
 
   private LocalFile(
       LocalStorage localStorage,
       Path relativePath,
       boolean isDirectory,
       long size,
-      Instant lastModified) {
+      long lastModified) {
     this.localStorage = requireNonNull(localStorage);
     this.relativePath = requireNonNull(relativePath);
     this.isDirectory = isDirectory;
     require(size >= 0, "Requires non-negative size");
     this.size = size;
-    this.lastModified = requireNonNull(lastModified);
+    this.lastModified = lastModified;
   }
 
   @Override
@@ -89,14 +88,14 @@ public final class LocalFile extends BaseFile implements File {
     return localStorage.root().resolve(relativePath);
   }
 
-  Instant lastModified() {
+  long lastModified() {
     return lastModified;
   }
 
   @Override
   public boolean same(File other) {
     if (other instanceof LocalFile localFile) {
-      return super.same(other) && lastModified.equals(localFile.lastModified);
+      return super.same(other) && lastModified == localFile.lastModified;
     }
     return super.same(other);
   }

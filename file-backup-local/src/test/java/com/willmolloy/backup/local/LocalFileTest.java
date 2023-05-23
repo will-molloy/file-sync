@@ -17,7 +17,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,19 +90,18 @@ class LocalFileTest {
   }
 
   @Test
-  void lastModified_returnsLastModifiedTime() throws IOException {
+  void lastModified_returnsLastModifiedTimeInMillis() throws IOException {
     // Given
     Path path = Files.createFile(storage.root().resolve("A"));
     LocalFile file = LocalFile.fromPath(storage, path);
 
     // When
-    Instant result = file.lastModified();
+    long result = file.lastModified();
 
     // Then
     long tolerance = 100;
     long currentMillis = System.currentTimeMillis();
-    assertThat(result.toEpochMilli())
-        .isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
+    assertThat(result).isIn(Range.closed(currentMillis - tolerance, currentMillis + tolerance));
   }
 
   @Test
@@ -218,6 +216,6 @@ class LocalFileTest {
     assertThat(directoryFiller.relativePath()).isEqualTo(fs.getPath("A/B/C"));
     assertThat(directoryFiller.isDirectory()).isEqualTo(true);
     assertThat(directoryFiller.size()).isEqualTo(0);
-    assertThat(directoryFiller.lastModified()).isEqualTo(Instant.MIN);
+    assertThat(directoryFiller.lastModified()).isEqualTo(0);
   }
 }
