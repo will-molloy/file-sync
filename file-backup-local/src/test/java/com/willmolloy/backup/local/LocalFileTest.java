@@ -55,7 +55,7 @@ class LocalFileTest {
   void uri_returnsFullPath() throws IOException {
     // Given
     Path path = Files.createFile(storage.root().resolve("A"));
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // Then
     assertThat(file.uri()).isEqualTo(path.toString());
@@ -65,7 +65,7 @@ class LocalFileTest {
   void relativePath_returnsRelativizedPath() throws IOException {
     // Given
     Path path = Files.createFile(storage.root().resolve("A"));
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // Then
     assertThat(file.relativePath()).isEqualTo(fs.getPath("A"));
@@ -77,7 +77,7 @@ class LocalFileTest {
     // Given
     Path path = Files.createFile(storage.root().resolve("A"));
     Files.writeString(path, contents);
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // When
     long result = file.size();
@@ -94,7 +94,7 @@ class LocalFileTest {
   void lastModified_returnsLastModifiedTime() throws IOException {
     // Given
     Path path = Files.createFile(storage.root().resolve("A"));
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // When
     Instant result = file.lastModified();
@@ -110,7 +110,7 @@ class LocalFileTest {
   void isDirectory_whenFile_false() throws IOException {
     // Given
     Path path = Files.createFile(storage.root().resolve("A"));
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // Then
     assertThat(file.isDirectory()).isFalse();
@@ -120,7 +120,7 @@ class LocalFileTest {
   void isDirectory_whenDirectory_true() throws IOException {
     // Given
     Path path = Files.createDirectory(storage.root().resolve("A"));
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // Then
     assertThat(file.isDirectory()).isTrue();
@@ -139,12 +139,12 @@ class LocalFileTest {
     Path thisFilePath = Files.createFile(storage.root().resolve("A"));
     Files.writeString(thisFilePath, thisContents);
     Files.setLastModifiedTime(thisFilePath, FileTime.fromMillis(thisLastModified));
-    LocalFile thisFile = spy(new LocalFile(storage, thisFilePath));
+    LocalFile thisFile = spy(LocalFile.fromPath(storage, thisFilePath));
 
     Path otherFilePath = Files.createFile(storage.root().resolve("B"));
     Files.writeString(otherFilePath, otherContents);
     Files.setLastModifiedTime(otherFilePath, FileTime.fromMillis(otherLastModified));
-    LocalFile otherFile = spy(new LocalFile(storage, otherFilePath));
+    LocalFile otherFile = spy(LocalFile.fromPath(storage, otherFilePath));
 
     // Then
     assertThat(thisFile.same(otherFile)).isEqualTo(expected);
@@ -168,7 +168,7 @@ class LocalFileTest {
     // Given
     Path thisFilePath = Files.createFile(storage.root().resolve("A"));
     Files.writeString(thisFilePath, thisContents);
-    LocalFile thisFile = spy(new LocalFile(storage, thisFilePath));
+    LocalFile thisFile = spy(LocalFile.fromPath(storage, thisFilePath));
 
     File otherFile = mock(File.class);
     when(otherFile.size()).thenReturn((long) otherContents.length());
@@ -190,7 +190,7 @@ class LocalFileTest {
   void toString_includesUri() throws IOException {
     // Given
     Path path = Files.createFile(storage.root().resolve("ABCD"));
-    LocalFile file = new LocalFile(storage, path);
+    LocalFile file = LocalFile.fromPath(storage, path);
 
     // Then
     assertThat(file.toString()).isEqualTo("LocalFile[%s]".formatted(path));
@@ -203,7 +203,21 @@ class LocalFileTest {
 
     // Then
     IllegalArgumentException thrown =
-        assertThrows(IllegalArgumentException.class, () -> new LocalFile(storage, path, null));
+        assertThrows(
+            IllegalArgumentException.class, () -> LocalFile.fromAttributes(storage, path, null));
     assertThat(thrown).hasMessageThat().isEqualTo("Requires path [A] to be under root [root]");
+  }
+
+  @Test
+  void directoryFiller() {
+    // Given
+    LocalFile directoryFiller = LocalFile.directoryFiller(storage, "A/B/C");
+
+    // Then
+    assertThat(directoryFiller.uri()).isEqualTo(storage.root().resolve("A/B/C").toString());
+    assertThat(directoryFiller.relativePath()).isEqualTo(fs.getPath("A/B/C"));
+    assertThat(directoryFiller.isDirectory()).isEqualTo(true);
+    assertThat(directoryFiller.size()).isEqualTo(0);
+    assertThat(directoryFiller.lastModified()).isEqualTo(Instant.MIN);
   }
 }

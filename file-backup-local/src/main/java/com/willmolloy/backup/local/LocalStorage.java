@@ -45,13 +45,14 @@ public class LocalStorage implements Location<LocalFile> {
             if (path == rootDir) {
               return;
             }
-            LocalFile file = new LocalFile(this, path, attributes);
+            LocalFile file = LocalFile.fromAttributes(this, path, attributes);
             if (!set.add(file)) {
               log.warn("Scanned duplicate: [{}]", file);
             }
           };
       Files.walkFileTree(rootDir, new DirectoryWalker(consumer));
-      return FileTree.from(set);
+      return FileTree.fromSetWithDirectoryFiller(
+          set, path -> LocalFile.directoryFiller(this, path));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

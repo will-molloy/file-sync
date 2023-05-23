@@ -17,22 +17,36 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  */
 final class S3File extends BaseFile implements File {
 
-  private final S3Bucket s3Bucket;
-  private final Path relativePath;
-  private final long size;
-  private final boolean isDirectory;
-
-  S3File(S3Bucket s3Bucket, S3Object s3Object) {
+  static S3File fromS3Object(S3Bucket s3Bucket, S3Object s3Object) {
     FileSystem fs = s3Bucket.prefix().getFileSystem();
     Path path = fs.getPath(s3Object.key());
     require(
         path.startsWith(s3Bucket.prefix()),
         "Requires object key [%s] to be under bucket prefix [%s]"
             .formatted(path, s3Bucket.prefix()));
+    return new S3File(
+        s3Bucket,
+        s3Bucket.prefix().relativize(path),
+        s3Object.key().endsWith("/"),
+        Optional.ofNullable(s3Object.size()).orElse(0L));
+  }
+
+  static S3File directoryFiller(S3Bucket s3Bucket, String relativePath) {
+    FileSystem fs = s3Bucket.prefix().getFileSystem();
+    return new S3File(s3Bucket, fs.getPath(relativePath), true, 0);
+  }
+
+  private final S3Bucket s3Bucket;
+  private final Path relativePath;
+  private final boolean isDirectory;
+  private final long size;
+
+  private S3File(S3Bucket s3Bucket, Path relativePath, boolean isDirectory, long size) {
     this.s3Bucket = requireNonNull(s3Bucket);
-    this.relativePath = s3Bucket.prefix().relativize(path);
-    this.size = Optional.ofNullable(s3Object.size()).orElse(0L);
-    this.isDirectory = s3Object.key().endsWith("/");
+    this.relativePath = requireNonNull(relativePath);
+    this.isDirectory = isDirectory;
+    require(size >= 0, "Requires non-negative size");
+    this.size = size;
   }
 
   @Override
@@ -46,12 +60,12 @@ final class S3File extends BaseFile implements File {
   }
 
   @Override
-  public long size() {
-    return size;
+  public boolean isDirectory() {
+    return isDirectory;
   }
 
   @Override
-  public boolean isDirectory() {
-    return isDirectory;
+  public long size() {
+    return size;
   }
 }

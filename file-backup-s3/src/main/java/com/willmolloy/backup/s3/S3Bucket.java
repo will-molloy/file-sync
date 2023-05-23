@@ -51,13 +51,13 @@ class S3Bucket implements Location<S3File> {
     Set<S3File> set = new HashSet<>();
     for (ListObjectsV2Response response : paginatedResponse) {
       for (S3Object s3Object : response.contents()) {
-        S3File file = new S3File(this, s3Object);
+        S3File file = S3File.fromS3Object(this, s3Object);
         if (!set.add(file)) {
           log.warn("Scanned duplicate: [{}]", file);
         }
       }
     }
-    return FileTree.from(set);
+    return FileTree.fromSetWithDirectoryFiller(set, path -> S3File.directoryFiller(this, path));
   }
 
   String bucketName() {

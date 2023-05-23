@@ -1,8 +1,10 @@
 package com.willmolloy.backup.util;
 
+import static java.util.function.Predicate.not;
+
 import java.io.File;
 import java.nio.file.Path;
-import java.util.stream.Collectors;
+import java.util.List;
 import java.util.stream.StreamSupport;
 
 /**
@@ -17,10 +19,16 @@ public final class PathHelper {
     if (File.separatorChar == '/') {
       return path.toString();
     } else {
-      return StreamSupport.stream(path.spliterator(), false)
-          .map(Path::toString)
-          .collect(Collectors.joining("/"));
+      return String.join("/", nameComponents(path));
     }
+  }
+
+  /** {@link Path#iterator} as {@code List<String>}. */
+  public static List<String> nameComponents(Path path) {
+    return StreamSupport.stream(path.spliterator(), false)
+        .map(Path::toString)
+        .filter(not(String::isEmpty))
+        .toList();
   }
 
   private PathHelper() {}

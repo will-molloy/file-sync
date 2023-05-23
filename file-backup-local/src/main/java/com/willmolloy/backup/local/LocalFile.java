@@ -6,6 +6,7 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.BaseFile;
 import com.willmolloy.backup.File;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -18,29 +19,50 @@ import java.time.Instant;
  */
 public final class LocalFile extends BaseFile implements File {
 
-  private final LocalStorage localStorage;
-  private final Path relativePath;
-  private final long size;
-  private final boolean isDirectory;
-  private final Instant lastModified;
-
-  LocalFile(LocalStorage localStorage, Path path, BasicFileAttributes attributes) {
+  static LocalFile fromAttributes(
+      LocalStorage localStorage, Path path, BasicFileAttributes attributes) {
     require(
         path.startsWith(localStorage.root()),
         "Requires path [%s] to be under root [%s]".formatted(path, localStorage.root()));
-    this.localStorage = requireNonNull(localStorage);
-    this.relativePath = localStorage.root().relativize(path);
-
     require(
         attributes.isRegularFile() || attributes.isDirectory(),
         "Requires a file or directory: [%s]".formatted(path));
-    this.size = attributes.size();
-    this.isDirectory = attributes.isDirectory();
-    this.lastModified = attributes.lastModifiedTime().toInstant();
+    return new LocalFile(
+        localStorage,
+        localStorage.root().relativize(path),
+        attributes.isDirectory(),
+        attributes.size(),
+        attributes.lastModifiedTime().toInstant());
   }
 
-  public LocalFile(LocalStorage localStorage, Path path) throws IOException {
-    this(localStorage, path, Files.readAttributes(path, BasicFileAttributes.class));
+  public static LocalFile fromPath(LocalStorage localStorage, Path path) throws IOException {
+    return fromAttributes(
+        localStorage, path, Files.readAttributes(path, BasicFileAttributes.class));
+  }
+
+  static LocalFile directoryFiller(LocalStorage localStorage, String relativePath) {
+    FileSystem fs = localStorage.root().getFileSystem();
+    return new LocalFile(localStorage, fs.getPath(relativePath), true, 0, Instant.MIN);
+  }
+
+  private final LocalStorage localStorage;
+  private final Path relativePath;
+  private final boolean isDirectory;
+  private final long size;
+  private final Instant lastModified;
+
+  private LocalFile(
+      LocalStorage localStorage,
+      Path relativePath,
+      boolean isDirectory,
+      long size,
+      Instant lastModified) {
+    this.localStorage = requireNonNull(localStorage);
+    this.relativePath = requireNonNull(relativePath);
+    this.isDirectory = isDirectory;
+    require(size >= 0, "Requires non-negative size");
+    this.size = size;
+    this.lastModified = requireNonNull(lastModified);
   }
 
   @Override

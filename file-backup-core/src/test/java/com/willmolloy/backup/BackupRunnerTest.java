@@ -46,7 +46,7 @@ class BackupRunnerTest {
   @Test
   void whenFileOnlyOnSource_createsFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
     when(mockDest.scan()).thenReturn(FileTree.empty());
     when(mockBackup.put(any())).thenReturn(true);
 
@@ -61,8 +61,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andNotSame_updatesFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(differentFile("A"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(differentFile("A"))));
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -76,8 +76,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andSame_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
 
     // When
     boolean result = BackupRunner.run(mockBackup);
@@ -91,7 +91,7 @@ class BackupRunnerTest {
   void whenFileOnlyOnDestination_deletesFileFromDestination() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.empty());
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -105,8 +105,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnDestinationAndSource_skipsDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
 
     // When
     boolean result = BackupRunner.run(mockBackup);
@@ -119,7 +119,7 @@ class BackupRunnerTest {
   @Test
   void whenCreateFails_countsFailedCreate() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
     when(mockDest.scan()).thenReturn(FileTree.empty());
     when(mockBackup.put(any())).thenReturn(false);
 
@@ -134,8 +134,8 @@ class BackupRunnerTest {
   @Test
   void whenUpdateFails_countsFailedUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(differentFile("A"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(differentFile("A"))));
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -150,7 +150,7 @@ class BackupRunnerTest {
   void whenDeleteFails_countsFailedDelete() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.empty());
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
     when(mockBackup.delete(any())).thenReturn(false);
 
     // When
@@ -164,7 +164,7 @@ class BackupRunnerTest {
   @Test
   void whenChildExists_skipsPut() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"), file("A/B"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"), file("A/B"))));
     when(mockDest.scan()).thenReturn(FileTree.empty());
     when(mockBackup.put(any())).thenReturn(true);
 
@@ -180,7 +180,7 @@ class BackupRunnerTest {
   @Test
   void whenGrandChildExists_skipsPut() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"), file("A/B/C"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"), file("A/B/C"))));
     when(mockDest.scan()).thenReturn(FileTree.empty());
     when(mockBackup.put(any())).thenReturn(true);
 
@@ -197,7 +197,7 @@ class BackupRunnerTest {
   void whenParentExists_skipsDelete() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.empty());
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"), file("A/B"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"), file("A/B"))));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -213,7 +213,7 @@ class BackupRunnerTest {
   void whenGrandParentExists_skipsDelete() {
     // Given
     when(mockSource.scan()).thenReturn(FileTree.empty());
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"), file("A/B/C"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"), file("A/B/C"))));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -228,8 +228,8 @@ class BackupRunnerTest {
   @Test
   void whenParentExistsButParentInSource_stillDeletes() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"), file("A/B"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"), file("A/B"))));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -244,8 +244,8 @@ class BackupRunnerTest {
   @Test
   void whenGrandParentExistsButGrandParentInSource_stillDeletes() {
     // Given
-    when(mockSource.scan()).thenReturn(FileTree.from(Set.of(file("A"))));
-    when(mockDest.scan()).thenReturn(FileTree.from(Set.of(file("A"), file("A/B/C"))));
+    when(mockSource.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"))));
+    when(mockDest.scan()).thenReturn(FileTree.fromSet(Set.of(file("A"), file("A/B/C"))));
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When

@@ -45,16 +45,16 @@ class S3BucketTest {
   }
 
   @Test
-  void scan_returnsMapOfKeysToFiles() {
+  void scan_returnsFileTree() {
     // Given
     S3Object a = S3Object.builder().key("my/bucket/prefix/A").build();
     S3Object b = S3Object.builder().key("my/bucket/prefix/B").build();
     ListObjectsV2Response page1 = ListObjectsV2Response.builder().contents(a, b).build();
     S3Object e = S3Object.builder().key("my/bucket/prefix/C/D/E").build();
-    ListObjectsV2Response page2 = ListObjectsV2Response.builder().contents(e).build();
-    S3Object i = S3Object.builder().key("my/bucket/prefix/F/G/H/I").build();
+    S3Object f = S3Object.builder().key("my/bucket/prefix/C/D/F").build();
+    ListObjectsV2Response page2 = ListObjectsV2Response.builder().contents(e, f).build();
     S3Object z = S3Object.builder().key("my/bucket/prefix/X/Y/Z").build();
-    ListObjectsV2Response page3 = ListObjectsV2Response.builder().contents(i, z).build();
+    ListObjectsV2Response page3 = ListObjectsV2Response.builder().contents(z).build();
 
     ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
     when(response.iterator()).thenReturn(List.of(page1, page2, page3).iterator());
@@ -69,13 +69,18 @@ class S3BucketTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.from(
+            FileTree.fromSet(
                 Set.of(
-                    new S3File(sut, a),
-                    new S3File(sut, b),
-                    new S3File(sut, e),
-                    new S3File(sut, i),
-                    new S3File(sut, z))));
+                    S3File.directoryFiller(sut, ""),
+                    S3File.fromS3Object(sut, a),
+                    S3File.fromS3Object(sut, b),
+                    S3File.directoryFiller(sut, "C"),
+                    S3File.directoryFiller(sut, "C/D"),
+                    S3File.fromS3Object(sut, e),
+                    S3File.fromS3Object(sut, f),
+                    S3File.directoryFiller(sut, "X"),
+                    S3File.directoryFiller(sut, "X/Y"),
+                    S3File.fromS3Object(sut, z))));
   }
 
   @Test

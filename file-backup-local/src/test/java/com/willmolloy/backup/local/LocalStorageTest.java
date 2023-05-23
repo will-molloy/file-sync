@@ -50,14 +50,13 @@ class LocalStorageTest {
   }
 
   @Test
-  void scan_returnsMapOfRelativizedFileNamesToFilesAndDirectories() throws IOException {
+  void scan_returnsFileTree() throws IOException {
     // Given
     Files.createFile(root.resolve("A"));
     Files.createFile(root.resolve("B"));
     Files.createDirectories(root.resolve("C/D"));
     Files.createFile(root.resolve("C/D/E"));
-    Files.createDirectories(root.resolve("F/G/H"));
-    Files.createFile(root.resolve("F/G/H/I"));
+    Files.createFile(root.resolve("C/D/F"));
     Files.createDirectories(root.resolve("X/Y"));
     Files.createFile(root.resolve("X/Y/Z"));
 
@@ -67,20 +66,18 @@ class LocalStorageTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.from(
+            FileTree.fromSet(
                 Set.of(
-                    new LocalFile(sut, root.resolve("A")),
-                    new LocalFile(sut, root.resolve("B")),
-                    new LocalFile(sut, root.resolve("C")),
-                    new LocalFile(sut, root.resolve("C/D")),
-                    new LocalFile(sut, root.resolve("C/D/E")),
-                    new LocalFile(sut, root.resolve("F")),
-                    new LocalFile(sut, root.resolve("F/G")),
-                    new LocalFile(sut, root.resolve("F/G/H")),
-                    new LocalFile(sut, root.resolve("F/G/H/I")),
-                    new LocalFile(sut, root.resolve("X")),
-                    new LocalFile(sut, root.resolve("X/Y")),
-                    new LocalFile(sut, root.resolve("X/Y/Z")))));
+                    LocalFile.directoryFiller(sut, ""),
+                    LocalFile.fromPath(sut, root.resolve("A")),
+                    LocalFile.fromPath(sut, root.resolve("B")),
+                    LocalFile.fromPath(sut, root.resolve("C")),
+                    LocalFile.fromPath(sut, root.resolve("C/D")),
+                    LocalFile.fromPath(sut, root.resolve("C/D/E")),
+                    LocalFile.fromPath(sut, root.resolve("C/D/F")),
+                    LocalFile.fromPath(sut, root.resolve("X")),
+                    LocalFile.fromPath(sut, root.resolve("X/Y")),
+                    LocalFile.fromPath(sut, root.resolve("X/Y/Z")))));
   }
 
   @Test

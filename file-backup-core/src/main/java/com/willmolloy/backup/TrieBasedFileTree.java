@@ -1,5 +1,6 @@
 package com.willmolloy.backup;
 
+import static com.willmolloy.backup.util.PathHelper.nameComponents;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 
@@ -9,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -19,8 +21,15 @@ import java.util.stream.Stream;
  */
 final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
-  static <FileT extends File> TrieBasedFileTree<FileT> from(Set<FileT> set) {
-    Trie<FileT> trie = new Trie<>();
+  static <FileT extends File> TrieBasedFileTree<FileT> fromSet(Set<FileT> set) {
+    Trie<FileT> trie = new Trie<>(null);
+    set.forEach(trie::insert);
+    return new TrieBasedFileTree<>(trie);
+  }
+
+  static <FileT extends File> TrieBasedFileTree<FileT> fromSetWithDirectoryFiller(
+      Set<FileT> set, Function<String, FileT> directoryFiller) {
+    Trie<FileT> trie = new Trie<>(directoryFiller);
     set.forEach(trie::insert);
     return new TrieBasedFileTree<>(trie);
   }
@@ -104,24 +113,41 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
    * @param <FileT> type of file stored in the trie nodes
    */
   private static final class Trie<FileT extends File> {
-    private final Node<FileT> root = new Node<>(null);
+    private final Node<FileT> root;
+    private final Function<String, FileT> directoryFiller;
+
+    Trie(Function<String, FileT> directoryFiller) {
+      this.directoryFiller = directoryFiller;
+      if (directoryFiller == null) {
+        this.root = new Node<>(null, null);
+      } else {
+        this.root = new Node<>(null, requireNonNull(directoryFiller.apply("")));
+      }
+    }
 
     void insert(FileT file) {
       Node<FileT> node = root;
-      for (Path c : file.relativePath()) {
+      StringBuilder path = new StringBuilder();
+      for (String c : nameComponents(file.relativePath())) {
         Node<FileT> child = node.children.get(c);
+        path.append(c);
         if (child == null) {
-          child = new Node<>(node);
+          if (directoryFiller == null) {
+            child = new Node<>(node, null);
+          } else {
+            child = new Node<>(node, requireNonNull(directoryFiller.apply(path.toString())));
+          }
           node.children.put(c, child);
         }
         node = child;
+        path.append('/');
       }
       node.file = file;
     }
 
     Optional<Node<FileT>> get(Path path) {
       Node<FileT> node = root;
-      for (Path c : path) {
+      for (String c : nameComponents(path)) {
         Node<FileT> child = node.children.get(c);
         if (child == null) {
           return Optional.empty();
@@ -137,17 +163,16 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
      * @param <FileT> type of file stored in this node
      */
     private static final class Node<FileT extends File> {
-      // non-null if the node represents a file
-      // null if the node exists only for trie traversal
       private FileT file;
 
       // trie fields
       private final Node<FileT> parent;
-      private final HashMap<Path, Node<FileT>> children;
+      private final HashMap<String, Node<FileT>> children;
 
-      Node(Node<FileT> parent) {
+      Node(Node<FileT> parent, FileT file) {
         this.parent = parent;
         this.children = new HashMap<>();
+        this.file = file;
       }
 
       Stream<Node<FileT>> stream() {
@@ -155,7 +180,6 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
             .filter(Node::containsData);
       }
 
-      // TODO remove, fill with dummy 'directory' nodes
       boolean containsData() {
         return file != null;
       }

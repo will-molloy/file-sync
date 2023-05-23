@@ -211,19 +211,19 @@ class S3BackupTest {
       Files.createDirectories(parent);
     }
     Files.createFile(path);
-    return new LocalFile(source, path);
+    return LocalFile.fromPath(source, path);
   }
 
   private LocalFile createLocalDirectory(Path relativePath) throws IOException {
     Path path = source.root().resolve(relativePath);
     Files.createDirectories(path);
-    return new LocalFile(source, path);
+    return LocalFile.fromPath(source, path);
   }
 
   private S3File createS3Object(String key) {
     S3Object s3Object =
         S3Object.builder().key(ensureUnixSeparator(destination.prefix().resolve(key))).build();
-    return new S3File(destination, s3Object);
+    return S3File.fromS3Object(destination, s3Object);
   }
 
   private S3File createS3Folder(String key) {
@@ -231,6 +231,6 @@ class S3BackupTest {
         S3Object.builder()
             .key(ensureUnixSeparator(destination.prefix().resolve(key)) + "/")
             .build();
-    return new S3File(destination, s3Object);
+    return S3File.fromS3Object(destination, s3Object);
   }
 }

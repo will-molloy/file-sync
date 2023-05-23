@@ -320,13 +320,13 @@ class LocalBackupTest {
     }
     Files.createFile(path);
     Files.writeString(path, contents);
-    return new LocalFile(localStorage, path);
+    return LocalFile.fromPath(localStorage, path);
   }
 
   private static LocalFile createDirectory(LocalStorage localStorage, Path relativePath)
       throws IOException {
     Path path = localStorage.root().resolve(relativePath);
     Files.createDirectories(path);
-    return new LocalFile(localStorage, path);
+    return LocalFile.fromPath(localStorage, path);
   }
 }

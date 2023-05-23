@@ -53,7 +53,7 @@ class S3FileTest {
   void uri_whenObject_returnsObjectUri() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.uri())
@@ -64,7 +64,7 @@ class S3FileTest {
   void uri_whenFolder_returnsFolderUri() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C/").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.uri())
@@ -75,7 +75,7 @@ class S3FileTest {
   void relativePath_returnsRelativizedPath() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.relativePath()).isEqualTo(Path.of("A/B/C"));
@@ -84,9 +84,9 @@ class S3FileTest {
   @Test
   void size_returnsS3ObjectSize() {
     // Given
-    long randomLong = FAKER.random().nextLong();
+    long randomLong = FAKER.number().numberBetween(1, 10);
     S3Object s3Object = S3Object.builder().key("prefix/A").size(randomLong).build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // When
     long result = file.size();
@@ -99,7 +99,7 @@ class S3FileTest {
   void isDirectory_whenObject_false() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.isDirectory()).isFalse();
@@ -109,7 +109,7 @@ class S3FileTest {
   void isDirectory_whenFolder_true() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C/").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.isDirectory()).isTrue();
@@ -120,7 +120,7 @@ class S3FileTest {
   void same_onlyTrueIfSizeEqual(long thisSize, long otherSize, boolean expected) {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A").size(thisSize).build();
-    S3File thisFile = spy(new S3File(bucket, s3Object));
+    S3File thisFile = spy(S3File.fromS3Object(bucket, s3Object));
 
     File otherFile = mock(File.class);
     when(otherFile.size()).thenReturn(otherSize);
@@ -130,7 +130,7 @@ class S3FileTest {
   }
 
   static Stream<Arguments> same_onlyTrueIfSizeEqual() {
-    long randomLong = FAKER.random().nextLong();
+    long randomLong = FAKER.number().numberBetween(1, 10);
     return Stream.of(
         Arguments.of(randomLong, randomLong, true),
         Arguments.of(randomLong, randomLong + 1, false),
@@ -141,7 +141,7 @@ class S3FileTest {
   void toString_whenObject_includesObjectUri() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.toString())
@@ -153,7 +153,7 @@ class S3FileTest {
   void toString_whenFolder_includesFolderUri() {
     // Given
     S3Object s3Object = S3Object.builder().key("prefix/A/B/C/").build();
-    S3File file = new S3File(bucket, s3Object);
+    S3File file = S3File.fromS3Object(bucket, s3Object);
 
     // Then
     assertThat(file.toString())
@@ -168,9 +168,22 @@ class S3FileTest {
 
     // Then
     IllegalArgumentException thrown =
-        assertThrows(IllegalArgumentException.class, () -> new S3File(bucket, s3Object));
+        assertThrows(IllegalArgumentException.class, () -> S3File.fromS3Object(bucket, s3Object));
     assertThat(thrown)
         .hasMessageThat()
         .isEqualTo("Requires object key [A] to be under bucket prefix [prefix]");
+  }
+
+  @Test
+  void directoryFiller() {
+    // Given
+    S3File directoryFiller = S3File.directoryFiller(bucket, "A/B/C");
+
+    // Then
+    Path relativePath = bucket.prefix().getFileSystem().getPath("A/B/C");
+    assertThat(directoryFiller.uri()).isEqualTo(bucket.folderUri(relativePath));
+    assertThat(directoryFiller.relativePath()).isEqualTo(relativePath);
+    assertThat(directoryFiller.isDirectory()).isEqualTo(true);
+    assertThat(directoryFiller.size()).isEqualTo(0);
   }
 }
