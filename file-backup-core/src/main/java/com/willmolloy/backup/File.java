@@ -5,6 +5,7 @@ import java.nio.file.Path;
 /**
  * Represents a file in the {@link FileTree}.
  *
+ * @see BaseFile
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public interface File {

@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public class LocalStorage implements Location<LocalFile> {
+public final class LocalStorage implements Location<LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 

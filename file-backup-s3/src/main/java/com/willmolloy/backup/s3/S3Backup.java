@@ -4,7 +4,7 @@ import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
@@ -23,35 +23,24 @@ import software.amazon.awssdk.services.s3.model.StorageClass;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class S3Backup implements Backup<LocalFile, S3File> {
+final class S3Backup extends BaseBackup<LocalFile, S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
   private final S3Client s3Client;
-
-  private final LocalStorage source;
   private final S3Bucket destination;
 
   S3Backup(S3Client s3Client, LocalStorage source, S3Bucket destination) {
+    super(source, destination);
     this.s3Client = requireNonNull(s3Client);
-    this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
-  }
-
-  @Override
-  public LocalStorage source() {
-    return source;
-  }
-
-  @Override
-  public S3Bucket destination() {
-    return destination;
   }
 
   @Override
   public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     Path key = sourceFile.relativePath();
+    // TODO put with some kind of filler object so we can use the S3File methods here...
     String destinationUri =
         sourceFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
     try {
@@ -107,11 +96,5 @@ class S3Backup implements Backup<LocalFile, S3File> {
       log.error("Error deleting: [{}]", destFile.uri(), e);
       return false;
     }
-  }
-
-  @Override
-  public String toString() {
-    return "%s[source=%s, destination=%s]"
-        .formatted(getClass().getSimpleName(), source, destination);
   }
 }

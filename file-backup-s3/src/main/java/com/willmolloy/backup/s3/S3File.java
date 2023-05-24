@@ -4,7 +4,6 @@ import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseFile;
-import com.willmolloy.backup.File;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -15,7 +14,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class S3File extends BaseFile implements File {
+final class S3File extends BaseFile {
 
   static S3File fromS3Object(S3Bucket s3Bucket, S3Object s3Object) {
     FileSystem fs = s3Bucket.prefix().getFileSystem();

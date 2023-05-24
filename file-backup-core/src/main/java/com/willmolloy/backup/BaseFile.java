@@ -3,7 +3,7 @@ package com.willmolloy.backup;
 import java.util.Objects;
 
 /**
- * Base {@link File} class with {@code hashCode/equals/toString} implemented for convenience.
+ * Base {@link File} class with common methods implemented for convenience.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */

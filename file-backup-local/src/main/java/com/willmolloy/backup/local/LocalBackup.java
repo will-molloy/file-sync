@@ -2,7 +2,7 @@ package com.willmolloy.backup.local;
 
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.BaseBackup;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
@@ -20,23 +20,23 @@ import org.apache.logging.log4j.Logger;
 /**
  * For backups to/from locally mounted storage. Either local disk, or mounted NAS, etc.
  *
- * @param source source
- * @param destination destination
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-record LocalBackup(LocalStorage source, LocalStorage destination)
-    implements Backup<LocalFile, LocalFile> {
+final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
+  private final LocalStorage destination;
+
   LocalBackup(LocalStorage source, LocalStorage destination) {
-    this.source = requireNonNull(source);
+    super(source, destination);
     this.destination = requireNonNull(destination);
   }
 
   @Override
   public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
+    // TODO put with some kind of filler object so we can do 'destFile.fullPath()' here...
     Path destPath = destination.root().resolve(sourceFile.relativePath());
     return robustCopy(sourcePath, destPath);
   }
@@ -125,9 +125,6 @@ record LocalBackup(LocalStorage source, LocalStorage destination)
     }
   }
 
-  // multiple threads are running recursive delete
-  // (this is the only way to run in parallel - can't guarantee the order)
-  // so ignore 'NoSuchFileException' as another thread may have got there first.
   private static final class RecursiveDelete implements FileVisitor<Path> {
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {

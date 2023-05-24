@@ -16,7 +16,7 @@ import java.nio.file.attribute.BasicFileAttributes;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class LocalFile extends BaseFile implements File {
+public final class LocalFile extends BaseFile {
 
   static LocalFile fromAttributes(
       LocalStorage localStorage, Path path, BasicFileAttributes attributes) {

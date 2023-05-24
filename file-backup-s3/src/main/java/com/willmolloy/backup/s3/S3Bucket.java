@@ -19,7 +19,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class S3Bucket implements Location<S3File> {
+final class S3Bucket implements Location<S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
