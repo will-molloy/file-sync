@@ -38,33 +38,16 @@ final class S3File extends BaseFile {
   private final S3Bucket s3Bucket;
   private final Path relativePath;
   private final boolean isDirectory;
-  private final long size;
 
   private S3File(S3Bucket s3Bucket, Path relativePath, boolean isDirectory, long size) {
+    super(relativePath, isDirectory, size);
     this.s3Bucket = requireNonNull(s3Bucket);
     this.relativePath = requireNonNull(relativePath);
     this.isDirectory = isDirectory;
-    require(size >= 0, "Requires non-negative size");
-    this.size = size;
   }
 
   @Override
   public String uri() {
     return isDirectory ? s3Bucket.folderUri(relativePath) : s3Bucket.objectUri(relativePath);
-  }
-
-  @Override
-  public Path relativePath() {
-    return relativePath;
-  }
-
-  @Override
-  public boolean isDirectory() {
-    return isDirectory;
-  }
-
-  @Override
-  public long size() {
-    return size;
   }
 }

@@ -1,5 +1,9 @@
 package com.willmolloy.backup;
 
+import static com.willmolloy.backup.util.Preconditions.require;
+import static java.util.Objects.requireNonNull;
+
+import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -8,6 +12,32 @@ import java.util.Objects;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public abstract class BaseFile implements File {
+
+  private final Path relativePath;
+  private final boolean isDirectory;
+  private final long size;
+
+  protected BaseFile(Path relativePath, boolean isDirectory, long size) {
+    this.relativePath = requireNonNull(relativePath);
+    this.isDirectory = isDirectory;
+    require(size >= 0, "Requires non-negative size");
+    this.size = size;
+  }
+
+  @Override
+  public final Path relativePath() {
+    return relativePath;
+  }
+
+  @Override
+  public final boolean isDirectory() {
+    return isDirectory;
+  }
+
+  @Override
+  public final long size() {
+    return size;
+  }
 
   @Override
   public final boolean equals(Object o) {

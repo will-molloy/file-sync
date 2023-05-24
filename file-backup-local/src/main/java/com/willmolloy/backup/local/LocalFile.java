@@ -46,8 +46,6 @@ public final class LocalFile extends BaseFile {
 
   private final LocalStorage localStorage;
   private final Path relativePath;
-  private final boolean isDirectory;
-  private final long size;
   private final long lastModified;
 
   private LocalFile(
@@ -56,32 +54,15 @@ public final class LocalFile extends BaseFile {
       boolean isDirectory,
       long size,
       long lastModified) {
+    super(relativePath, isDirectory, size);
     this.localStorage = requireNonNull(localStorage);
     this.relativePath = requireNonNull(relativePath);
-    this.isDirectory = isDirectory;
-    require(size >= 0, "Requires non-negative size");
-    this.size = size;
     this.lastModified = lastModified;
   }
 
   @Override
   public String uri() {
     return fullPath().toString();
-  }
-
-  @Override
-  public Path relativePath() {
-    return relativePath;
-  }
-
-  @Override
-  public boolean isDirectory() {
-    return isDirectory;
-  }
-
-  @Override
-  public long size() {
-    return size;
   }
 
   public Path fullPath() {
