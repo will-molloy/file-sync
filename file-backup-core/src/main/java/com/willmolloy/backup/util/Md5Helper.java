@@ -8,6 +8,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 
 /**
  * Helper for computing MD5 hash.
@@ -24,9 +25,9 @@ public final class Md5Helper {
   }
 
   private static byte[] md5(Path file) throws IOException {
-    log.debug("md5({})", file);
+    EntryMessage m = log.traceEntry("md5({})", file);
     try (InputStream inputStream = Files.newInputStream(file)) {
-      return DigestUtils.md5(inputStream);
+      return log.traceExit(m, DigestUtils.md5(inputStream));
     }
   }
 

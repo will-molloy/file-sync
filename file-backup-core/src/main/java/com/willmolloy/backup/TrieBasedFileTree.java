@@ -8,10 +8,12 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 
 /**
  * {@link FileTree} implemented via {@linkplain Trie trie data structure}.
@@ -21,18 +23,7 @@ import java.util.stream.Stream;
  */
 final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
-  static <FileT extends File> TrieBasedFileTree<FileT> fromSet(Set<FileT> set) {
-    Trie<FileT> trie = new Trie<>(null);
-    set.forEach(trie::insert);
-    return new TrieBasedFileTree<>(trie);
-  }
-
-  static <FileT extends File> TrieBasedFileTree<FileT> fromSetWithDirectoryFiller(
-      Set<FileT> set, Function<String, FileT> directoryFiller) {
-    Trie<FileT> trie = new Trie<>(directoryFiller);
-    set.forEach(trie::insert);
-    return new TrieBasedFileTree<>(trie);
-  }
+  private static final Logger log = LogManager.getLogger();
 
   private final Trie<FileT> trie;
 
@@ -211,6 +202,45 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
       public String toString() {
         return "Node[file=%s, children=%s]".formatted(file, children);
       }
+    }
+  }
+
+  static <FileT extends File> TrieBasedFileTree.Builder<FileT> builder() {
+    return new TrieBasedFileTree.Builder<>();
+  }
+
+  /**
+   * {@link FileTree.Builder} implementation for {@link TrieBasedFileTree}.
+   *
+   * @param <FileT> type of file stored in the built file tree
+   */
+  static final class Builder<FileT extends File> implements FileTree.Builder<FileT> {
+
+    private final Trie<FileT> trie;
+
+    private Builder(Trie<FileT> trie) {
+      this.trie = requireNonNull(trie);
+    }
+
+    private Builder() {
+      this(new Trie<>(null));
+    }
+
+    @Override
+    public Builder<FileT> withDirectoryFiller(Function<String, FileT> directoryFiller) {
+      return new TrieBasedFileTree.Builder<>(new Trie<>(directoryFiller));
+    }
+
+    @Override
+    public Builder<FileT> insert(FileT file) {
+      EntryMessage m = log.traceEntry("insert({})", file);
+      trie.insert(file);
+      return log.traceExit(m, this);
+    }
+
+    @Override
+    public TrieBasedFileTree<FileT> build() {
+      return new TrieBasedFileTree<>(trie);
     }
   }
 }

@@ -9,7 +9,6 @@ import com.willmolloy.backup.FileTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,18 +68,18 @@ class S3BucketTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.fromSet(
-                Set.of(
-                    S3File.directoryFiller(sut, ""),
-                    S3File.fromS3Object(sut, a),
-                    S3File.fromS3Object(sut, b),
-                    S3File.directoryFiller(sut, "C"),
-                    S3File.directoryFiller(sut, "C/D"),
-                    S3File.fromS3Object(sut, e),
-                    S3File.fromS3Object(sut, f),
-                    S3File.directoryFiller(sut, "X"),
-                    S3File.directoryFiller(sut, "X/Y"),
-                    S3File.fromS3Object(sut, z))));
+            FileTree.builder()
+                .insert(S3File.directoryFiller(sut, ""))
+                .insert(S3File.fromS3Object(sut, a))
+                .insert(S3File.fromS3Object(sut, b))
+                .insert(S3File.directoryFiller(sut, "C"))
+                .insert(S3File.directoryFiller(sut, "C/D"))
+                .insert(S3File.fromS3Object(sut, e))
+                .insert(S3File.fromS3Object(sut, f))
+                .insert(S3File.directoryFiller(sut, "X"))
+                .insert(S3File.directoryFiller(sut, "X/Y"))
+                .insert(S3File.fromS3Object(sut, z))
+                .build());
   }
 
   @Test

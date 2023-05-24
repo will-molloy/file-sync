@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 
 /**
  * Runs a {@link Backup}.
@@ -57,13 +58,13 @@ public final class BackupRunner {
             if (maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get())) {
               threadPool.submit(
                   () -> {
-                    log.debug("put({})", key);
-                    if (!backup.put(sourceFile)) {
+                    EntryMessage m = log.traceEntry("put({})", sourceFile);
+                    if (!log.traceExit(m, backup.put(sourceFile))) {
                       allSuccess.set(false);
                     }
                   });
             } else {
-              log.debug("same({})", key);
+              log.trace("same({})", key);
             }
           });
 
@@ -85,8 +86,8 @@ public final class BackupRunner {
 
             threadPool.submit(
                 () -> {
-                  log.debug("delete({})", key);
-                  if (!backup.delete(destFile)) {
+                  EntryMessage m = log.traceEntry("delete({})", destFile);
+                  if (!log.traceExit(m, backup.delete(destFile))) {
                     allSuccess.set(false);
                   }
                 });

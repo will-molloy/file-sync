@@ -13,8 +13,6 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,20 +37,19 @@ public class LocalStorage implements Location<LocalFile> {
   public FileTree<LocalFile> scan() {
     log.info("Scanning directory: [{}]", rootDir);
     try {
-      Set<LocalFile> set = new HashSet<>();
+      FileTree.Builder<LocalFile> builder =
+          FileTree.<LocalFile>builder()
+              .withDirectoryFiller(path -> LocalFile.directoryFiller(this, path));
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
             if (path == rootDir) {
               return;
             }
             LocalFile file = LocalFile.fromAttributes(this, path, attributes);
-            if (!set.add(file)) {
-              log.warn("Scanned duplicate: [{}]", file);
-            }
+            builder.insert(file);
           };
       Files.walkFileTree(rootDir, new DirectoryWalker(consumer));
-      return FileTree.fromSetWithDirectoryFiller(
-          set, path -> LocalFile.directoryFiller(this, path));
+      return builder.build();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

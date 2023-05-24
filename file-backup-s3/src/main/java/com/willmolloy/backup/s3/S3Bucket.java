@@ -6,8 +6,6 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -48,16 +46,15 @@ class S3Bucket implements Location<S3File> {
             .build();
     ListObjectsV2Iterable paginatedResponse = s3Client.listObjectsV2Paginator(request);
 
-    Set<S3File> set = new HashSet<>();
+    FileTree.Builder<S3File> builder =
+        FileTree.<S3File>builder().withDirectoryFiller(path -> S3File.directoryFiller(this, path));
     for (ListObjectsV2Response response : paginatedResponse) {
       for (S3Object s3Object : response.contents()) {
         S3File file = S3File.fromS3Object(this, s3Object);
-        if (!set.add(file)) {
-          log.warn("Scanned duplicate: [{}]", file);
-        }
+        builder.insert(file);
       }
     }
-    return FileTree.fromSetWithDirectoryFiller(set, path -> S3File.directoryFiller(this, path));
+    return builder.build();
   }
 
   String bucketName() {

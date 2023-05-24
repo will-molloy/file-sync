@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,18 +65,18 @@ class LocalStorageTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.fromSet(
-                Set.of(
-                    LocalFile.directoryFiller(sut, ""),
-                    LocalFile.fromPath(sut, root.resolve("A")),
-                    LocalFile.fromPath(sut, root.resolve("B")),
-                    LocalFile.fromPath(sut, root.resolve("C")),
-                    LocalFile.fromPath(sut, root.resolve("C/D")),
-                    LocalFile.fromPath(sut, root.resolve("C/D/E")),
-                    LocalFile.fromPath(sut, root.resolve("C/D/F")),
-                    LocalFile.fromPath(sut, root.resolve("X")),
-                    LocalFile.fromPath(sut, root.resolve("X/Y")),
-                    LocalFile.fromPath(sut, root.resolve("X/Y/Z")))));
+            FileTree.builder()
+                .insert(LocalFile.directoryFiller(sut, ""))
+                .insert(LocalFile.fromPath(sut, root.resolve("A")))
+                .insert(LocalFile.fromPath(sut, root.resolve("B")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C/D")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C/D/E")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C/D/F")))
+                .insert(LocalFile.fromPath(sut, root.resolve("X")))
+                .insert(LocalFile.fromPath(sut, root.resolve("X/Y")))
+                .insert(LocalFile.fromPath(sut, root.resolve("X/Y/Z")))
+                .build());
   }
 
   @Test
