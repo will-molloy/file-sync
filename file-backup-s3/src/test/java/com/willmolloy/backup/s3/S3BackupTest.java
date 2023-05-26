@@ -30,9 +30,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
  * S3BackupTest.
@@ -44,6 +46,7 @@ import software.amazon.awssdk.services.s3.model.StorageClass;
 class S3BackupTest {
 
   @Mock private S3Client mockS3Client;
+  @Mock private S3Waiter mockS3Waiter;
   private LocalStorage source;
   private S3Bucket destination;
   private S3Backup sut;
@@ -57,13 +60,14 @@ class S3BackupTest {
     Files.createDirectory(sourceRoot);
     source = new LocalStorage(sourceRoot);
     destination = new S3Bucket(mockS3Client, "my-bucket", fs.getPath("my/bucket/prefix/backups/"));
-    sut = new S3Backup(mockS3Client, source, destination);
+    sut = new S3Backup(mockS3Client, mockS3Waiter, source, destination);
   }
 
   @AfterEach
   void tearDown() throws IOException {
     fs.close();
     verifyNoMoreInteractions(mockS3Client);
+    verifyNoMoreInteractions(mockS3Waiter);
   }
 
   @Test
@@ -95,6 +99,12 @@ class S3BackupTest {
                 .storageClass(StorageClass.DEEP_ARCHIVE)
                 .build(),
             sourceFile.fullPath());
+    verify(mockS3Waiter)
+        .waitUntilObjectExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/backups/A/B/C")
+                .build());
   }
 
   @Test
@@ -117,6 +127,12 @@ class S3BackupTest {
                     .build()),
             // CHECKSTYLE IGNORE RegexpSinglelineJava FOR NEXT 1 LINES
             ArgumentMatchers.<RequestBody>argThat(body -> body.contentLength() == 0));
+    verify(mockS3Waiter)
+        .waitUntilObjectExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/backups/A/B/C/")
+                .build());
   }
 
   @Test
@@ -163,6 +179,12 @@ class S3BackupTest {
                 .bucket("my-bucket")
                 .key("my/bucket/prefix/backups/X/Y/Z")
                 .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/backups/X/Y/Z")
+                .build());
   }
 
   @Test
@@ -178,6 +200,12 @@ class S3BackupTest {
     verify(mockS3Client)
         .deleteObject(
             DeleteObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/backups/X/Y/Z/")
+                .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
                 .bucket("my-bucket")
                 .key("my/bucket/prefix/backups/X/Y/Z/")
                 .build());

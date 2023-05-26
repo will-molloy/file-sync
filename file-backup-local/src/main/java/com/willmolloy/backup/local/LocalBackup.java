@@ -36,7 +36,6 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   @Override
   public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
-    // TODO put with some kind of filler object so we can do 'destFile.fullPath()' here...
     Path destPath = destination.root().resolve(sourceFile.relativePath());
     return robustCopy(sourcePath, destPath);
   }

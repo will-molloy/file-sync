@@ -5,18 +5,23 @@ import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
+import com.willmolloy.backup.File;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
  * For backups to AWS S3.
@@ -28,28 +33,25 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   private static final Logger log = LogManager.getLogger();
 
   private final S3Client s3Client;
+  private final S3Waiter s3Waiter;
   private final S3Bucket destination;
 
-  S3Backup(S3Client s3Client, LocalStorage source, S3Bucket destination) {
+  S3Backup(S3Client s3Client, S3Waiter s3Waiter, LocalStorage source, S3Bucket destination) {
     super(source, destination);
     this.s3Client = requireNonNull(s3Client);
+    this.s3Waiter = requireNonNull(s3Waiter);
     this.destination = requireNonNull(destination);
   }
 
   @Override
   public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
-    Path key = sourceFile.relativePath();
-    // TODO put with some kind of filler object so we can use the S3File methods here...
-    String destinationUri =
-        sourceFile.isDirectory() ? destination.folderUri(key) : destination.objectUri(key);
+    String destinationUri = s3Uri(sourceFile);
     try {
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(
-                  ensureUnixSeparator(destination.prefix().resolve(key))
-                      + (sourceFile.isDirectory() ? "/" : ""))
+              .key(s3Key(sourceFile))
               .storageClass(StorageClass.DEEP_ARCHIVE);
 
       if (!sourceFile.isDirectory()) {
@@ -60,7 +62,9 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.build();
         s3Client.putObject(request, RequestBody.empty());
       }
-      // TODO waiter?
+
+      wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
+
       log.info("Put: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
@@ -78,23 +82,43 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
 
   @Override
   public boolean delete(S3File destFile) {
-    Path key = destFile.relativePath();
     try {
       // TODO DeleteObjectsRequest for folders... currently does not work.
       DeleteObjectRequest request =
           DeleteObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(
-                  ensureUnixSeparator(destination.prefix().resolve(key))
-                      + (destFile.isDirectory() ? "/" : ""))
+              .key(s3Key(destFile))
               .build();
       s3Client.deleteObject(request);
-      // TODO waiter?
+
+      wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
+
       log.info("Deleted: [{}]", destFile.uri());
       return true;
     } catch (RuntimeException e) {
       log.error("Error deleting: [{}]", destFile.uri(), e);
       return false;
     }
+  }
+
+  private String s3Uri(File file) {
+    return file.isDirectory()
+        ? destination.folderUri(file.relativePath())
+        : destination.objectUri(file.relativePath());
+  }
+
+  private String s3Key(File file) {
+    String key = ensureUnixSeparator(destination.prefix().resolve(file.relativePath()));
+    return file.isDirectory() ? key + "/" : key;
+  }
+
+  private void wait(String key, Function<HeadObjectRequest, WaiterResponse<?>> waiter) {
+    HeadObjectRequest headRequest =
+        HeadObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
+    // we are supposed to ignore the ResponseOrException here?
+    // only populated when successful (even the Exception e.g. 404 for waitUntilObjectNotExists)
+    // the method call itself will throw an exception if something went wrong.
+    // https://github.com/aws/aws-sdk-java-v2/issues/2460#issuecomment-837136429
+    waiter.apply(headRequest);
   }
 }
