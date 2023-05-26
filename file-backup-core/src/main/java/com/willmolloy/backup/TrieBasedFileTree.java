@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -32,8 +31,8 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public void forEach(Consumer<FileT> consumer) {
-    trie.root.stream().map(Trie.Node::file).forEach(consumer);
+  public Stream<FileT> preorder() {
+    return trie.root.stream().map(Trie.Node::file);
   }
 
   @Override
@@ -70,8 +69,8 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
     return files().mapToLong(File::size).sum();
   }
 
-  private Stream<? extends File> files() {
-    return trie.root.stream().map(Trie.Node::file).filter(not(File::isDirectory));
+  private Stream<FileT> files() {
+    return preorder().filter(not(File::isDirectory));
   }
 
   @Override

@@ -3,11 +3,7 @@ package com.willmolloy.backup;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
-import com.google.common.collect.Sets;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
@@ -19,53 +15,61 @@ import org.junit.jupiter.api.Test;
 class TrieBasedFileTreeTest {
 
   @Test
-  void forEach_visitsEachNodeExactlyOnce() {
+  void preorder_returnsNodesInPreorder() {
     // Given
-    Set<File> expected =
-        Set.of(
+    TrieBasedFileTree<File> fileTree =
+        TrieBasedFileTree.builder()
+            .insert(file("A"))
+            .insert(file("A/B"))
+            .insert(file("A/B/C"))
+            .insert(file("D"))
+            .insert(file("D/E"))
+            .insert(file("D/F"))
+            .insert(file("X/Y/Z"))
+            .build();
+
+    // Then
+    assertThat(fileTree.preorder())
+        .containsExactly(
             file("A"),
             file("A/B"),
             file("A/B/C"),
             file("D"),
             file("D/E"),
             file("D/F"),
-            file("X/Y/Z"));
-    TrieBasedFileTree.Builder<File> builder = TrieBasedFileTree.builder();
-    expected.forEach(builder::insert);
-    TrieBasedFileTree<File> fileTree = builder.build();
-
-    // When
-    List<File> actual = new ArrayList<>();
-    fileTree.forEach(actual::add);
-
-    // Then
-    assertThat(actual).containsExactlyElementsIn(expected);
+            file("X/Y/Z"))
+        .inOrder();
   }
 
   @Test
-  void forEach_withDirectoryFiller_visitsEachNodeExactlyOnceIncludingMissingDirs() {
+  void preorder_withDirectoryFiller_returnsNodesIncludingMissingDirsInPreorder() {
     // Given
-    Set<File> expected =
-        Set.of(
+    TrieBasedFileTree<File> fileTree =
+        TrieBasedFileTree.builder()
+            .withDirectoryFiller(directoryFiller())
+            .insert(file("A"))
+            .insert(file("A/B"))
+            .insert(file("A/B/C"))
+            .insert(file("D"))
+            .insert(file("D/E"))
+            .insert(file("D/F"))
+            .insert(file("X/Y/Z"))
+            .build();
+
+    // Then
+    assertThat(fileTree.preorder())
+        .containsExactly(
+            directory(""),
             file("A"),
             file("A/B"),
             file("A/B/C"),
             file("D"),
             file("D/E"),
             file("D/F"),
-            file("X/Y/Z"));
-    TrieBasedFileTree.Builder<File> builder =
-        TrieBasedFileTree.builder().withDirectoryFiller(directoryFiller());
-    expected.forEach(builder::insert);
-    TrieBasedFileTree<File> fileTree = builder.build();
-
-    // When
-    List<File> actual = new ArrayList<>();
-    fileTree.forEach(actual::add);
-
-    // Then
-    Set<File> missingDirs = Set.of(directory(""), directory("X"), directory("X/Y"));
-    assertThat(actual).containsExactlyElementsIn(Sets.union(expected, missingDirs));
+            directory("X"),
+            directory("X/Y"),
+            file("X/Y/Z"))
+        .inOrder();
   }
 
   @Test

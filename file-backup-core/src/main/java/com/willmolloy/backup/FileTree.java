@@ -2,7 +2,6 @@ package com.willmolloy.backup;
 
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -15,7 +14,7 @@ import java.util.stream.Stream;
  */
 public interface FileTree<FileT extends File> {
 
-  void forEach(Consumer<FileT> consumer);
+  Stream<FileT> preorder();
 
   Optional<FileT> get(Path relativePath);
 

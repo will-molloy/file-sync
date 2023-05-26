@@ -1,9 +1,6 @@
 package com.willmolloy.backup;
 
-import static java.util.function.Predicate.not;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.Locale;
@@ -11,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,56 +40,54 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      FileTree<SourceFileT> sourceFiles = scanWithLog(backup.source()::scan, "source");
-      FileTree<DestFileT> destFiles = scanWithLog(backup.destination()::scan, "destination");
+      FileTree<SourceFileT> sourceFileTree = scanWithLog(backup.source()::scan, "source");
+      FileTree<DestFileT> destFileTree = scanWithLog(backup.destination()::scan, "destination");
 
-      sourceFiles.forEach(
-          (sourceFile) -> {
-            Path key = sourceFile.relativePath();
+      sourceFileTree
+          .preorder()
+          // only need to put leaves
+          // TODO postorder and stop at first non-leaf?
+          .filter(
+              sourceFile ->
+                  sourceFileTree
+                      .descendants(sourceFile.relativePath())
+                      .noneMatch(descendant -> true))
+          .filter(
+              sourceFile -> {
+                Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
+                if (maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get())) {
+                  return true;
+                }
+                log.debug("Skipping put. Files same({}, {})", sourceFile, maybeDestFile.get());
+                return false;
+              })
+          .forEach(
+              sourceFile ->
+                  threadPool.submit(
+                      () -> {
+                        EntryMessage m = log.traceEntry("put({})", sourceFile);
+                        if (!log.traceExit(m, backup.put(sourceFile))) {
+                          allSuccess.set(false);
+                        }
+                      }));
 
-            if (sourceFiles.descendants(key).anyMatch(descendant -> true)) {
-              log.debug("Skipping put({}). Covered by descendant", key);
-              return;
-            }
-
-            Optional<DestFileT> maybeDestFile = destFiles.get(key);
-            if (maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get())) {
-              threadPool.submit(
-                  () -> {
-                    EntryMessage m = log.traceEntry("put({})", sourceFile);
-                    if (!log.traceExit(m, backup.put(sourceFile))) {
-                      allSuccess.set(false);
-                    }
-                  });
-            } else {
-              log.trace("same({})", key);
-            }
-          });
-
-      destFiles.forEach(
-          (destFile) -> {
-            Path key = destFile.relativePath();
-
-            if (sourceFiles.contains(key)) {
-              return;
-            }
-
-            if (destFiles
-                .ancestors(key)
-                .map(File::relativePath)
-                .anyMatch(not(sourceFiles::contains))) {
-              log.debug("Skipping delete({}). Covered by ancestor", key);
-              return;
-            }
-
-            threadPool.submit(
-                () -> {
-                  EntryMessage m = log.traceEntry("delete({})", destFile);
-                  if (!log.traceExit(m, backup.delete(destFile))) {
-                    allSuccess.set(false);
-                  }
-                });
-          });
+      Predicate<DestFileT> shouldDelete =
+          destFile -> !sourceFileTree.contains(destFile.relativePath());
+      destFileTree
+          .preorder()
+          .filter(shouldDelete)
+          // skip delete if covered by ancestor
+          .filter(
+              destFile -> destFileTree.ancestors(destFile.relativePath()).noneMatch(shouldDelete))
+          .forEach(
+              destFile ->
+                  threadPool.submit(
+                      () -> {
+                        EntryMessage m = log.traceEntry("delete({})", destFile);
+                        if (!log.traceExit(m, backup.delete(destFile))) {
+                          allSuccess.set(false);
+                        }
+                      }));
     }
 
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));
