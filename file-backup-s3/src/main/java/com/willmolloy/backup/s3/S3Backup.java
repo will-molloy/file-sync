@@ -11,16 +11,23 @@ import com.willmolloy.backup.local.LocalStorage;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
@@ -54,13 +61,13 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
               .key(s3Key(sourceFile))
               .storageClass(StorageClass.DEEP_ARCHIVE);
 
-      if (!sourceFile.isDirectory()) {
+      if (sourceFile.isDirectory()) {
+        PutObjectRequest request = baseRequest.build();
+        s3Client.putObject(request, RequestBody.empty());
+      } else {
         // TODO multipart upload for large files
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
-      } else {
-        PutObjectRequest request = baseRequest.build();
-        s3Client.putObject(request, RequestBody.empty());
       }
 
       wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
@@ -83,15 +90,11 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   @Override
   public boolean delete(S3File destFile) {
     try {
-      // TODO DeleteObjectsRequest for folders... currently does not work.
-      DeleteObjectRequest request =
-          DeleteObjectRequest.builder()
-              .bucket(destination.bucketName())
-              .key(s3Key(destFile))
-              .build();
-      s3Client.deleteObject(request);
-
-      wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
+      if (destFile.isDirectory()) {
+        deleteFolder(destFile);
+      } else {
+        deleteObject(destFile);
+      }
 
       log.info("Deleted: [{}]", destFile.uri());
       return true;
@@ -99,6 +102,40 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
       log.error("Error deleting: [{}]", destFile.uri(), e);
       return false;
     }
+  }
+
+  private void deleteFolder(S3File destFile) {
+    // TODO the list is redundant? We already have this info in the FileTree
+    ListObjectsV2Request listRequest =
+        ListObjectsV2Request.builder()
+            .bucket(destination.bucketName())
+            .prefix(s3Key(destFile))
+            .build();
+    ListObjectsV2Iterable paginatedListResponse = s3Client.listObjectsV2Paginator(listRequest);
+
+    for (ListObjectsV2Response listResponse : paginatedListResponse) {
+      List<ObjectIdentifier> objects =
+          listResponse.contents().stream()
+              .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+              .toList();
+      if (objects.isEmpty()) {
+        break;
+      }
+      DeleteObjectsRequest deleteRequest =
+          DeleteObjectsRequest.builder()
+              .bucket(destination.bucketName())
+              .delete(Delete.builder().objects(objects).build())
+              .build();
+      s3Client.deleteObjects(deleteRequest);
+    }
+  }
+
+  private void deleteObject(S3File destFile) {
+    DeleteObjectRequest request =
+        DeleteObjectRequest.builder().bucket(destination.bucketName()).key(s3Key(destFile)).build();
+    s3Client.deleteObject(request);
+
+    wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
   }
 
   private String s3Uri(File file) {

@@ -6,6 +6,7 @@ import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +31,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
@@ -81,7 +89,7 @@ class S3BackupTest {
   }
 
   @Test
-  void put_whenFile_makesPutRequest() throws IOException {
+  void put_whenFile_makesPutObjectRequest() throws IOException {
     // Given
     LocalFile sourceFile = createLocalFile(fs.getPath("A/B/C"));
 
@@ -108,7 +116,7 @@ class S3BackupTest {
   }
 
   @Test
-  void put_whenDirectory_makesPutRequest() throws IOException {
+  void put_whenDirectory_makesPutObjectRequest() throws IOException {
     // Given
     LocalFile sourceDirectory = createLocalDirectory(fs.getPath("A/B/C"));
 
@@ -164,7 +172,7 @@ class S3BackupTest {
   }
 
   @Test
-  void delete_whenFile_makesDeleteRequest() {
+  void delete_whenFile_makesDeleteObjectRequest() {
     // Given
     S3File destFile = createS3Object("X/Y/Z");
 
@@ -188,9 +196,25 @@ class S3BackupTest {
   }
 
   @Test
-  void delete_whenFolder_makesDeleteRequest() {
+  void delete_whenFolder_makesDeleteObjectsRequests() {
     // Given
     S3File destFile = createS3Folder("X/Y/Z/");
+
+    ListObjectsV2Response page1 =
+        ListObjectsV2Response.builder().contents(S3Object.builder().key("A").build()).build();
+    ListObjectsV2Response page2 =
+        ListObjectsV2Response.builder()
+            .contents(S3Object.builder().key("B").build(), S3Object.builder().key("C").build())
+            .build();
+
+    ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
+    when(response.iterator()).thenReturn(List.of(page1, page2).iterator());
+    when(mockS3Client.listObjectsV2Paginator(
+            ListObjectsV2Request.builder()
+                .bucket("my-bucket")
+                .prefix("my/bucket/prefix/backups/X/Y/Z/")
+                .build()))
+        .thenReturn(response);
 
     // When
     boolean result = sut.delete(destFile);
@@ -198,16 +222,22 @@ class S3BackupTest {
     // Then
     assertThat(result).isTrue();
     verify(mockS3Client)
-        .deleteObject(
-            DeleteObjectRequest.builder()
+        .deleteObjects(
+            DeleteObjectsRequest.builder()
                 .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/X/Y/Z/")
+                .delete(
+                    Delete.builder().objects(ObjectIdentifier.builder().key("A").build()).build())
                 .build());
-    verify(mockS3Waiter)
-        .waitUntilObjectNotExists(
-            HeadObjectRequest.builder()
+    verify(mockS3Client)
+        .deleteObjects(
+            DeleteObjectsRequest.builder()
                 .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/X/Y/Z/")
+                .delete(
+                    Delete.builder()
+                        .objects(
+                            ObjectIdentifier.builder().key("B").build(),
+                            ObjectIdentifier.builder().key("C").build())
+                        .build())
                 .build());
   }
 
