@@ -1,70 +1,32 @@
 package com.willmolloy.backup;
 
-import java.util.Map;
-
 /**
  * Backup type definition.
  *
- * @param <SourceT> source location type
- * @param <DestinationT> destination location type
+ * @param <SourceFileT> source file type
+ * @param <DestFileT> destination file type
+ * @see BaseBackup
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup<SourceT extends Backup.Location, DestinationT extends Backup.Location> {
+public interface Backup<SourceFileT extends File, DestFileT extends File> {
 
-  SourceT source();
+  Location<SourceFileT> source();
 
-  DestinationT destination();
+  Location<DestFileT> destination();
 
   /**
-   * Creates or updates the file identified by {@code key} on destination with the corresponding
-   * file on source.
+   * Creates or updates the corresponding file on destination.
    *
    * @return {@code true} if create/update was successful
+   * @implSpec Creates parent directories when necessary
    */
-  boolean put(String key);
+  boolean put(SourceFileT sourceFile);
 
   /**
-   * Deletes the file identified by {@code key} on destination.
+   * Deletes the file on destination.
    *
    * @return {@code true} if delete was successful
+   * @implSpec Deletes children directories/files when necessary
    */
-  boolean delete(String key);
-
-  /** Backup location (source or destination). */
-  interface Location {
-
-    /**
-     * Scans the location's file tree.
-     *
-     * @return Map of (relativized) paths to nodes.
-     */
-    Map<String, Node> scan();
-  }
-
-  /** Represents a node in a locations file tree. Either a file or directory. */
-  sealed interface Node permits Node.File, Node.Directory {
-
-    /** File. */
-    non-sealed interface File extends Node {
-
-      /** File size in bytes. */
-      long size();
-
-      /**
-       * {@code true} if the {@code other} file can be considered the same.
-       *
-       * @apiNote Used to determine if a file requires updating.
-       * @implNote The default implementation just looks at file size.
-       */
-      // for s3; considered last-modified, but it's really object-creation time.
-      // also considered e-tag, but it's calculated differently for large (> 16MB) files.
-      // file size is good enough?
-      default boolean same(File other) {
-        return size() == other.size();
-      }
-    }
-
-    /** Directory. */
-    non-sealed interface Directory extends Node {}
-  }
+  boolean delete(DestFileT destFile);
 }

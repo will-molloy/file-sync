@@ -29,12 +29,9 @@ final class Main {
       LocalStorage dest = new LocalStorage(fs.getPath(destPath));
 
       LocalBackup localBackup = new LocalBackup(source, dest);
-      BackupRunner.OverallStatistics statistics = BackupRunner.run(localBackup);
-
-      if (statistics.errorStatistics().any()) {
+      if (!BackupRunner.run(localBackup)) {
         System.exit(1);
       }
-
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
       System.exit(1);

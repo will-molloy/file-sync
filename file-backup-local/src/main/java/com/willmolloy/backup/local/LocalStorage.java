@@ -3,9 +3,8 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.Backup;
-import com.willmolloy.backup.Backup.Location;
-import java.io.File;
+import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.Location;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -14,100 +13,67 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Represents a local storage location.
  *
- * @param root root directory
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public record LocalStorage(Path root) implements Location {
+public final class LocalStorage implements Location<LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
-  public LocalStorage {
-    requireNonNull(root);
-    require(Files.isDirectory(root), "Requires a directory: [%s]".formatted(root));
+  private final Path rootDir;
+
+  public LocalStorage(Path rootDir) {
+    this.rootDir = requireNonNull(rootDir);
+    require(Files.isDirectory(rootDir), "Requires a directory: [%s]".formatted(rootDir));
   }
 
   @Override
-  public Map<String, Backup.Node> scan() {
-    log.info("Scanning directory: [{}]", root);
+  public FileTree<LocalFile> scan() {
+    log.info("Scanning directory: [{}]", rootDir);
     try {
-      Map<String, Backup.Node> map = new HashMap<>();
-
-      Function<Path, String> keyFunc =
-          ((Function<Path, Path>) root::relativize).andThen(LocalStorage::ensureUnixSeparator);
-
-      // not sure how duplicates occur?? But it does happen; take the most recently scanned file.
-      BiFunction<Backup.Node, Backup.Node, Backup.Node> mergeFunc =
-          (first, second) -> {
-            log.warn("Scanned duplicate: [{}]", second);
-            return second;
-          };
-
-      BiConsumer<Path, BasicFileAttributes> fileConsumer =
+      FileTree.Builder<LocalFile> builder =
+          FileTree.<LocalFile>builder()
+              .withDirectoryFiller(path -> LocalFile.directoryFiller(this, path));
+      BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
-            String key = keyFunc.apply(path);
-            LocalFile localFile = new LocalFile(path, attributes);
-            map.merge(key, localFile, mergeFunc);
-          };
-
-      BiConsumer<Path, BasicFileAttributes> directoryConsumer =
-          (path, attributes) -> {
-            if (path == root) {
+            if (path == rootDir) {
               return;
             }
-            String key = keyFunc.apply(path);
-            LocalDirectory localFile = new LocalDirectory(path, attributes);
-            map.merge(key, localFile, mergeFunc);
+            LocalFile file = LocalFile.fromAttributes(this, path, attributes);
+            builder.insert(file);
           };
-
-      Files.walkFileTree(root, new DirectoryScanner(fileConsumer, directoryConsumer));
-      return map;
+      Files.walkFileTree(rootDir, new DirectoryWalker(consumer));
+      return builder.build();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  private static String ensureUnixSeparator(Path path) {
-    if (File.separatorChar == '/') {
-      return path.toString();
-    } else {
-      return StreamSupport.stream(path.spliterator(), false)
-          .map(Path::toString)
-          .collect(Collectors.joining("/"));
-    }
+  public Path root() {
+    return rootDir;
   }
 
   @Override
   public String toString() {
-    return "%s[%s]".formatted(getClass().getSimpleName(), root);
+    return "%s[%s]".formatted(getClass().getSimpleName(), rootDir);
   }
 
-  private static final class DirectoryScanner implements FileVisitor<Path> {
-    private final BiConsumer<Path, BasicFileAttributes> fileConsumer;
-    private final BiConsumer<Path, BasicFileAttributes> directoryConsumer;
+  private static final class DirectoryWalker implements FileVisitor<Path> {
+    private final BiConsumer<Path, BasicFileAttributes> consumer;
 
-    private DirectoryScanner(
-        BiConsumer<Path, BasicFileAttributes> fileConsumer,
-        BiConsumer<Path, BasicFileAttributes> directoryConsumer) {
-      this.fileConsumer = requireNonNull(fileConsumer);
-      this.directoryConsumer = requireNonNull(directoryConsumer);
+    private DirectoryWalker(BiConsumer<Path, BasicFileAttributes> consumer) {
+      this.consumer = requireNonNull(consumer);
     }
 
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
-      directoryConsumer.accept(dir, attributes);
+      consumer.accept(dir, attributes);
       return FileVisitResult.CONTINUE;
     }
 
@@ -118,7 +84,7 @@ public record LocalStorage(Path root) implements Location {
         log.warn("Skipped file (symlink): [{}]", file);
         return FileVisitResult.CONTINUE;
       }
-      fileConsumer.accept(file, attributes);
+      consumer.accept(file, attributes);
       return FileVisitResult.CONTINUE;
     }
 
@@ -127,7 +93,7 @@ public record LocalStorage(Path root) implements Location {
       if (e instanceof AccessDeniedException) {
         log.warn("Skipped file (access denied): [{}]", file);
       } else {
-        log.error("Error visiting file: [%s]".formatted(file), e);
+        log.error("Error visiting file: [{}]", file, e);
       }
       return FileVisitResult.CONTINUE;
     }
@@ -135,7 +101,7 @@ public record LocalStorage(Path root) implements Location {
     @Override
     public FileVisitResult postVisitDirectory(Path dir, IOException e) {
       if (e != null) {
-        log.error("Error visiting directory: [%s]".formatted(dir), e);
+        log.error("Error visiting directory: [{}]", dir, e);
       }
       return FileVisitResult.CONTINUE;
     }

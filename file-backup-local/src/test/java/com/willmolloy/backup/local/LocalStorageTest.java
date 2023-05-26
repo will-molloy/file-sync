@@ -6,13 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.Backup;
+import com.willmolloy.backup.FileTree;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,35 +49,34 @@ class LocalStorageTest {
   }
 
   @Test
-  void scan_returnsMapOfRelativizedFileNamesToFilesAndDirectories() throws IOException {
+  void scan_returnsFileTree() throws IOException {
     // Given
     Files.createFile(root.resolve("A"));
     Files.createFile(root.resolve("B"));
     Files.createDirectories(root.resolve("C/D"));
     Files.createFile(root.resolve("C/D/E"));
-    Files.createDirectories(root.resolve("F/G/H"));
-    Files.createFile(root.resolve("F/G/H/I"));
+    Files.createFile(root.resolve("C/D/F"));
     Files.createDirectories(root.resolve("X/Y"));
     Files.createFile(root.resolve("X/Y/Z"));
 
     // When
-    Map<String, Backup.Node> scan = sut.scan();
+    FileTree<LocalFile> scan = sut.scan();
 
     // Then
     assertThat(scan)
-        .containsExactly(
-            "A", new LocalFile(root.resolve("A")),
-            "B", new LocalFile(root.resolve("B")),
-            "C", new LocalDirectory(root.resolve("C")),
-            "C/D", new LocalDirectory(root.resolve("C/D")),
-            "C/D/E", new LocalFile(root.resolve("C/D/E")),
-            "F", new LocalDirectory(root.resolve("F")),
-            "F/G", new LocalDirectory(root.resolve("F/G")),
-            "F/G/H", new LocalDirectory(root.resolve("F/G/H")),
-            "F/G/H/I", new LocalFile(root.resolve("F/G/H/I")),
-            "X", new LocalDirectory(root.resolve("X")),
-            "X/Y", new LocalDirectory(root.resolve("X/Y")),
-            "X/Y/Z", new LocalFile(root.resolve("X/Y/Z")));
+        .isEqualTo(
+            FileTree.builder()
+                .insert(LocalFile.directoryFiller(sut, ""))
+                .insert(LocalFile.fromPath(sut, root.resolve("A")))
+                .insert(LocalFile.fromPath(sut, root.resolve("B")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C/D")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C/D/E")))
+                .insert(LocalFile.fromPath(sut, root.resolve("C/D/F")))
+                .insert(LocalFile.fromPath(sut, root.resolve("X")))
+                .insert(LocalFile.fromPath(sut, root.resolve("X/Y")))
+                .insert(LocalFile.fromPath(sut, root.resolve("X/Y/Z")))
+                .build());
   }
 
   @Test
