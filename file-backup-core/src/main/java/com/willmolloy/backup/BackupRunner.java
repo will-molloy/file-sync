@@ -44,10 +44,8 @@ public final class BackupRunner {
       FileTree<DestFileT> destFileTree = scanWithLog(backup.destination()::scan, "destination");
 
       sourceFileTree
-          .preorder()
           // only need to put leaves
-          .filter(
-              sourceFile -> sourceFileTree.descendants(sourceFile).noneMatch(descendant -> true))
+          .leaves()
           .filter(
               sourceFile -> {
                 Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());

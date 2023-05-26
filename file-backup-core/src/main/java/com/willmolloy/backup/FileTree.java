@@ -16,6 +16,8 @@ public interface FileTree<FileT extends File> {
 
   Stream<FileT> preorder();
 
+  Stream<FileT> leaves();
+
   Optional<FileT> get(Path relativePath);
 
   Stream<FileT> ancestors(FileT file);

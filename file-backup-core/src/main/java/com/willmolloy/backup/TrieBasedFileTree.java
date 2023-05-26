@@ -36,6 +36,15 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
+  public Stream<FileT> leaves() {
+    return preorder().filter(this::isLeaf);
+  }
+
+  private boolean isLeaf(FileT file) {
+    return descendants(file).noneMatch(e -> true);
+  }
+
+  @Override
   public Optional<FileT> get(Path relativePath) {
     return trie.get(relativePath).map(Trie.Node::file);
   }

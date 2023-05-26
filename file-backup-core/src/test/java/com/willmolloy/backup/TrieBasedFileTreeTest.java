@@ -73,6 +73,26 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
+  void leaves_returnsLeaves() {
+    // Given
+    TrieBasedFileTree<File> fileTree =
+        TrieBasedFileTree.builder()
+            .insert(file("A"))
+            .insert(file("A/B"))
+            .insert(file("A/B/C"))
+            .insert(file("D"))
+            .insert(file("D/E"))
+            .insert(file("D/F"))
+            .insert(file("X/Y/Z"))
+            .build();
+
+    // Then
+    assertThat(fileTree.leaves())
+        .containsExactly(file("A/B/C"), file("D/E"), file("D/F"), file("X/Y/Z"))
+        .inOrder();
+  }
+
+  @Test
   void get_whenNodePresent_present() {
     File expected = file("A/B");
     TrieBasedFileTree<File> fileTree =
