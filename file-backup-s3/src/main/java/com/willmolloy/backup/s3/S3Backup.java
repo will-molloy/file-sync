@@ -105,7 +105,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   }
 
   private void deleteFolder(S3File destFile) {
-    // TODO the list is redundant? We already have this info in the FileTree
+    // TODO the list is redundant? We already have this info in the FileTree (descendants -> leaves)
     ListObjectsV2Request listRequest =
         ListObjectsV2Request.builder()
             .bucket(destination.bucketName())

@@ -117,50 +117,6 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void contains_whenNodePresent_true() {
-    File expected = file("A/B");
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .insert(file("A"))
-            .insert(expected)
-            .insert(file("A/B/C"))
-            .build();
-    assertThat(fileTree.contains(expected.relativePath())).isTrue();
-  }
-
-  @Test
-  void contains_whenNodeAbsent_false() {
-    File notExpected = file("A/B");
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder().insert(file("A")).insert(file("A/B/C")).build();
-    assertThat(fileTree.contains(notExpected.relativePath())).isFalse();
-  }
-
-  @Test
-  void contains_withDirectoryFiller_whenMissingDirFilledIn_true() {
-    File expected = file("A/B");
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
-            .insert(file("A"))
-            .insert(file("A/B/C"))
-            .build();
-    assertThat(fileTree.contains(expected.relativePath())).isTrue();
-  }
-
-  @Test
-  void contains_withDirectoryFiller_whenMissingDirNotFilledIn_false() {
-    File notExpected = file("A/B/C/D");
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
-            .insert(file("A"))
-            .insert(file("A/B/C"))
-            .build();
-    assertThat(fileTree.contains(notExpected.relativePath())).isFalse();
-  }
-
-  @Test
   void ancestors_returnsAncestors() {
     TrieBasedFileTree<File> fileTree =
         TrieBasedFileTree.builder()
@@ -170,7 +126,7 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.ancestors(Path.of("A/B/C/D/E")))
+    assertThat(fileTree.ancestors(file("A/B/C/D/E")))
         .containsExactly(directory("A/B/C"), directory("A"))
         .inOrder();
   }
@@ -185,7 +141,7 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.ancestors(Path.of("A/B/C/D"))).isEmpty();
+    assertThat(fileTree.ancestors(file("A/B/C/D"))).isEmpty();
   }
 
   @Test
@@ -199,7 +155,7 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.ancestors(Path.of("A/B/C/D/E")))
+    assertThat(fileTree.ancestors(file("A/B/C/D/E")))
         .containsExactly(directory("A/B/C/D"), directory("A/B/C"), directory("A/B"), directory("A"))
         .inOrder();
   }
@@ -214,7 +170,7 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.descendants(Path.of("A/B/C")))
+    assertThat(fileTree.descendants(file("A/B/C")))
         .containsExactly(file("A/B/C/D/E"), file("A/B/C/D/F"), file("A/B/C/D/X/Y/Z"))
         .inOrder();
   }
@@ -229,7 +185,7 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.descendants(Path.of("A/B/C/D"))).isEmpty();
+    assertThat(fileTree.descendants(file("A/B/C/D"))).isEmpty();
   }
 
   @Test
@@ -243,7 +199,7 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.descendants(Path.of("A/B/C")))
+    assertThat(fileTree.descendants(file("A/B/C")))
         .containsExactly(
             directory("A/B/C/D"),
             file("A/B/C/D/E"),

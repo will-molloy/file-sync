@@ -46,12 +46,8 @@ public final class BackupRunner {
       sourceFileTree
           .preorder()
           // only need to put leaves
-          // TODO postorder and stop at first non-leaf?
           .filter(
-              sourceFile ->
-                  sourceFileTree
-                      .descendants(sourceFile.relativePath())
-                      .noneMatch(descendant -> true))
+              sourceFile -> sourceFileTree.descendants(sourceFile).noneMatch(descendant -> true))
           .filter(
               sourceFile -> {
                 Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
@@ -71,14 +67,13 @@ public final class BackupRunner {
                         }
                       }));
 
-      Predicate<DestFileT> shouldDelete =
-          destFile -> !sourceFileTree.contains(destFile.relativePath());
+      Predicate<DestFileT> canDelete =
+          destFile -> sourceFileTree.get(destFile.relativePath()).isEmpty();
       destFileTree
           .preorder()
-          .filter(shouldDelete)
+          .filter(canDelete)
           // skip delete if covered by ancestor
-          .filter(
-              destFile -> destFileTree.ancestors(destFile.relativePath()).noneMatch(shouldDelete))
+          .filter(destFile -> destFileTree.ancestors(destFile).noneMatch(canDelete))
           .forEach(
               destFile ->
                   threadPool.submit(

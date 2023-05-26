@@ -18,11 +18,9 @@ public interface FileTree<FileT extends File> {
 
   Optional<FileT> get(Path relativePath);
 
-  boolean contains(Path relativePath);
+  Stream<FileT> ancestors(FileT file);
 
-  Stream<FileT> ancestors(Path relativePath);
-
-  Stream<FileT> descendants(Path relativePath);
+  Stream<FileT> descendants(FileT file);
 
   long fileCount();
 

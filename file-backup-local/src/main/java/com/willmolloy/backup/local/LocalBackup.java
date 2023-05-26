@@ -112,7 +112,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private boolean robustDelete(Path destPath) {
     try {
-      // TODO redundant to walk FileTree we already scanned?
+      // TODO redundant to walk FileTree we already scanned? (descendants -> postorder)
       Files.walkFileTree(destPath, new RecursiveDelete());
       log.info("Deleted: [{}]", destPath);
       return true;

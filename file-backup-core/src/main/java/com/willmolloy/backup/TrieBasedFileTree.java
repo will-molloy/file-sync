@@ -41,13 +41,8 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public boolean contains(Path relativePath) {
-    return trie.get(relativePath).isPresent();
-  }
-
-  @Override
-  public Stream<FileT> ancestors(Path relativePath) {
-    return trie.get(relativePath).stream()
+  public Stream<FileT> ancestors(FileT file) {
+    return trie.get(file.relativePath()).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
         .takeWhile(node -> node != trie.root)
         .filter(Trie.Node::containsData)
@@ -55,8 +50,11 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public Stream<FileT> descendants(Path relativePath) {
-    return trie.get(relativePath).stream().flatMap(Trie.Node::stream).skip(1).map(Trie.Node::file);
+  public Stream<FileT> descendants(FileT file) {
+    return trie.get(file.relativePath()).stream()
+        .flatMap(Trie.Node::stream)
+        .skip(1)
+        .map(Trie.Node::file);
   }
 
   @Override
