@@ -68,7 +68,7 @@ public final class BackupRunner {
       Predicate<DestFileT> canDelete =
           destFile -> sourceFileTree.get(destFile.relativePath()).isEmpty();
       destFileTree
-          .preorder()
+          .postorder()
           .filter(canDelete)
           // skip delete if covered by ancestor
           .filter(destFile -> destFileTree.ancestors(destFile).noneMatch(canDelete))

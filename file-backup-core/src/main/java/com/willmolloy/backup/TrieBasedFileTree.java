@@ -6,6 +6,7 @@ import static java.util.function.Predicate.not;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,13 +39,13 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public Stream<FileT> preorder() {
-    return trie.root.preorder().map(Trie.Node::file);
+  public Stream<FileT> postorder() {
+    return trie.root.postorder().map(Trie.Node::file);
   }
 
   @Override
   public Stream<FileT> leaves() {
-    return trie.root.preorder().filter(node -> node.children.isEmpty()).map(Trie.Node::file);
+    return trie.root.postorder().filter(node -> node.children.isEmpty()).map(Trie.Node::file);
   }
 
   @Override
@@ -74,7 +75,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   private Stream<FileT> files() {
-    return preorder().filter(not(File::isDirectory));
+    return postorder().filter(not(File::isDirectory));
   }
 
   @Override
@@ -115,8 +116,10 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
     private void insert(FileT file, @Nullable Function<String, FileT> directoryFiller) {
       Node<FileT> node = root;
+      // TODO broken when inserting into subtree... but that isn't used
       StringBuilder pathSoFar = new StringBuilder();
-      for (String c : nameComponents(file.relativePath())) {
+      List<String> pathToNode = nameComponents(file.relativePath());
+      for (String c : pathToNode) {
         Node<FileT> child = node.children.get(c);
         pathSoFar.append(c);
         if (child == null) {
@@ -135,7 +138,11 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
     private Optional<Node<FileT>> get(Path path) {
       Node<FileT> node = root;
-      for (String c : nameComponents(path)) {
+      List<String> pathToNode =
+          root.file == null
+              ? nameComponents(path)
+              : nameComponents(root.file.relativePath().relativize(path));
+      for (String c : pathToNode) {
         Node<FileT> child = node.children.get(c);
         if (child == null) {
           return Optional.empty();
@@ -163,8 +170,8 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
         this.children = new HashMap<>();
       }
 
-      private Stream<Node<FileT>> preorder() {
-        return Stream.concat(Stream.of(this), children.values().stream().flatMap(Node::preorder))
+      private Stream<Node<FileT>> postorder() {
+        return Stream.concat(children.values().stream().flatMap(Node::postorder), Stream.of(this))
             .filter(Node::containsData);
       }
 

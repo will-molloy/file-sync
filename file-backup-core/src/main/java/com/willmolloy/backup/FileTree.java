@@ -16,7 +16,7 @@ public interface FileTree<FileT extends File> {
 
   Optional<FileT> get(Path relativePath);
 
-  Stream<FileT> preorder();
+  Stream<FileT> postorder();
 
   Stream<FileT> leaves();
 

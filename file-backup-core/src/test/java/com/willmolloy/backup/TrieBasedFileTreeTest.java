@@ -59,7 +59,7 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void preorder_returnsNodesInPreorder() {
+  void postorder_returnsNodesInPostorder() {
     // Given
     TrieBasedFileTree<File> fileTree =
         TrieBasedFileTree.builder()
@@ -73,20 +73,20 @@ class TrieBasedFileTreeTest {
             .build();
 
     // Then
-    assertThat(fileTree.preorder())
+    assertThat(fileTree.postorder())
         .containsExactly(
-            file("A"),
-            file("A/B"),
             file("A/B/C"),
-            file("D"),
+            file("A/B"),
+            file("A"),
             file("D/E"),
             file("D/F"),
+            file("D"),
             file("X/Y/Z"))
         .inOrder();
   }
 
   @Test
-  void preorder_withDirectoryFiller_returnsNodesIncludingMissingDirsInPreorder() {
+  void postorder_withDirectoryFiller_returnsNodesIncludingMissingDirsInPostorder() {
     // Given
     TrieBasedFileTree<File> fileTree =
         TrieBasedFileTree.builder()
@@ -101,23 +101,23 @@ class TrieBasedFileTreeTest {
             .build();
 
     // Then
-    assertThat(fileTree.preorder())
+    assertThat(fileTree.postorder())
         .containsExactly(
-            directory(""),
-            file("A"),
-            file("A/B"),
             file("A/B/C"),
-            file("D"),
+            file("A/B"),
+            file("A"),
             file("D/E"),
             file("D/F"),
-            directory("X"),
+            file("D"),
+            file("X/Y/Z"),
             directory("X/Y"),
-            file("X/Y/Z"))
+            directory("X"),
+            directory(""))
         .inOrder();
   }
 
   @Test
-  void leaves_returnsLeaves() {
+  void leaves_returnsLeavesLeftToRight() {
     // Given
     TrieBasedFileTree<File> fileTree =
         TrieBasedFileTree.builder()
@@ -196,11 +196,12 @@ class TrieBasedFileTreeTest {
     FileTree<File> subtree = fileTree.subtree(directory("A/B/C"));
 
     // Then
-    // building the subtree complicates the implementation, so testing via pre-order
-    assertThat(subtree.preorder())
+    // building the subtree complicates the implementation, so testing via post-order/ancestors
+    assertThat(subtree.postorder())
         .containsExactly(
-            directory("A/B/C"), file("A/B/C/D/E"), file("A/B/C/D/F"), file("A/B/C/D/X/Y/Z"))
+            file("A/B/C/D/E"), file("A/B/C/D/F"), file("A/B/C/D/X/Y/Z"), directory("A/B/C"))
         .inOrder();
+    assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z"))).containsExactly(directory("A/B/C"));
   }
 
   @Test
@@ -234,16 +235,18 @@ class TrieBasedFileTreeTest {
     FileTree<File> subtree = fileTree.subtree(directory("A/B/C/D"));
 
     // Then
-    // building the subtree complicates the implementation, so testing via pre-order
-    assertThat(subtree.preorder())
+    // building the subtree complicates the implementation, so testing via post-order
+    assertThat(subtree.postorder())
         .containsExactly(
-            directory("A/B/C/D"),
             file("A/B/C/D/E"),
             file("A/B/C/D/F"),
-            directory("A/B/C/D/X"),
+            file("A/B/C/D/X/Y/Z"),
             directory("A/B/C/D/X/Y"),
-            file("A/B/C/D/X/Y/Z"))
+            directory("A/B/C/D/X"),
+            directory("A/B/C/D"))
         .inOrder();
+    assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z")))
+        .containsExactly(directory("A/B/C/D/X/Y"), directory("A/B/C/D/X"), directory("A/B/C/D"));
   }
 
   @Test
