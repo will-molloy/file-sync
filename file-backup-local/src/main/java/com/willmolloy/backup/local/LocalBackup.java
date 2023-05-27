@@ -57,7 +57,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       }
       return true;
     } catch (FileAlreadyExistsException e) {
-      // TODO if we do the deletes first, we won't end up in these scenarios? Good to be safe?
+      // TODO if we do the deletes first, we won't end up in these scenarios? But good to be safe?
       // failed to create directory since it already exists as a file
       FileSystem fs = destination.root().getFileSystem();
       Path badPath = fs.getPath(e.getFile());
@@ -113,7 +113,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private boolean robustDelete(Path destPath) {
     try {
-      // TODO redundant to walk FileTree we already scanned? (descendants -> postorder)
+      // TODO redundant to walk FileTree we already scanned? (subtree -> postorder)
       Files.walkFileTree(destPath, new RecursiveDelete());
       log.info("Deleted: [{}]", destPath);
       return true;

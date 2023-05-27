@@ -14,15 +14,15 @@ import java.util.stream.Stream;
  */
 public interface FileTree<FileT extends File> {
 
+  Optional<FileT> get(Path relativePath);
+
   Stream<FileT> preorder();
 
   Stream<FileT> leaves();
 
-  Optional<FileT> get(Path relativePath);
-
   Stream<FileT> ancestors(FileT file);
 
-  Stream<FileT> descendants(FileT file);
+  FileTree<FileT> subtree(FileT file);
 
   long fileCount();
 

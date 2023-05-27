@@ -6,10 +6,12 @@ import static java.util.function.Predicate.not;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -26,27 +28,23 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
   private final Trie<FileT> trie;
 
-  private TrieBasedFileTree(Trie<FileT> trie) {
+  TrieBasedFileTree(Trie<FileT> trie) {
     this.trie = requireNonNull(trie);
-  }
-
-  @Override
-  public Stream<FileT> preorder() {
-    return trie.root.stream().map(Trie.Node::file);
-  }
-
-  @Override
-  public Stream<FileT> leaves() {
-    return preorder().filter(this::isLeaf);
-  }
-
-  private boolean isLeaf(FileT file) {
-    return descendants(file).noneMatch(e -> true);
   }
 
   @Override
   public Optional<FileT> get(Path relativePath) {
     return trie.get(relativePath).map(Trie.Node::file);
+  }
+
+  @Override
+  public Stream<FileT> preorder() {
+    return trie.root.preorder().map(Trie.Node::file);
+  }
+
+  @Override
+  public Stream<FileT> leaves() {
+    return trie.root.preorder().filter(node -> node.children.isEmpty()).map(Trie.Node::file);
   }
 
   @Override
@@ -59,11 +57,10 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public Stream<FileT> descendants(FileT file) {
-    return trie.get(file.relativePath()).stream()
-        .flatMap(Trie.Node::stream)
-        .skip(1)
-        .map(Trie.Node::file);
+  public FileTree<FileT> subtree(FileT file) {
+    return trie.get(file.relativePath())
+        .map(node -> new TrieBasedFileTree<>(new Trie<>(node)))
+        .orElseGet(() -> TrieBasedFileTree.<FileT>builder().build());
   }
 
   @Override
@@ -111,38 +108,32 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
    */
   private static final class Trie<FileT extends File> {
     private final Node<FileT> root;
-    private final Function<String, FileT> directoryFiller;
 
-    Trie(Function<String, FileT> directoryFiller) {
-      this.directoryFiller = directoryFiller;
-      if (directoryFiller == null) {
-        this.root = new Node<>(null, null);
-      } else {
-        this.root = new Node<>(null, requireNonNull(directoryFiller.apply("")));
-      }
+    private Trie(Node<FileT> root) {
+      this.root = requireNonNull(root);
     }
 
-    void insert(FileT file) {
+    private void insert(FileT file, @Nullable Function<String, FileT> directoryFiller) {
       Node<FileT> node = root;
-      StringBuilder path = new StringBuilder();
+      StringBuilder pathSoFar = new StringBuilder();
       for (String c : nameComponents(file.relativePath())) {
         Node<FileT> child = node.children.get(c);
-        path.append(c);
+        pathSoFar.append(c);
         if (child == null) {
           if (directoryFiller == null) {
-            child = new Node<>(node, null);
+            child = new Node<>(null, node);
           } else {
-            child = new Node<>(node, requireNonNull(directoryFiller.apply(path.toString())));
+            child = new Node<>(requireNonNull(directoryFiller.apply(pathSoFar.toString())), node);
           }
           node.children.put(c, child);
         }
         node = child;
-        path.append('/');
+        pathSoFar.append('/');
       }
       node.file = file;
     }
 
-    Optional<Node<FileT>> get(Path path) {
+    private Optional<Node<FileT>> get(Path path) {
       Node<FileT> node = root;
       for (String c : nameComponents(path)) {
         Node<FileT> child = node.children.get(c);
@@ -160,28 +151,28 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
      * @param <FileT> type of file stored in this node
      */
     private static final class Node<FileT extends File> {
-      private FileT file;
+      @Nullable private FileT file;
 
       // trie fields
-      private final Node<FileT> parent;
-      private final HashMap<String, Node<FileT>> children;
+      @Nullable private final Node<FileT> parent;
+      private final Map<String, Node<FileT>> children;
 
-      Node(Node<FileT> parent, FileT file) {
+      private Node(FileT file, Node<FileT> parent) {
+        this.file = file;
         this.parent = parent;
         this.children = new HashMap<>();
-        this.file = file;
       }
 
-      Stream<Node<FileT>> stream() {
-        return Stream.concat(Stream.of(this), children.values().stream().flatMap(Node::stream))
+      private Stream<Node<FileT>> preorder() {
+        return Stream.concat(Stream.of(this), children.values().stream().flatMap(Node::preorder))
             .filter(Node::containsData);
       }
 
-      boolean containsData() {
+      private boolean containsData() {
         return file != null;
       }
 
-      FileT file() {
+      private FileT file() {
         return file;
       }
 
@@ -221,26 +212,29 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
    * @param <FileT> type of file stored in the built file tree
    */
   static final class Builder<FileT extends File> implements FileTree.Builder<FileT> {
-
     private final Trie<FileT> trie;
+    @Nullable private final Function<String, FileT> directoryFiller;
 
-    private Builder(Trie<FileT> trie) {
+    private Builder(Trie<FileT> trie, @Nullable Function<String, FileT> directoryFiller) {
       this.trie = requireNonNull(trie);
+      this.directoryFiller = directoryFiller;
     }
 
     private Builder() {
-      this(new Trie<>(null));
+      this(new Trie<>(new Trie.Node<>(null, null)), null);
     }
 
     @Override
     public Builder<FileT> withDirectoryFiller(Function<String, FileT> directoryFiller) {
-      return new TrieBasedFileTree.Builder<>(new Trie<>(directoryFiller));
+      return new TrieBasedFileTree.Builder<>(
+          new Trie<>(new Trie.Node<>(requireNonNull(directoryFiller.apply("")), null)),
+          directoryFiller);
     }
 
     @Override
     public Builder<FileT> insert(FileT file) {
       EntryMessage m = log.traceEntry("insert({})", file);
-      trie.insert(file);
+      trie.insert(file, directoryFiller);
       return log.traceExit(m, this);
     }
 
