@@ -57,6 +57,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       }
       return true;
     } catch (FileAlreadyExistsException e) {
+      // TODO if we do the deletes first, we won't end up in these scenarios? Good to be safe?
       // failed to create directory since it already exists as a file
       FileSystem fs = destination.root().getFileSystem();
       Path badPath = fs.getPath(e.getFile());

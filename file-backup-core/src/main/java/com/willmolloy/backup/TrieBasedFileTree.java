@@ -53,7 +53,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   public Stream<FileT> ancestors(FileT file) {
     return trie.get(file.relativePath()).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
-        .takeWhile(node -> node != trie.root)
+        .takeWhile(node -> node != trie.root.parent)
         .filter(Trie.Node::containsData)
         .map(Trie.Node::file);
   }

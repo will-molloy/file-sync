@@ -176,7 +176,12 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
     assertThat(fileTree.ancestors(file("A/B/C/D/E")))
-        .containsExactly(directory("A/B/C/D"), directory("A/B/C"), directory("A/B"), directory("A"))
+        .containsExactly(
+            directory("A/B/C/D"),
+            directory("A/B/C"),
+            directory("A/B"),
+            directory("A"),
+            directory(""))
         .inOrder();
   }
 
