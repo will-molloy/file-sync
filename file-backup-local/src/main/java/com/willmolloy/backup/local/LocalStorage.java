@@ -39,7 +39,10 @@ public final class LocalStorage implements Location<LocalFile> {
     try {
       FileTree.Builder<LocalFile> builder =
           FileTree.builder(
-              LocalFile.fromPath(this, rootDir), path -> LocalFile.directoryFiller(this, path));
+              LocalFile.fromPath(this, rootDir),
+              path -> {
+                throw new IllegalStateException("Directory Filler unnecessary");
+              });
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
             if (path == rootDir) {

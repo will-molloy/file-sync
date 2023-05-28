@@ -205,17 +205,4 @@ class LocalFileTest {
             IllegalArgumentException.class, () -> LocalFile.fromAttributes(storage, path, null));
     assertThat(thrown).hasMessageThat().isEqualTo("Requires path [A] to be under root [root]");
   }
-
-  @Test
-  void directoryFiller() {
-    // Given
-    LocalFile directoryFiller = LocalFile.directoryFiller(storage, "A/B/C");
-
-    // Then
-    assertThat(directoryFiller.uri()).isEqualTo(storage.root().resolve("A/B/C").toString());
-    assertThat(directoryFiller.relativePath()).isEqualTo(fs.getPath("A/B/C"));
-    assertThat(directoryFiller.isDirectory()).isEqualTo(true);
-    assertThat(directoryFiller.size()).isEqualTo(0);
-    assertThat(directoryFiller.lastModified()).isEqualTo(0);
-  }
 }
