@@ -51,7 +51,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       }
       return true;
     } catch (FileAlreadyExistsException e) {
-      // TODO if we do the deletes first, we won't end up in these scenarios? But good to be safe?
+      // TODO if we do the deletes first, we won't end up in these scenarios? Good to be safe?
       // failed to create directory since it already exists as a file
       log.warn(
           "Error copying: [{}] -> [{}]. Deleting file to allow creation of directories first",

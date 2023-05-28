@@ -79,7 +79,6 @@ public final class BackupRunner {
                       }));
     }
 
-    // TODO post condition? i.e. scan and ensure sync?
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));
     return allSuccess.get();
   }

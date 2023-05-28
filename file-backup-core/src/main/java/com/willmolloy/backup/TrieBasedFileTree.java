@@ -228,7 +228,6 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
     @Override
     public TrieBasedFileTree<FileT> build() {
-      // TODO post condition?
       return new TrieBasedFileTree<>(trie);
     }
   }
