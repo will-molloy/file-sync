@@ -65,6 +65,7 @@ class LocalStorageTest {
     // Then
     assertThat(scan)
         .isEqualTo(
+            // null directoryFiller, otherwise it isn't tested!
             FileTree.builder(LocalFile.fromPath(sut, sut.root()), path -> null)
                 .insert(LocalFile.fromPath(sut, root.resolve("A")))
                 .insert(LocalFile.fromPath(sut, root.resolve("B")))

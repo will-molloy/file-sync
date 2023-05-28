@@ -129,12 +129,10 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
                     last
                         ? new Node<>(file, currentNode)
                         : new Node<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
-        if (last) {
-          return;
-        }
         pathSoFar.append('/');
       }
-            node.file = file;
+      // no need to set Node.file here; assuming only leaves are inserted or parent dirs are
+      // inserted first (i.e. in a pre-order manner)
     }
 
     private Optional<Node<FileT>> get(Path path) {
@@ -156,7 +154,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
      * @param <FileT> type of file stored in this node
      */
     private static final class Node<FileT extends File> {
-      private FileT file;
+      private final FileT file;
 
       // trie fields
       @Nullable private final Node<FileT> parent;
