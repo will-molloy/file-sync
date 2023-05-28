@@ -2,6 +2,7 @@ package com.willmolloy.backup.s3;
 
 import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
+import static com.willmolloy.backup.util.StreamHelper.chunk;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
@@ -12,6 +13,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -21,12 +23,9 @@ import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.StorageClass;
-import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
@@ -94,8 +93,10 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
       } else {
         deleteObject(destFile);
       }
-
       log.info("Deleted: [{}]", destFile.uri());
+      return true;
+    } catch (NoSuchFileException e) {
+      log.debug("Already deleted: [{}]", destFile, e);
       return true;
     } catch (Exception e) {
       log.error("Error deleting: [{}]", destFile.uri(), e);
@@ -103,37 +104,29 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
     }
   }
 
-  private void deleteFolder(S3File destFile) {
-    // TODO the list is redundant? We already have this info in the FileTree (subtree -> leaves)
-    ListObjectsV2Request listRequest =
-        ListObjectsV2Request.builder()
-            .bucket(destination.bucketName())
-            .prefix(s3Key(destFile))
-            .build();
-    ListObjectsV2Iterable paginatedListResponse = s3Client.listObjectsV2Paginator(listRequest);
-
-    for (ListObjectsV2Response listResponse : paginatedListResponse) {
-      List<ObjectIdentifier> objects =
-          listResponse.contents().stream()
-              .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
-              .toList();
-      if (objects.isEmpty()) {
-        break;
-      }
-      DeleteObjectsRequest deleteRequest =
-          DeleteObjectsRequest.builder()
-              .bucket(destination.bucketName())
-              .delete(Delete.builder().objects(objects).build())
-              .build();
-      s3Client.deleteObjects(deleteRequest);
-    }
+  private void deleteFolder(S3File destFile) throws NoSuchFileException {
+    // TODO cache scan
+    Stream<S3File> filesToDelete = destination.scan().subtree(destFile).leaves();
+    Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);
+    chunks
+        .map(
+            chunk ->
+                chunk.stream()
+                    .map(s3File -> ObjectIdentifier.builder().key(s3Key(s3File)).build())
+                    .toList())
+        .map(
+            objects ->
+                DeleteObjectsRequest.builder()
+                    .bucket(destination.bucketName())
+                    .delete(Delete.builder().objects(objects).build())
+                    .build())
+        .forEach(s3Client::deleteObjects);
   }
 
   private void deleteObject(S3File destFile) {
     DeleteObjectRequest request =
         DeleteObjectRequest.builder().bucket(destination.bucketName()).key(s3Key(destFile)).build();
     s3Client.deleteObject(request);
-
     wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
   }
 
@@ -148,6 +141,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
     return file.isDirectory() ? key + "/" : key;
   }
 
+  // TODO this just throws errors - not using it right?
   private void wait(String key, Function<HeadObjectRequest, WaiterResponse<?>> waiter) {
     HeadObjectRequest headRequest =
         HeadObjectRequest.builder().bucket(destination.bucketName()).key(key).build();

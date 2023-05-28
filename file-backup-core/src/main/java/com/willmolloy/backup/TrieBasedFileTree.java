@@ -6,7 +6,7 @@ import static java.util.function.Predicate.not;
 
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -163,7 +163,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
       private Node(FileT file, Node<FileT> parent) {
         this.file = requireNonNull(file);
         this.parent = parent;
-        this.children = new HashMap<>();
+        this.children = new LinkedHashMap<>();
       }
 
       private Stream<Node<FileT>> postorder() {
