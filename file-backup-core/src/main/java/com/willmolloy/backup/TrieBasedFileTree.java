@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -113,7 +112,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
       this.root = requireNonNull(root);
     }
 
-    private void insert(FileT file, Function<String, FileT> directoryFiller) {
+    private void insert(FileT file, DirectoryFiller<FileT> directoryFiller) {
       Node<FileT> node = root;
       StringBuilder pathSoFar = new StringBuilder(root.file.relativePath().toString());
       List<String> pathToNode =
@@ -212,9 +211,9 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
    */
   static final class Builder<FileT extends File> implements FileTree.Builder<FileT> {
     private final Trie<FileT> trie;
-    private final Function<String, FileT> directoryFiller;
+    private final DirectoryFiller<FileT> directoryFiller;
 
-    Builder(FileT root, Function<String, FileT> directoryFiller) {
+    Builder(FileT root, DirectoryFiller<FileT> directoryFiller) {
       this.trie = new Trie<>(new Trie.Node<>(root, null));
       this.directoryFiller = requireNonNull(directoryFiller);
     }

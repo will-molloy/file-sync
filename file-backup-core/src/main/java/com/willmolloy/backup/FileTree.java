@@ -2,7 +2,6 @@ package com.willmolloy.backup;
 
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -29,7 +28,7 @@ public interface FileTree<FileT extends File> {
   long totalSize();
 
   static <FileT extends File> Builder<FileT> builder(
-      FileT root, Function<String, FileT> directoryFiller) {
+      FileT root, DirectoryFiller<FileT> directoryFiller) {
     return new TrieBasedFileTree.Builder<>(root, directoryFiller);
   }
 

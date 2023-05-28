@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
-import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -178,7 +177,7 @@ class TrieBasedFileTreeTest {
     return new TestFile(path, Path.of(path), 0, true);
   }
 
-  private static Function<String, File> directoryFiller() {
+  private static DirectoryFiller<File> directoryFiller() {
     return TrieBasedFileTreeTest::directory;
   }
 
