@@ -115,9 +115,9 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
     private void insert(FileT file, Function<String, FileT> directoryFiller) {
       Node<FileT> node = root;
-      // TODO broken when inserting into subtree... but that isn't used
-      StringBuilder pathSoFar = new StringBuilder();
-      List<String> pathToNode = nameComponents(file.relativePath());
+      StringBuilder pathSoFar = new StringBuilder(root.file.relativePath().toString());
+      List<String> pathToNode =
+          nameComponents(root.file.relativePath().relativize(file.relativePath()));
       for (int i = 0; i < pathToNode.size(); i++) {
         pathSoFar.append(pathToNode.get(i));
         Node<FileT> currentNode = node;
@@ -125,24 +125,21 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
         node =
             node.children.computeIfAbsent(
                 pathToNode.get(i),
-                k -> {
-                  if (last) {
-                    return new Node<>(file, currentNode);
-                  } else {
-                    return new Node<>(directoryFiller.apply(pathSoFar.toString()), currentNode);
-                  }
-                });
+                k ->
+                    last
+                        ? new Node<>(file, currentNode)
+                        : new Node<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
+        if (last) {
+          return;
+        }
         pathSoFar.append('/');
       }
-      node.file = file;
+            node.file = file;
     }
 
     private Optional<Node<FileT>> get(Path path) {
       Node<FileT> node = root;
-      List<String> pathToNode =
-          root.file == null
-              ? nameComponents(path)
-              : nameComponents(root.file.relativePath().relativize(path));
+      List<String> pathToNode = nameComponents(root.file.relativePath().relativize(path));
       for (String c : pathToNode) {
         Node<FileT> child = node.children.get(c);
         if (child == null) {

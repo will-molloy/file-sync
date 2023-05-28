@@ -141,21 +141,20 @@ class TrieBasedFileTreeTest {
             .build();
 
     // When
-    FileTree<File> subtree = fileTree.subtree(directory("A/B/C/D"));
+    FileTree<File> subtree = fileTree.subtree(directory("A/B/C"));
 
     // Then
-    // building the subtree complicates the implementation, so testing via post-order/ancestors
-    assertThat(subtree.postorder())
-        .containsExactly(
-            file("A/B/C/D/E"),
-            file("A/B/C/D/F"),
-            file("A/B/C/D/X/Y/Z"),
-            directory("A/B/C/D/X/Y"),
-            directory("A/B/C/D/X"),
-            directory("A/B/C/D"))
-        .inOrder();
-    assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z")))
-        .containsExactly(directory("A/B/C/D/X/Y"), directory("A/B/C/D/X"), directory("A/B/C/D"));
+    assertThat(subtree)
+        .isEqualTo(
+            // null directoryFiller, otherwise it isn't tested!
+            new TrieBasedFileTree.Builder<>(directory("A/B/C"), path -> null)
+                .insert(directory("A/B/C/D"))
+                .insert(file("A/B/C/D/E"))
+                .insert(file("A/B/C/D/F"))
+                .insert(directory("A/B/C/D/X"))
+                .insert(directory("A/B/C/D/X/Y"))
+                .insert(file("A/B/C/D/X/Y/Z"))
+                .build());
   }
 
   @Test
