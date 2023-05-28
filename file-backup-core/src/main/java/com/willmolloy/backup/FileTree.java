@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 /**
  * Represents a {@link Location}s file tree.
  *
- * @see #builder()
+ * @see #builder
  * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
@@ -28,8 +28,9 @@ public interface FileTree<FileT extends File> {
 
   long totalSize();
 
-  static <FileT extends File> Builder<FileT> builder() {
-    return TrieBasedFileTree.builder();
+  static <FileT extends File> Builder<FileT> builder(
+      FileT root, Function<String, FileT> directoryFiller) {
+    return new TrieBasedFileTree.Builder<>(root, directoryFiller);
   }
 
   /**
@@ -38,13 +39,6 @@ public interface FileTree<FileT extends File> {
    * @param <FileT> type of file stored in the built file tree
    */
   interface Builder<FileT extends File> {
-
-    /**
-     * Fills in missing directories with the {@code directoryFiller}.
-     *
-     * @apiNote Useful for cases where directories are not scanned. E.g. AWS S3 ListObjects.
-     */
-    Builder<FileT> withDirectoryFiller(Function<String, FileT> directoryFiller);
 
     Builder<FileT> insert(FileT file);
 

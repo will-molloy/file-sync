@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.EntryMessage;
 
 /**
  * {@link FileTree} implemented via {@linkplain Trie trie data structure}.
@@ -61,7 +60,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   public FileTree<FileT> subtree(FileT file) {
     return trie.get(file.relativePath())
         .map(node -> new TrieBasedFileTree<>(new Trie<>(node)))
-        .orElseGet(() -> TrieBasedFileTree.<FileT>builder().build());
+        .orElseThrow();
   }
 
   @Override
@@ -114,23 +113,25 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
       this.root = requireNonNull(root);
     }
 
-    private void insert(FileT file, @Nullable Function<String, FileT> directoryFiller) {
+    private void insert(FileT file, Function<String, FileT> directoryFiller) {
       Node<FileT> node = root;
       // TODO broken when inserting into subtree... but that isn't used
       StringBuilder pathSoFar = new StringBuilder();
       List<String> pathToNode = nameComponents(file.relativePath());
-      for (String c : pathToNode) {
-        Node<FileT> child = node.children.get(c);
-        pathSoFar.append(c);
-        if (child == null) {
-          if (directoryFiller == null) {
-            child = new Node<>(null, node);
-          } else {
-            child = new Node<>(requireNonNull(directoryFiller.apply(pathSoFar.toString())), node);
-          }
-          node.children.put(c, child);
-        }
-        node = child;
+      for (int i = 0; i < pathToNode.size(); i++) {
+        pathSoFar.append(pathToNode.get(i));
+        Node<FileT> currentNode = node;
+        boolean last = i == pathToNode.size() - 1;
+        node =
+            node.children.computeIfAbsent(
+                pathToNode.get(i),
+                k -> {
+                  if (last) {
+                    return new Node<>(file, currentNode);
+                  } else {
+                    return new Node<>(directoryFiller.apply(pathSoFar.toString()), currentNode);
+                  }
+                });
         pathSoFar.append('/');
       }
       node.file = file;
@@ -158,14 +159,14 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
      * @param <FileT> type of file stored in this node
      */
     private static final class Node<FileT extends File> {
-      @Nullable private FileT file;
+      private FileT file;
 
       // trie fields
       @Nullable private final Node<FileT> parent;
       private final Map<String, Node<FileT>> children;
 
       private Node(FileT file, Node<FileT> parent) {
-        this.file = file;
+        this.file = requireNonNull(file);
         this.parent = parent;
         this.children = new HashMap<>();
       }
@@ -209,10 +210,6 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
     }
   }
 
-  static <FileT extends File> TrieBasedFileTree.Builder<FileT> builder() {
-    return new TrieBasedFileTree.Builder<>();
-  }
-
   /**
    * {@link FileTree.Builder} implementation for {@link TrieBasedFileTree}.
    *
@@ -220,33 +217,23 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
    */
   static final class Builder<FileT extends File> implements FileTree.Builder<FileT> {
     private final Trie<FileT> trie;
-    @Nullable private final Function<String, FileT> directoryFiller;
+    private final Function<String, FileT> directoryFiller;
 
-    private Builder(Trie<FileT> trie, @Nullable Function<String, FileT> directoryFiller) {
-      this.trie = requireNonNull(trie);
-      this.directoryFiller = directoryFiller;
-    }
-
-    private Builder() {
-      this(new Trie<>(new Trie.Node<>(null, null)), null);
-    }
-
-    @Override
-    public Builder<FileT> withDirectoryFiller(Function<String, FileT> directoryFiller) {
-      return new TrieBasedFileTree.Builder<>(
-          new Trie<>(new Trie.Node<>(requireNonNull(directoryFiller.apply("")), null)),
-          directoryFiller);
+    Builder(FileT root, Function<String, FileT> directoryFiller) {
+      this.trie = new Trie<>(new Trie.Node<>(root, null));
+      this.directoryFiller = requireNonNull(directoryFiller);
     }
 
     @Override
     public Builder<FileT> insert(FileT file) {
-      EntryMessage m = log.traceEntry("insert({})", file);
+      log.debug("insert({})", file);
       trie.insert(file, directoryFiller);
-      return log.traceExit(m, this);
+      return this;
     }
 
     @Override
     public TrieBasedFileTree<FileT> build() {
+      // TODO post condition?
       return new TrieBasedFileTree<>(trie);
     }
   }

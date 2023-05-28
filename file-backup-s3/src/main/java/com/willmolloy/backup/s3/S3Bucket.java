@@ -47,7 +47,8 @@ final class S3Bucket implements Location<S3File> {
     ListObjectsV2Iterable paginatedResponse = s3Client.listObjectsV2Paginator(request);
 
     FileTree.Builder<S3File> builder =
-        FileTree.<S3File>builder().withDirectoryFiller(path -> S3File.directoryFiller(this, path));
+        FileTree.builder(
+            S3File.directoryFiller(this, ""), path -> S3File.directoryFiller(this, path));
     for (ListObjectsV2Response response : paginatedResponse) {
       for (S3Object s3Object : response.contents()) {
         S3File file = S3File.fromS3Object(this, s3Object);

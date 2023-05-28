@@ -38,8 +38,8 @@ public final class LocalStorage implements Location<LocalFile> {
     log.info("Scanning directory: [{}]", rootDir);
     try {
       FileTree.Builder<LocalFile> builder =
-          FileTree.<LocalFile>builder()
-              .withDirectoryFiller(path -> LocalFile.directoryFiller(this, path));
+          FileTree.builder(
+              LocalFile.fromPath(this, rootDir), path -> LocalFile.directoryFiller(this, path));
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
             if (path == rootDir) {

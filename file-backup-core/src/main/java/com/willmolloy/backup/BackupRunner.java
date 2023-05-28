@@ -12,7 +12,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.EntryMessage;
 
 /**
  * Runs a {@link Backup}.
@@ -46,24 +45,21 @@ public final class BackupRunner {
       sourceFileTree
           // only need to put leaves
           .leaves()
-          .filter(
+          .forEach(
               sourceFile -> {
                 Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
                 if (maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get())) {
-                  return true;
-                }
-                log.debug("Skipping put. Files same({}, {})", sourceFile, maybeDestFile.get());
-                return false;
-              })
-          .forEach(
-              sourceFile ->
                   threadPool.submit(
                       () -> {
-                        EntryMessage m = log.traceEntry("put({})", sourceFile);
-                        if (!log.traceExit(m, backup.put(sourceFile))) {
+                        log.debug("put({}, {})", sourceFile, maybeDestFile);
+                        if (!backup.put(sourceFile)) {
                           allSuccess.set(false);
                         }
-                      }));
+                      });
+                } else {
+                  log.debug("same({}, {})", sourceFile, maybeDestFile.get());
+                }
+              });
 
       Predicate<DestFileT> canDelete =
           destFile -> sourceFileTree.get(destFile.relativePath()).isEmpty();
@@ -76,13 +72,14 @@ public final class BackupRunner {
               destFile ->
                   threadPool.submit(
                       () -> {
-                        EntryMessage m = log.traceEntry("delete({})", destFile);
-                        if (!log.traceExit(m, backup.delete(destFile))) {
+                        log.debug("delete({})", destFile);
+                        if (!backup.delete(destFile)) {
                           allSuccess.set(false);
                         }
                       }));
     }
 
+    // TODO post condition? i.e. scan and ensure sync?
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));
     return allSuccess.get();
   }
