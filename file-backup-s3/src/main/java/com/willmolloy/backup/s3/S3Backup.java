@@ -8,7 +8,6 @@ import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.File;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
-import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -81,7 +80,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
           destinationUri,
           e);
       return true;
-    } catch (RuntimeException | IOException e) {
+    } catch (Exception e) {
       log.error("Error putting: [{}] -> [{}]", sourcePath, destinationUri, e);
       return false;
     }
@@ -98,7 +97,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
 
       log.info("Deleted: [{}]", destFile.uri());
       return true;
-    } catch (RuntimeException e) {
+    } catch (Exception e) {
       log.error("Error deleting: [{}]", destFile.uri(), e);
       return false;
     }

@@ -7,13 +7,11 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,13 +35,9 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     Path destPath = destination.root().resolve(sourceFile.relativePath());
-    return robustCopy(sourcePath, destPath);
-  }
-
-  private boolean robustCopy(Path sourcePath, Path destPath) {
     try {
       return createParentDirs(sourcePath, destPath) && doCopy(sourcePath, destPath);
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("Error copying: [{}] -> [{}]", sourcePath, destPath, e);
       return false;
     }
@@ -59,27 +53,28 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
     } catch (FileAlreadyExistsException e) {
       // TODO if we do the deletes first, we won't end up in these scenarios? But good to be safe?
       // failed to create directory since it already exists as a file
-      FileSystem fs = destination.root().getFileSystem();
-      Path badPath = fs.getPath(e.getFile());
       log.warn(
-          "Error copying: [{}] -> [{}]. Deleting file [{}] to allow creation of directories first",
+          "Error copying: [{}] -> [{}]. Deleting file to allow creation of directories first",
           sourcePath,
           destPath,
-          badPath,
           e);
-      return robustDelete(badPath) && createParentDirs(sourcePath, destPath);
+      FileSystem fs = destination.root().getFileSystem();
+      Path badPath = destination.root().relativize(fs.getPath(e.getFile()));
+      return delete(getDestFile(badPath)) && createParentDirs(sourcePath, destPath);
     } catch (NoSuchFileException e) {
       // same as above, except its thrown when the parent already exists as a file
       // (see https://stackoverflow.com/a/76278968/6122976)
-      FileSystem fs = destination.root().getFileSystem();
-      Path badPath = fs.getPath(e.getFile()).getParent();
       log.warn(
-          "Error copying: [{}] -> [{}]. Deleting file [{}] to allow creation of directories first",
+          "Error copying: [{}] -> [{}]. Deleting file to allow creation of directories first",
           sourcePath,
           destPath,
-          badPath,
           e);
-      return robustDelete(badPath) && createParentDirs(sourcePath, destPath);
+      FileSystem fs = destination.root().getFileSystem();
+      // for some reason e.getFile here is in absolute form, so take that into account
+      // TODO what if the jdk changes this behaviour? create a 'safe relativize' method?
+      Path badPath =
+          destination.root().toAbsolutePath().relativize(fs.getPath(e.getFile()).getParent());
+      return delete(getDestFile(badPath)) && createParentDirs(sourcePath, destPath);
     }
   }
 
@@ -102,65 +97,46 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
           sourcePath,
           destPath,
           e);
-      return robustDelete(destPath) && doCopy(sourcePath, destPath);
+      FileSystem fs = destination.root().getFileSystem();
+      Path badPath = destination.root().relativize(fs.getPath(e.getFile()));
+      return delete(getDestFile(badPath)) && doCopy(sourcePath, destPath);
     }
+  }
+
+  private LocalFile getDestFile(Path relativePath) {
+    return destination
+        .scan()
+        .get(relativePath)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Path [%s] not in destination file tree".formatted(relativePath)));
   }
 
   @Override
   public boolean delete(LocalFile destFile) {
-    return robustDelete(destFile.fullPath());
-  }
-
-  private boolean robustDelete(Path destPath) {
+    AtomicBoolean allDeleted = new AtomicBoolean(true);
     try {
-      // TODO redundant to walk FileTree we already scanned? (subtree -> postorder)
-      Files.walkFileTree(destPath, new RecursiveDelete());
-      log.info("Deleted: [{}]", destPath);
-      return true;
+      destination
+          .scan()
+          .subtree(destFile)
+          .postorder()
+          .map(LocalFile::fullPath)
+          .forEach(
+              destPath -> {
+                try {
+                  Files.delete(destPath);
+                  log.info("Deleted: [{}]", destPath);
+                } catch (NoSuchFileException e) {
+                  log.debug("Already deleted: [{}]", destPath, e);
+                } catch (Exception e) {
+                  log.error("Error deleting: [{}]", destPath, e);
+                  allDeleted.set(false);
+                }
+              });
     } catch (NoSuchFileException e) {
-      log.debug("Already deleted: [{}]", destPath, e);
-      return true;
-    } catch (IOException e) {
-      log.error("Error deleting: [{}]", destPath, e);
-      return false;
+      log.debug("Already deleted: [{}]", destFile, e);
     }
-  }
-
-  private static final class RecursiveDelete implements FileVisitor<Path> {
-    @Override
-    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
-      return FileVisitResult.CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-      Files.deleteIfExists(file);
-      return FileVisitResult.CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException {
-      if (e instanceof NoSuchFileException) {
-        log.debug("Already deleted file: [{}]", file, e);
-        return FileVisitResult.CONTINUE;
-      } else {
-        log.error("Error visiting file: [{}]", file, e);
-        throw e;
-      }
-    }
-
-    @Override
-    public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
-      if (e != null) {
-        if (e instanceof NoSuchFileException) {
-          log.debug("Already deleted directory: [{}]", dir, e);
-          return FileVisitResult.CONTINUE;
-        }
-        log.error("Error visiting directory: [{}]", dir, e);
-        throw e;
-      }
-      Files.deleteIfExists(dir);
-      return FileVisitResult.CONTINUE;
-    }
+    return allDeleted.get();
   }
 }

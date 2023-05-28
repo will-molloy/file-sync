@@ -1,5 +1,6 @@
 package com.willmolloy.backup;
 
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -25,7 +26,7 @@ public interface FileTree<FileT extends File> {
 
   Stream<FileT> ancestors(FileT file);
 
-  FileTree<FileT> subtree(FileT file);
+  FileTree<FileT> subtree(FileT file) throws NoSuchFileException;
 
   long fileCount();
 

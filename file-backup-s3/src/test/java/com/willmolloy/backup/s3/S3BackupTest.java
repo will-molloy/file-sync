@@ -160,7 +160,6 @@ class S3BackupTest {
   void put_whenS3Error_failsGracefully() throws IOException {
     // Given
     LocalFile sourceFile = createLocalFile(fs.getPath("A/B/C"));
-
     when(mockS3Client.putObject(any(PutObjectRequest.class), any(Path.class)))
         .thenThrow(new RuntimeException());
 

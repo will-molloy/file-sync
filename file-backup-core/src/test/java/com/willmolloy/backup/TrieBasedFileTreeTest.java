@@ -4,8 +4,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -128,7 +128,7 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void subtree_returnsSubtreeRootedAtGivenNodeIncludingMissingDirs() {
+  void subtree_returnsSubtreeRootedAtGivenNodeIncludingMissingDirs() throws NoSuchFileException {
     // Given
     TrieBasedFileTree<File> fileTree =
         new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
@@ -157,7 +157,7 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void subtree_whenNodeNotInTree_throws() {
+  void subtree_whenFileNotInTree_throws() {
     TrieBasedFileTree<File> fileTree =
         new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
@@ -166,7 +166,10 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThrows(NoSuchElementException.class, () -> fileTree.subtree(directory("X/Y/Z")));
+    File notInTree = directory("X/Y/Z");
+    NoSuchFileException thrown =
+        assertThrows(NoSuchFileException.class, () -> fileTree.subtree(notInTree));
+    assertThat(thrown).hasMessageThat().isEqualTo(notInTree.relativePath().toString());
   }
 
   private static File file(String path) {
