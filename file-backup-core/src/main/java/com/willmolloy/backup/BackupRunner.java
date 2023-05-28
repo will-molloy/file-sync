@@ -62,7 +62,7 @@ public final class BackupRunner {
               });
 
       Predicate<DestFileT> canDelete =
-          destFile -> sourceFileTree.get(destFile.relativePath()).isEmpty();
+          destFile -> !sourceFileTree.contains(destFile.relativePath());
       destFileTree
           .postorder()
           .filter(canDelete)

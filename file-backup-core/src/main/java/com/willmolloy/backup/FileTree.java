@@ -15,6 +15,10 @@ public interface FileTree<FileT extends File> {
 
   Optional<FileT> get(Path relativePath);
 
+  default boolean contains(Path relativePath) {
+    return get(relativePath).isPresent();
+  }
+
   Stream<FileT> postorder();
 
   Stream<FileT> leaves();
