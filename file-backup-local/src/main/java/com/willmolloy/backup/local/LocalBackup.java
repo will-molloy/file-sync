@@ -105,7 +105,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private LocalFile getDestFile(Path relativePath) {
     return destination
-        .scan()
+        .fileTree()
         .get(relativePath)
         .orElseThrow(
             () ->
@@ -119,7 +119,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
     try {
       // TODO cache scan
       destination
-          .scan()
+          .fileTree()
           .subtree(destFile)
           .postorder()
           .map(LocalFile::fullPath)

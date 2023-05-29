@@ -189,6 +189,36 @@ class TrieBasedFileTreeTest {
         .isEqualTo(new TrieBasedFileTree.Builder<>(file("X/Y/Z"), path -> null).build());
   }
 
+  @Test
+  void fileCount_countsFiles() {
+    TrieBasedFileTree<File> fileTree =
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
+            .insert(directory("A"))
+            .insert(directory("A/B"))
+            .insert(file("A/B/C"))
+            .insert(file("A/B/D"))
+            .insert(directory("X"))
+            .insert(directory("X/Y"))
+            .insert(file("X/Y/Z"))
+            .build();
+    assertThat(fileTree.fileCount()).isEqualTo(3);
+  }
+
+  @Test
+  void totalSize_sumsFileSize() {
+    TrieBasedFileTree<File> fileTree =
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
+            .insert(directory("A"))
+            .insert(directory("A/B"))
+            .insert(file("A/B/C"))
+            .insert(file("A/B/D"))
+            .insert(directory("X"))
+            .insert(directory("X/Y"))
+            .insert(file("X/Y/Z"))
+            .build();
+    assertThat(fileTree.totalSize()).isEqualTo(6);
+  }
+
   private static File file(String path) {
     return new TestFile(path, Path.of(path), 2, false);
   }

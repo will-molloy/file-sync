@@ -3,8 +3,8 @@ package com.willmolloy.backup.s3;
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.BaseLocation;
 import com.willmolloy.backup.FileTree;
-import com.willmolloy.backup.Location;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,7 +19,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class S3Bucket implements Location<S3File> {
+final class S3Bucket extends BaseLocation<S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -37,7 +37,7 @@ final class S3Bucket implements Location<S3File> {
   }
 
   @Override
-  public FileTree<S3File> scan() {
+  protected FileTree<S3File> scan() {
     log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder()

@@ -35,8 +35,8 @@ class BackupRunnerTest {
 
   @AfterEach
   void tearDown() {
-    verify(mockSource).scan();
-    verify(mockDest).scan();
+    verify(mockSource).fileTree();
+    verify(mockDest).fileTree();
     verifyNoMoreInteractions(mockSource);
     verifyNoMoreInteractions(mockDest);
     verifyNoMoreInteractions(mockBackup);
@@ -45,8 +45,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnlyOnSource_createsFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -60,8 +60,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andNotSame_updatesFileOnDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(differentFile("A")).build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(differentFile("A")).build());
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -75,8 +75,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnSourceAndDestination_andSame_skipsUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
 
     // When
     boolean result = BackupRunner.run(mockBackup);
@@ -89,8 +89,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnlyOnDestination_deletesFileFromDestination() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
@@ -104,8 +104,8 @@ class BackupRunnerTest {
   @Test
   void whenFileOnDestinationAndSource_skipsDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
 
     // When
     boolean result = BackupRunner.run(mockBackup);
@@ -118,8 +118,8 @@ class BackupRunnerTest {
   @Test
   void whenCreateFails_countsFailedCreate() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -133,8 +133,8 @@ class BackupRunnerTest {
   @Test
   void whenUpdateFails_countsFailedUpdate() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(differentFile("A")).build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(differentFile("A")).build());
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
@@ -148,8 +148,8 @@ class BackupRunnerTest {
   @Test
   void whenDeleteFails_countsFailedDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
     when(mockBackup.delete(any())).thenReturn(false);
 
     // When
@@ -163,9 +163,9 @@ class BackupRunnerTest {
   @Test
   void whenChildExists_skipsPut() {
     // Given
-    when(mockSource.scan())
+    when(mockSource.fileTree())
         .thenReturn(fileTreeBuilder().insert(file("A")).insert(file("A/B")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -180,9 +180,9 @@ class BackupRunnerTest {
   @Test
   void whenGrandChildExists_skipsPut() {
     // Given
-    when(mockSource.scan())
+    when(mockSource.fileTree())
         .thenReturn(fileTreeBuilder().insert(file("A")).insert(file("A/B/C")).build());
-    when(mockDest.scan()).thenReturn(fileTreeBuilder().build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
@@ -197,8 +197,8 @@ class BackupRunnerTest {
   @Test
   void whenParentExists_skipsDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().build());
-    when(mockDest.scan())
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().build());
+    when(mockDest.fileTree())
         .thenReturn(fileTreeBuilder().insert(file("A")).insert(file("A/B")).build());
     when(mockBackup.delete(any())).thenReturn(true);
 
@@ -214,8 +214,8 @@ class BackupRunnerTest {
   @Test
   void whenGrandParentExists_skipsDelete() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().build());
-    when(mockDest.scan())
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().build());
+    when(mockDest.fileTree())
         .thenReturn(fileTreeBuilder().insert(file("A")).insert(file("A/B/C")).build());
     when(mockBackup.delete(any())).thenReturn(true);
 
@@ -231,8 +231,8 @@ class BackupRunnerTest {
   @Test
   void whenParentExistsButParentInSource_stillDeletes() {
     // Given
-    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(mockDest.scan())
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree())
         .thenReturn(fileTreeBuilder().insert(file("A")).insert(file("A/B")).build());
     when(mockBackup.delete(any())).thenReturn(true);
 
@@ -248,9 +248,9 @@ class BackupRunnerTest {
   @Test
   void whenGrandParentExistsButGrandParentInSource_stillDeletes() {
     // Given
-    when(mockSource.scan())
+    when(mockSource.fileTree())
         .thenReturn(fileTreeBuilder().insert(file("A")).insert(file("A/B")).build());
-    when(mockDest.scan())
+    when(mockDest.fileTree())
         .thenReturn(
             fileTreeBuilder().insert(file("A")).insert(file("A/B")).insert(file("A/B/C")).build());
     when(mockBackup.delete(any())).thenReturn(true);

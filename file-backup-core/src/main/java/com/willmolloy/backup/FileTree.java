@@ -21,23 +21,26 @@ public interface FileTree<FileT extends File> {
     return get(relativePath).isPresent();
   }
 
-  /** Traverses the {@link FileTree} in a post-order manner. */
+  /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();
 
-  /** Traverses the leaves of the {@link FileTree}. Left to right. */
+  /** Traverses all leaves, left to right. */
   Stream<FileT> leaves();
 
-  /**
-   * Traverses the ancestors of the {@link FileTree}. From the parent of the given {@code file} to
-   * the root.
-   */
+  /** Traverses ancestors from the parent of the given {@code file} to the root. */
   Stream<FileT> ancestors(FileT file);
 
   /** Returns the subtree rooted at the given {@code file}. */
   FileTree<FileT> subtree(FileT file);
 
+  /** Count of files (where {@link File#isDirectory()} is {@code false}). */
   long fileCount();
 
+  /**
+   * Total size in bytes.
+   *
+   * @see File#size()
+   */
   long totalSize();
 
   /**

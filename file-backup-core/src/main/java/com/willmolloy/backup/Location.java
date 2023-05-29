@@ -8,6 +8,6 @@ package com.willmolloy.backup;
  */
 public interface Location<FileT extends File> {
 
-  /** Scans the location's {@link FileTree}. */
-  FileTree<FileT> scan();
+  /** Returns the location's {@link FileTree}. */
+  FileTree<FileT> fileTree();
 }
