@@ -1,5 +1,5 @@
 plugins {
-  id 'com.google.cloud.tools.jib' version '3.3.1'
+  id 'com.google.cloud.tools.jib' version '3.3.2'
 }
 
 jib {
@@ -25,5 +25,5 @@ static def getGitCommitTime() {
 dependencies {
   implementation project(":file-backup-core")
   implementation project(":file-backup-local")
-  implementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.56'
+  implementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.74'
 }
