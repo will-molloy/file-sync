@@ -32,33 +32,17 @@ public final class BackupRunner {
 
     AtomicBoolean allSuccess = new AtomicBoolean(true);
 
+    FileTree<SourceFileT> sourceFileTree = backup.source().fileTree();
+    FileTree<DestFileT> destFileTree = backup.destination().fileTree();
+
     try (ExecutorService threadPool =
         Executors.newFixedThreadPool(10, Thread.ofVirtual().name("worker-", 1).factory())) {
 
-      FileTree<SourceFileT> sourceFileTree = backup.source().fileTree();
-      FileTree<DestFileT> destFileTree = backup.destination().fileTree();
-
-      sourceFileTree
-          // only need to put leaves
-          .leaves()
-          .forEach(
-              sourceFile -> {
-                Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
-                if (maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get())) {
-                  threadPool.submit(
-                      () -> {
-                        log.debug("put({}, {})", sourceFile, maybeDestFile);
-                        if (!backup.put(sourceFile)) {
-                          allSuccess.set(false);
-                        }
-                      });
-                } else {
-                  log.debug("same({}, {})", sourceFile, maybeDestFile.get());
-                }
-              });
-
       Predicate<DestFileT> canDelete =
-          destFile -> !sourceFileTree.contains(destFile.relativePath());
+          destFile -> {
+            Optional<SourceFileT> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
+            return maybeSourceFile.isEmpty() || !maybeSourceFile.get().same(destFile);
+          };
       destFileTree
           .postorder()
           .filter(canDelete)
@@ -68,8 +52,30 @@ public final class BackupRunner {
               destFile ->
                   threadPool.submit(
                       () -> {
-                        log.debug("delete({})", destFile);
                         if (!backup.delete(destFile)) {
+                          allSuccess.set(false);
+                        }
+                      }));
+    }
+
+    try (ExecutorService threadPool =
+        Executors.newFixedThreadPool(10, Thread.ofVirtual().name("worker-", 1).factory())) {
+
+      Predicate<SourceFileT> canPut =
+          sourceFile -> {
+            Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
+            return maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get());
+          };
+      sourceFileTree
+          // only need to put leaves
+          .leaves()
+          .filter(canPut)
+          .forEach(
+              sourceFile ->
+                  threadPool.submit(
+                      () -> {
+                        log.debug("put({})", sourceFile);
+                        if (!backup.put(sourceFile)) {
                           allSuccess.set(false);
                         }
                       }));
