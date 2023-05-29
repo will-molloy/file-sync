@@ -68,8 +68,7 @@ class S3BucketTest {
     // Then
     assertThat(scan)
         .isEqualTo(
-            // null directoryFiller, otherwise it isn't tested!
-            FileTree.builder(S3File.directoryFiller(sut, ""), path -> null)
+            FileTree.builder(S3File.directoryFiller(sut, ""))
                 .insert(S3File.fromS3Object(sut, a))
                 .insert(S3File.fromS3Object(sut, b))
                 .insert(S3File.directoryFiller(sut, "C"))
