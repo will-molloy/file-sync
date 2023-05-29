@@ -33,7 +33,7 @@ public final class BackupRunner {
     AtomicBoolean allSuccess = new AtomicBoolean(true);
 
     try (ExecutorService threadPool =
-        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("worker-", 1).factory())) {
+        Executors.newFixedThreadPool(10, Thread.ofVirtual().name("worker-", 1).factory())) {
 
       FileTree<SourceFileT> sourceFileTree = backup.source().fileTree();
       FileTree<DestFileT> destFileTree = backup.destination().fileTree();
