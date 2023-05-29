@@ -35,7 +35,6 @@ public final class LocalStorage extends BaseLocation<LocalFile> {
 
   @Override
   protected FileTree<LocalFile> scan() {
-    log.info("Scanning directory: [{}]", rootDir);
     try {
       FileTree.Builder<LocalFile> builder = FileTree.builder(LocalFile.fromPath(this, rootDir));
       BiConsumer<Path, BasicFileAttributes> consumer =

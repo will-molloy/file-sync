@@ -197,7 +197,7 @@ class S3BackupTest {
   }
 
   @Test
-  void delete_whenFolder_makesDeleteObjectsRequests() {
+  void delete_whenFolder_makesDeleteObjectsRequest() {
     // Given
     S3File destFile = createS3Folder("folder/");
 
@@ -258,7 +258,7 @@ class S3BackupTest {
   }
 
   @Test
-  void delete_whenFolder_makesDeleteObjectsRequests_inChunksOf1000Keys() {
+  void delete_whenFolder_makesDeleteObjectsRequestsInChunksOf1000Keys() {
     // Given
     S3File destFile = createS3Folder("folder/");
 

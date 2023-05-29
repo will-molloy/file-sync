@@ -38,7 +38,6 @@ final class S3Bucket extends BaseLocation<S3File> {
 
   @Override
   protected FileTree<S3File> scan() {
-    log.info("Scanning bucket: [{}]", bucketUri());
     ListObjectsV2Request request =
         ListObjectsV2Request.builder()
             .bucket(bucketName)

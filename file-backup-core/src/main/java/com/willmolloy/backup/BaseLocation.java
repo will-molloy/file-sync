@@ -8,7 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Base {@link Location} class. Caches the {@link FileTree} after scan.
+ * Base {@link Location} class. Caches the scanned {@link FileTree}.
  *
  * @param <FileT> type of file stored in this location
  * @author <a href=https://willmolloy.com>Will Molloy</a>
@@ -28,9 +28,10 @@ public abstract class BaseLocation<FileT extends File> implements Location<FileT
       synchronized (this) {
         if (fileTree == null) {
           long scanStartNanos = System.nanoTime();
+          log.info("Scanning: {}", this);
           FileTree<FileT> fileTree = scan();
           log.info(
-              "Scanned {} in: {}. {} files. {}MB",
+              "Scanned: {} in: {}. {} files. {}MB",
               this,
               elapsed(scanStartNanos),
               NUMBER_FORMAT.format(fileTree.fileCount()),

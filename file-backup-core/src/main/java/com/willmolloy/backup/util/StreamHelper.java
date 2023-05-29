@@ -38,7 +38,6 @@ public final class StreamHelper {
                     .toList();
               }
             };
-
     return StreamSupport.stream(result.spliterator(), false);
   }
 

@@ -27,7 +27,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
 
   private final Trie<FileT> trie;
 
-  TrieBasedFileTree(Trie<FileT> trie) {
+  private TrieBasedFileTree(Trie<FileT> trie) {
     this.trie = requireNonNull(trie);
   }
 
