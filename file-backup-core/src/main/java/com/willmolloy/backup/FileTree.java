@@ -2,35 +2,70 @@ package com.willmolloy.backup;
 
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
  * Represents a {@link Location}s file tree.
  *
- * @see #builder()
+ * @see #builder
  * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public interface FileTree<FileT extends File> {
 
-  void forEach(Consumer<FileT> consumer);
-
+  /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
 
-  boolean contains(Path relativePath);
+  /** Lookup test by {@link File#relativePath()}. */
+  default boolean contains(Path relativePath) {
+    return get(relativePath).isPresent();
+  }
 
-  Stream<FileT> ancestors(Path relativePath);
+  /** Traverses all nodes in a post-order manner. */
+  Stream<FileT> postorder();
 
-  Stream<FileT> descendants(Path relativePath);
+  /** Traverses all leaves, left to right. */
+  Stream<FileT> leaves();
 
+  /** Traverses ancestors from the parent of the given {@code file} to the root. */
+  Stream<FileT> ancestors(FileT file);
+
+  /** Returns the subtree rooted at the given {@code file}. */
+  FileTree<FileT> subtree(FileT file);
+
+  /** Count of files (where {@link File#isDirectory()} is {@code false}). */
   long fileCount();
 
+  /**
+   * Total size in bytes.
+   *
+   * @see File#size()
+   */
   long totalSize();
 
-  static <FileT extends File> Builder<FileT> builder() {
-    return TrieBasedFileTree.builder();
+  /**
+   * Returns an instance of {@link FileTree.Builder}.
+   *
+   * @param root file which will be the root of the {@link FileTree}
+   */
+  static <FileT extends File> Builder<FileT> builder(FileT root) {
+    return builder(
+        root,
+        path -> {
+          throw new IllegalStateException("Directory Filler unexpected");
+        });
+  }
+
+  /**
+   * Returns an instance of {@link FileTree.Builder}.
+   *
+   * @param root file which will be the root of the {@link FileTree}
+   * @param directoryFiller {@link DirectoryFiller} to fill in missing directories during {@link
+   *     FileTree.Builder#insert}.
+   */
+  static <FileT extends File> Builder<FileT> builder(
+      FileT root, DirectoryFiller<FileT> directoryFiller) {
+    return new TrieBasedFileTree.Builder<>(root, directoryFiller);
   }
 
   /**
@@ -39,13 +74,6 @@ public interface FileTree<FileT extends File> {
    * @param <FileT> type of file stored in the built file tree
    */
   interface Builder<FileT extends File> {
-
-    /**
-     * Fills in missing directories with the {@code directoryFiller}.
-     *
-     * @apiNote Useful for cases where directories are not scanned. E.g. AWS S3 ListObjects.
-     */
-    Builder<FileT> withDirectoryFiller(Function<String, FileT> directoryFiller);
 
     Builder<FileT> insert(FileT file);
 

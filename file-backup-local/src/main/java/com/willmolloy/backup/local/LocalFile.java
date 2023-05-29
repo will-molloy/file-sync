@@ -6,7 +6,6 @@ import static java.util.Objects.requireNonNull;
 import com.willmolloy.backup.BaseFile;
 import com.willmolloy.backup.File;
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -37,11 +36,6 @@ public final class LocalFile extends BaseFile {
   public static LocalFile fromPath(LocalStorage localStorage, Path path) throws IOException {
     return fromAttributes(
         localStorage, path, Files.readAttributes(path, BasicFileAttributes.class));
-  }
-
-  static LocalFile directoryFiller(LocalStorage localStorage, String relativePath) {
-    FileSystem fs = localStorage.root().getFileSystem();
-    return new LocalFile(localStorage, fs.getPath(relativePath), true, 0, 0);
   }
 
   private final LocalStorage localStorage;

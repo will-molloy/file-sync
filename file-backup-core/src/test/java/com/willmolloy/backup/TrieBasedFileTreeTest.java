@@ -3,12 +3,7 @@ package com.willmolloy.backup;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
-import com.google.common.collect.Sets;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -19,60 +14,10 @@ import org.junit.jupiter.api.Test;
 class TrieBasedFileTreeTest {
 
   @Test
-  void forEach_visitsEachNodeExactlyOnce() {
-    // Given
-    Set<File> expected =
-        Set.of(
-            file("A"),
-            file("A/B"),
-            file("A/B/C"),
-            file("D"),
-            file("D/E"),
-            file("D/F"),
-            file("X/Y/Z"));
-    TrieBasedFileTree.Builder<File> builder = TrieBasedFileTree.builder();
-    expected.forEach(builder::insert);
-    TrieBasedFileTree<File> fileTree = builder.build();
-
-    // When
-    List<File> actual = new ArrayList<>();
-    fileTree.forEach(actual::add);
-
-    // Then
-    assertThat(actual).containsExactlyElementsIn(expected);
-  }
-
-  @Test
-  void forEach_withDirectoryFiller_visitsEachNodeExactlyOnceIncludingMissingDirs() {
-    // Given
-    Set<File> expected =
-        Set.of(
-            file("A"),
-            file("A/B"),
-            file("A/B/C"),
-            file("D"),
-            file("D/E"),
-            file("D/F"),
-            file("X/Y/Z"));
-    TrieBasedFileTree.Builder<File> builder =
-        TrieBasedFileTree.builder().withDirectoryFiller(directoryFiller());
-    expected.forEach(builder::insert);
-    TrieBasedFileTree<File> fileTree = builder.build();
-
-    // When
-    List<File> actual = new ArrayList<>();
-    fileTree.forEach(actual::add);
-
-    // Then
-    Set<File> missingDirs = Set.of(directory(""), directory("X"), directory("X/Y"));
-    assertThat(actual).containsExactlyElementsIn(Sets.union(expected, missingDirs));
-  }
-
-  @Test
-  void get_whenNodePresent_present() {
+  void get_whenNodeInTree_present() {
     File expected = file("A/B");
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(expected)
             .insert(file("A/B/C"))
@@ -81,19 +26,10 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void get_whenNodeAbsent_empty() {
-    File notExpected = file("A/B");
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder().insert(file("A")).insert(file("A/B/C")).build();
-    assertThat(fileTree.get(notExpected.relativePath())).isEmpty();
-  }
-
-  @Test
-  void get_withDirectoryFiller_whenMissingDirFilledIn_present() {
+  void get_whenMissingDirFilledIn_present() {
     File expected = file("A/B");
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
@@ -101,11 +37,10 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void get_withDirectoryFiller_whenMissingDirNotFilledIn_empty() {
+  void get_whenNodeNotInTree_empty() {
     File notExpected = file("A/B/C/D");
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
@@ -113,147 +48,151 @@ class TrieBasedFileTreeTest {
   }
 
   @Test
-  void contains_whenNodePresent_true() {
-    File expected = file("A/B");
+  void postorder_returnsNodesIncludingMissingDirsInPostorder() {
+    // Given
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
-            .insert(expected)
+            .insert(file("A/B"))
             .insert(file("A/B/C"))
+            .insert(file("D"))
+            .insert(file("D/E"))
+            .insert(file("D/F"))
+            .insert(file("X/Y/Z"))
             .build();
-    assertThat(fileTree.contains(expected.relativePath())).isTrue();
+
+    // Then
+    assertThat(fileTree.postorder())
+        .containsExactly(
+            file("A/B/C"),
+            file("A/B"),
+            file("A"),
+            file("D/E"),
+            file("D/F"),
+            file("D"),
+            file("X/Y/Z"),
+            directory("X/Y"),
+            directory("X"),
+            directory(""))
+        .inOrder();
   }
 
   @Test
-  void contains_whenNodeAbsent_false() {
-    File notExpected = file("A/B");
+  void leaves_returnsLeavesLeftToRight() {
+    // Given
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder().insert(file("A")).insert(file("A/B/C")).build();
-    assertThat(fileTree.contains(notExpected.relativePath())).isFalse();
-  }
-
-  @Test
-  void contains_withDirectoryFiller_whenMissingDirFilledIn_true() {
-    File expected = file("A/B");
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
+            .insert(file("A/B"))
             .insert(file("A/B/C"))
+            .insert(file("D"))
+            .insert(file("D/E"))
+            .insert(file("D/F"))
+            .insert(file("X/Y/Z"))
             .build();
-    assertThat(fileTree.contains(expected.relativePath())).isTrue();
+
+    // Then
+    assertThat(fileTree.leaves())
+        .containsExactly(file("A/B/C"), file("D/E"), file("D/F"), file("X/Y/Z"))
+        .inOrder();
   }
 
   @Test
-  void contains_withDirectoryFiller_whenMissingDirNotFilledIn_false() {
-    File notExpected = file("A/B/C/D");
+  void ancestors_returnsAncestorsIncludingMissingDirs() {
+    // Given
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
-            .insert(file("A"))
-            .insert(file("A/B/C"))
-            .build();
-    assertThat(fileTree.contains(notExpected.relativePath())).isFalse();
-  }
-
-  @Test
-  void ancestors_returnsAncestors() {
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.ancestors(Path.of("A/B/C/D/E")))
-        .containsExactly(directory("A/B/C"), directory("A"))
+
+    // Then
+    assertThat(fileTree.ancestors(file("A/B/C/D")))
+        .containsExactly(directory("A/B/C"), directory("A/B"), directory("A"), directory(""))
         .inOrder();
   }
 
   @Test
   void ancestors_whenNodeNotInTree_empty() {
+    // Given
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.ancestors(Path.of("A/B/C/D"))).isEmpty();
+
+    // Then
+    assertThat(fileTree.ancestors(file("X/Y/Z"))).isEmpty();
   }
 
   @Test
-  void ancestors_withDirectoryFiller_returnsAncestorsIncludingMissingDirs() {
+  void subtree_returnsSubtreeRootedAtGivenNodeIncludingMissingDirs() {
+    // Given
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    assertThat(fileTree.ancestors(Path.of("A/B/C/D/E")))
-        .containsExactly(directory("A/B/C/D"), directory("A/B/C"), directory("A/B"), directory("A"))
-        .inOrder();
-  }
 
-  @Test
-  void descendants_returnsDescendants() {
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .insert(directory("A"))
-            .insert(directory("A/B/C"))
-            .insert(file("A/B/C/D/E"))
-            .insert(file("A/B/C/D/F"))
-            .insert(file("A/B/C/D/X/Y/Z"))
-            .build();
-    assertThat(fileTree.descendants(Path.of("A/B/C")))
-        .containsExactly(file("A/B/C/D/E"), file("A/B/C/D/F"), file("A/B/C/D/X/Y/Z"))
-        .inOrder();
-  }
+    // When
+    FileTree<File> subtree = fileTree.subtree(directory("A/B/C"));
 
-  @Test
-  void descendants_whenNodeNotInTree_empty() {
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .insert(directory("A"))
-            .insert(directory("A/B/C"))
-            .insert(file("A/B/C/D/E"))
-            .insert(file("A/B/C/D/F"))
-            .insert(file("A/B/C/D/X/Y/Z"))
-            .build();
-    assertThat(fileTree.descendants(Path.of("A/B/C/D"))).isEmpty();
-  }
-
-  @Test
-  void descendants_withDirectoryFiller_returnsDescendantsIncludingMissingDirs() {
-    TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
-            .withDirectoryFiller(directoryFiller())
-            .insert(directory("A"))
-            .insert(directory("A/B/C"))
-            .insert(file("A/B/C/D/E"))
-            .insert(file("A/B/C/D/F"))
-            .insert(file("A/B/C/D/X/Y/Z"))
-            .build();
-    assertThat(fileTree.descendants(Path.of("A/B/C")))
+    // Then
+    assertThat(subtree)
+        .isEqualTo(
+            // null directoryFiller, otherwise it isn't tested!
+            new TrieBasedFileTree.Builder<>(directory("A/B/C"), path -> null)
+                .insert(directory("A/B/C/D"))
+                .insert(file("A/B/C/D/E"))
+                .insert(file("A/B/C/D/F"))
+                .insert(directory("A/B/C/D/X"))
+                .insert(directory("A/B/C/D/X/Y"))
+                .insert(file("A/B/C/D/X/Y/Z"))
+                .build());
+    // verify ancestors ends at the new root
+    assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z")))
         .containsExactly(
-            directory("A/B/C/D"),
-            file("A/B/C/D/E"),
-            file("A/B/C/D/F"),
-            directory("A/B/C/D/X"),
             directory("A/B/C/D/X/Y"),
-            file("A/B/C/D/X/Y/Z"))
+            directory("A/B/C/D/X"),
+            directory("A/B/C/D"),
+            directory("A/B/C"))
         .inOrder();
+  }
+
+  @Test
+  void subtree_whenFileNotInTree_returnsTreeContainingJustThatFile() {
+    // Given
+    TrieBasedFileTree<File> fileTree =
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
+            .insert(directory("A"))
+            .insert(directory("A/B/C"))
+            .insert(file("A/B/C/D/E"))
+            .insert(file("A/B/C/D/F"))
+            .insert(file("A/B/C/D/X/Y/Z"))
+            .build();
+    File notInTree = file("X/Y/Z");
+
+    // When
+    FileTree<File> subtree = fileTree.subtree(notInTree);
+
+    // Then
+    assertThat(subtree)
+        .isEqualTo(new TrieBasedFileTree.Builder<>(file("X/Y/Z"), path -> null).build());
   }
 
   @Test
   void fileCount_countsFiles() {
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B"))
             .insert(file("A/B/C"))
@@ -268,7 +207,7 @@ class TrieBasedFileTreeTest {
   @Test
   void totalSize_sumsFileSize() {
     TrieBasedFileTree<File> fileTree =
-        TrieBasedFileTree.builder()
+        new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B"))
             .insert(file("A/B/C"))
@@ -288,8 +227,8 @@ class TrieBasedFileTreeTest {
     return new TestFile(path, Path.of(path), 0, true);
   }
 
-  private static Function<String, File> directoryFiller() {
-    return path -> directory(path);
+  private static DirectoryFiller<File> directoryFiller() {
+    return TrieBasedFileTreeTest::directory;
   }
 
   private record TestFile(String uri, Path relativePath, long size, boolean isDirectory)

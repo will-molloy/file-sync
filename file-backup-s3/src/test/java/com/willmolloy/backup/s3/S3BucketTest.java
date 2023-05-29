@@ -63,13 +63,12 @@ class S3BucketTest {
     when(mockS3Client.listObjectsV2Paginator(request)).thenReturn(response);
 
     // When
-    FileTree<S3File> scan = sut.scan();
+    FileTree<S3File> scan = sut.fileTree();
 
     // Then
     assertThat(scan)
         .isEqualTo(
-            FileTree.builder()
-                .insert(S3File.directoryFiller(sut, ""))
+            FileTree.builder(S3File.directoryFiller(sut, ""))
                 .insert(S3File.fromS3Object(sut, a))
                 .insert(S3File.fromS3Object(sut, b))
                 .insert(S3File.directoryFiller(sut, "C"))
