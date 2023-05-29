@@ -186,6 +186,7 @@ class LocalBackupIntegrationTest {
   void whenNonEmptyDirectoryOnSourceAndFileOnDestination_overwritesFileOnDestination()
       throws IOException {
     // Given
+    // TODO bug where 2nd worker tries delete after first worker copied...
     createFile(sourceRoot.resolve("A/B/C/D/E/F.txt"), "Hello");
     createFile(sourceRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
     createFile(destRoot.resolve("A/B/C"), "hello!");
