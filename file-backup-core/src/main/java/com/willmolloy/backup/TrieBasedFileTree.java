@@ -51,7 +51,6 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
     return trie.get(file.relativePath()).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
         .takeWhile(node -> node != trie.root.parent)
-        .filter(Trie.Node::containsData)
         .map(Trie.Node::file);
   }
 
@@ -145,7 +144,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
         }
         node = child;
       }
-      return node.containsData() ? Optional.of(node) : Optional.empty();
+      return Optional.of(node);
     }
 
     /**
@@ -167,12 +166,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
       }
 
       private Stream<Node<FileT>> postorder() {
-        return Stream.concat(children.values().stream().flatMap(Node::postorder), Stream.of(this))
-            .filter(Node::containsData);
-      }
-
-      private boolean containsData() {
-        return file != null;
+        return Stream.concat(children.values().stream().flatMap(Node::postorder), Stream.of(this));
       }
 
       private FileT file() {
