@@ -2,9 +2,7 @@ package com.willmolloy.backup;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -101,6 +99,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void ancestors_returnsAncestorsIncludingMissingDirs() {
+    // Given
     TrieBasedFileTree<File> fileTree =
         new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
@@ -109,6 +108,8 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
+
+    // Then
     assertThat(fileTree.ancestors(file("A/B/C/D")))
         .containsExactly(directory("A/B/C"), directory("A/B"), directory("A"), directory(""))
         .inOrder();
@@ -116,6 +117,7 @@ class TrieBasedFileTreeTest {
 
   @Test
   void ancestors_whenNodeNotInTree_empty() {
+    // Given
     TrieBasedFileTree<File> fileTree =
         new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
@@ -124,11 +126,13 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
+
+    // Then
     assertThat(fileTree.ancestors(file("X/Y/Z"))).isEmpty();
   }
 
   @Test
-  void subtree_returnsSubtreeRootedAtGivenNodeIncludingMissingDirs() throws NoSuchFileException {
+  void subtree_returnsSubtreeRootedAtGivenNodeIncludingMissingDirs() {
     // Given
     TrieBasedFileTree<File> fileTree =
         new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
@@ -154,10 +158,19 @@ class TrieBasedFileTreeTest {
                 .insert(directory("A/B/C/D/X/Y"))
                 .insert(file("A/B/C/D/X/Y/Z"))
                 .build());
+    // verify ancestors ends at the new root
+    assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z")))
+        .containsExactly(
+            directory("A/B/C/D/X/Y"),
+            directory("A/B/C/D/X"),
+            directory("A/B/C/D"),
+            directory("A/B/C"))
+        .inOrder();
   }
 
   @Test
-  void subtree_whenFileNotInTree_throws() {
+  void subtree_whenFileNotInTree_returnsTreeContainingJustThatFile() {
+    // Given
     TrieBasedFileTree<File> fileTree =
         new TrieBasedFileTree.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
@@ -166,10 +179,14 @@ class TrieBasedFileTreeTest {
             .insert(file("A/B/C/D/F"))
             .insert(file("A/B/C/D/X/Y/Z"))
             .build();
-    File notInTree = directory("X/Y/Z");
-    NoSuchFileException thrown =
-        assertThrows(NoSuchFileException.class, () -> fileTree.subtree(notInTree));
-    assertThat(thrown).hasMessageThat().isEqualTo(notInTree.relativePath().toString());
+    File notInTree = file("X/Y/Z");
+
+    // When
+    FileTree<File> subtree = fileTree.subtree(notInTree);
+
+    // Then
+    assertThat(subtree)
+        .isEqualTo(new TrieBasedFileTree.Builder<>(file("X/Y/Z"), path -> null).build());
   }
 
   private static File file(String path) {

@@ -1,6 +1,5 @@
 package com.willmolloy.backup;
 
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -14,19 +13,28 @@ import java.util.stream.Stream;
  */
 public interface FileTree<FileT extends File> {
 
+  /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
 
+  /** Lookup test by {@link File#relativePath()}. */
   default boolean contains(Path relativePath) {
     return get(relativePath).isPresent();
   }
 
+  /** Traverses the {@link FileTree} in a post-order manner. */
   Stream<FileT> postorder();
 
+  /** Traverses the leaves of the {@link FileTree}. Left to right. */
   Stream<FileT> leaves();
 
+  /**
+   * Traverses the ancestors of the {@link FileTree}. From the parent of the given {@code file} to
+   * the root.
+   */
   Stream<FileT> ancestors(FileT file);
 
-  FileTree<FileT> subtree(FileT file) throws NoSuchFileException;
+  /** Returns the subtree rooted at the given {@code file}. */
+  FileTree<FileT> subtree(FileT file);
 
   long fileCount();
 

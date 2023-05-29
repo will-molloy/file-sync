@@ -135,8 +135,9 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
                   allDeleted.set(false);
                 }
               });
-    } catch (NoSuchFileException e) {
-      log.debug("Already deleted: [{}]", destFile, e);
+    } catch (Exception e) {
+      log.error("Error deleting: [{}]", destFile.uri(), e);
+      return false;
     }
     return allDeleted.get();
   }

@@ -95,16 +95,13 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
       }
       log.info("Deleted: [{}]", destFile.uri());
       return true;
-    } catch (NoSuchFileException e) {
-      log.debug("Already deleted: [{}]", destFile, e);
-      return true;
     } catch (Exception e) {
       log.error("Error deleting: [{}]", destFile.uri(), e);
       return false;
     }
   }
 
-  private void deleteFolder(S3File destFile) throws NoSuchFileException {
+  private void deleteFolder(S3File destFile) {
     // TODO cache scan
     Stream<S3File> filesToDelete = destination.scan().subtree(destFile).leaves();
     Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);

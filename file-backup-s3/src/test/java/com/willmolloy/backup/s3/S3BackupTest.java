@@ -303,27 +303,6 @@ class S3BackupTest {
   }
 
   @Test
-  void delete_whenFolder_notInTree_failsGracefully() {
-    // Given
-    S3File destFile = createS3Folder("folder/");
-
-    ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
-    when(response.iterator()).thenReturn(List.<ListObjectsV2Response>of().iterator());
-    when(mockS3Client.listObjectsV2Paginator(
-            ListObjectsV2Request.builder()
-                .bucket("my-bucket")
-                .prefix("my/bucket/prefix/backups/")
-                .build()))
-        .thenReturn(response);
-
-    // When
-    boolean result = assertDoesNotThrow(() -> sut.delete(destFile));
-
-    // Then
-    assertThat(result).isTrue();
-  }
-
-  @Test
   void delete_whenS3Error_failsGracefully() {
     // Given
     S3File destFile = createS3Object("X/Y/Z");

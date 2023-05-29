@@ -4,7 +4,6 @@ import static com.willmolloy.backup.util.PathHelper.nameComponents;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,10 +56,11 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public FileTree<FileT> subtree(FileT file) throws NoSuchFileException {
+  public FileTree<FileT> subtree(FileT file) {
     return trie.get(file.relativePath())
         .map(node -> new TrieBasedFileTree<>(new Trie<>(node)))
-        .orElseThrow(() -> new NoSuchFileException(file.relativePath().toString()));
+        // shouldn't get here... only if you did subtree.subtree
+        .orElseGet(() -> new TrieBasedFileTree.Builder<>(file, path -> null).build());
   }
 
   @Override
