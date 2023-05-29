@@ -117,7 +117,6 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   public boolean delete(LocalFile destFile) {
     AtomicBoolean allDeleted = new AtomicBoolean(true);
     try {
-      // TODO cache scan
       destination
           .fileTree()
           .subtree(destFile)

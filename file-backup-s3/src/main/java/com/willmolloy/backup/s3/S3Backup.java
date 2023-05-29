@@ -102,7 +102,6 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   }
 
   private void deleteFolder(S3File destFile) {
-    // TODO cache scan
     Stream<S3File> filesToDelete = destination.fileTree().subtree(destFile).leaves();
     Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);
     chunks
