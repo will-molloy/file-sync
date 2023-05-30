@@ -28,5 +28,6 @@ public interface Backup<SourceFileT extends File, DestFileT extends File> {
    * @return {@code true} if delete was successful
    * @implSpec Deletes children directories/files when necessary
    */
+  // TODO accept FileTree<DestFileT> (i.e. subtree) here? then don't need caching
   boolean delete(DestFileT destFile);
 }

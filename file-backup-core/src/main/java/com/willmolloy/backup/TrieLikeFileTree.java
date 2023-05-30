@@ -16,50 +16,50 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * {@link FileTree} implemented via {@linkplain Trie trie data structure}.
+ * {@link FileTree} implemented like a trie over {@link Path} {@linkplain Path#iterator name components}.
  *
  * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
+final class TrieLikeFileTree<FileT extends File> implements FileTree<FileT> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final Trie<FileT> trie;
+  private final Node<FileT> root;
 
-  private TrieBasedFileTree(Trie<FileT> trie) {
-    this.trie = requireNonNull(trie);
+  private TrieLikeFileTree(Node<FileT> trie) {
+    this.root = requireNonNull(trie);
   }
 
   @Override
   public Optional<FileT> get(Path relativePath) {
-    return trie.get(relativePath).map(Trie.Node::file);
+    return root.get(relativePath).map(Node::file);
   }
 
   @Override
   public Stream<FileT> postorder() {
-    return trie.root.postorder().map(Trie.Node::file);
+    return root.postorder().map(Node::file);
   }
 
   @Override
   public Stream<FileT> leaves() {
-    return trie.root.postorder().filter(node -> node.children.isEmpty()).map(Trie.Node::file);
+    return root.postorder().filter(node -> node.children.isEmpty()).map(Node::file);
   }
 
   @Override
   public Stream<FileT> ancestors(FileT file) {
-    return trie.get(file.relativePath()).stream()
+    return root.get(file.relativePath()).stream()
         .flatMap(node -> Stream.iterate(node.parent, parent -> parent.parent))
-        .takeWhile(node -> node != trie.root.parent)
-        .map(Trie.Node::file);
+        .takeWhile(node -> node != root.parent)
+        .map(Node::file);
   }
 
   @Override
   public FileTree<FileT> subtree(FileT file) {
-    return trie.get(file.relativePath())
-        .map(node -> new TrieBasedFileTree<>(new Trie<>(node)))
+    return root.get(file.relativePath())
+        .map(TrieLikeFileTree::new)
         // shouldn't get here... only if you did subtree.subtree
-        .orElseGet(() -> new TrieBasedFileTree.Builder<>(file, path -> null).build());
+        .orElseThrow(IllegalArgumentException::new);
   }
 
   @Override
@@ -84,36 +84,40 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
     if (o == null) {
       return false;
     }
-    if (o instanceof TrieBasedFileTree<?> fileTree) {
-      return Objects.equals(trie.root, fileTree.trie.root);
+    if (o instanceof TrieLikeFileTree<?> fileTree) {
+      return Objects.equals(root, fileTree.root);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(trie.root);
+    return Objects.hash(root);
   }
 
   @Override
   public String toString() {
-    return "FileTree[root=%s]".formatted(trie.root);
+    return "FileTree[root=%s]".formatted(root);
   }
 
   /**
-   * Trie over {@link Path} {@linkplain Path#iterator name components}.
+   * Represents a node in the file tree.
    *
-   * @param <FileT> type of file stored in the trie nodes
+   * @param <FileT> type of file stored in this node
    */
-  // TODO just need the Node class?
-  private static final class Trie<FileT extends File> {
-    private final Node<FileT> root;
+  private static final class Node<FileT extends File> {
+    private final FileT file;
+    @Nullable private final Node<FileT> parent;
+    private final Map<String, Node<FileT>> children;
 
-    private Trie(Node<FileT> root) {
-      this.root = requireNonNull(root);
+    private Node(FileT file, Node<FileT> parent) {
+      this.file = requireNonNull(file);
+      this.parent = parent;
+      this.children = new LinkedHashMap<>();
     }
 
     private void insert(FileT file, DirectoryFiller<FileT> directoryFiller) {
+      Node<FileT> root = this;
       Node<FileT> node = root;
       StringBuilder pathSoFar = new StringBuilder(root.file.relativePath().toString());
       List<String> pathToNode =
@@ -136,6 +140,7 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
     }
 
     private Optional<Node<FileT>> get(Path path) {
+      Node<FileT> root = this;
       Node<FileT> node = root;
       List<String> pathToNode = nameComponents(root.file.relativePath().relativize(path));
       for (String c : pathToNode) {
@@ -148,82 +153,63 @@ final class TrieBasedFileTree<FileT extends File> implements FileTree<FileT> {
       return Optional.of(node);
     }
 
-    /**
-     * {@link Trie} node.
-     *
-     * @param <FileT> type of file stored in this node
-     */
-    private static final class Node<FileT extends File> {
-      private final FileT file;
+    private Stream<Node<FileT>> postorder() {
+      return Stream.concat(children.values().stream().flatMap(Node::postorder), Stream.of(this));
+    }
 
-      // trie fields
-      @Nullable private final Node<FileT> parent;
-      private final Map<String, Node<FileT>> children;
+    private FileT file() {
+      return file;
+    }
 
-      private Node(FileT file, Node<FileT> parent) {
-        this.file = requireNonNull(file);
-        this.parent = parent;
-        this.children = new LinkedHashMap<>();
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
       }
-
-      private Stream<Node<FileT>> postorder() {
-        return Stream.concat(children.values().stream().flatMap(Node::postorder), Stream.of(this));
-      }
-
-      private FileT file() {
-        return file;
-      }
-
-      @Override
-      public boolean equals(Object o) {
-        if (this == o) {
-          return true;
-        }
-        if (o == null) {
-          return false;
-        }
-        if (o instanceof Node<?> node) {
-          return Objects.equals(file, node.file) && Objects.equals(children, node.children);
-        }
+      if (o == null) {
         return false;
       }
-
-      @Override
-      public int hashCode() {
-        return Objects.hash(file, children);
+      if (o instanceof Node<?> node) {
+        return Objects.equals(file, node.file) && Objects.equals(children, node.children);
       }
+      return false;
+    }
 
-      @Override
-      public String toString() {
-        return "Node[file=%s, children=%s]".formatted(file, children);
-      }
+    @Override
+    public int hashCode() {
+      return Objects.hash(file, children);
+    }
+
+    @Override
+    public String toString() {
+      return "Node[file=%s, children=%s]".formatted(file, children);
     }
   }
 
   /**
-   * {@link FileTree.Builder} implementation for {@link TrieBasedFileTree}.
+   * {@link FileTree.Builder} implementation for {@link TrieLikeFileTree}.
    *
    * @param <FileT> type of file stored in the built file tree
    */
   static final class Builder<FileT extends File> implements FileTree.Builder<FileT> {
-    private final Trie<FileT> trie;
+    private final Node<FileT> root;
     private final DirectoryFiller<FileT> directoryFiller;
 
     Builder(FileT root, DirectoryFiller<FileT> directoryFiller) {
-      this.trie = new Trie<>(new Trie.Node<>(root, null));
+      this.root = new Node<>(root, null);
       this.directoryFiller = requireNonNull(directoryFiller);
     }
 
     @Override
     public Builder<FileT> insert(FileT file) {
       log.debug("insert({})", file);
-      trie.insert(file, directoryFiller);
+      root.insert(file, directoryFiller);
       return this;
     }
 
     @Override
-    public TrieBasedFileTree<FileT> build() {
-      return new TrieBasedFileTree<>(trie);
+    public TrieLikeFileTree<FileT> build() {
+      return new TrieLikeFileTree<>(root);
     }
   }
 }

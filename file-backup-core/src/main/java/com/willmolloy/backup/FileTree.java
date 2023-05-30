@@ -60,7 +60,7 @@ public interface FileTree<FileT extends File> {
    */
   static <FileT extends File> Builder<FileT> builder(
       FileT root, DirectoryFiller<FileT> directoryFiller) {
-    return new TrieBasedFileTree.Builder<>(root, directoryFiller);
+    return new TrieLikeFileTree.Builder<>(root, directoryFiller);
   }
 
   /**
