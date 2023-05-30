@@ -39,8 +39,12 @@ public final class BackupRunner {
     try (ExecutorService threadPool =
         Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("delete-worker-", 1).factory())) {
+      // TODO push down into Backup class - for S3, delete before update is a waste
       Predicate<DestFileT> canDelete =
           destFile -> {
+            if (destFileTree.isRoot(destFile)){
+              return false;
+            }
             Optional<SourceFileT> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
             // either file not on source -> delete
             // OR files different -> will update
@@ -67,6 +71,9 @@ public final class BackupRunner {
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("put-worker-", 1).factory())) {
       Predicate<SourceFileT> canPut =
           sourceFile -> {
+            if (sourceFileTree.isRoot(sourceFile)){
+              return false;
+            }
             Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
             // either file not on dest -> create
             // OR files different -> update

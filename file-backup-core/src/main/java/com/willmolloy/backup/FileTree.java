@@ -16,6 +16,8 @@ public interface FileTree<FileT extends File> {
   /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
 
+  boolean isRoot(FileT file);
+
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();
 

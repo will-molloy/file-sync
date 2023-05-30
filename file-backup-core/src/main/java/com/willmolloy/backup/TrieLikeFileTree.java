@@ -37,6 +37,11 @@ final class TrieLikeFileTree<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
+  public boolean isRoot(FileT file) {
+    return file == root.file;
+  }
+
+  @Override
   public Stream<FileT> postorder() {
     return root.postorder().map(Node::file);
   }
