@@ -16,11 +16,6 @@ public interface FileTree<FileT extends File> {
   /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
 
-  /** Lookup test by {@link File#relativePath()}. */
-  default boolean contains(Path relativePath) {
-    return get(relativePath).isPresent();
-  }
-
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();
 

@@ -35,12 +35,15 @@ public final class BackupRunner {
     FileTree<SourceFileT> sourceFileTree = backup.source().fileTree();
     FileTree<DestFileT> destFileTree = backup.destination().fileTree();
 
+    log.info("Deleting files on destination that aren't on source");
     try (ExecutorService threadPool =
-        Executors.newFixedThreadPool(10, Thread.ofVirtual().name("worker-", 1).factory())) {
-
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("delete-worker-", 1).factory())) {
       Predicate<DestFileT> canDelete =
           destFile -> {
             Optional<SourceFileT> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
+            // either file not on source -> delete
+            // OR files different -> will update
             return maybeSourceFile.isEmpty() || !maybeSourceFile.get().same(destFile);
           };
       destFileTree
@@ -52,18 +55,21 @@ public final class BackupRunner {
               destFile ->
                   threadPool.submit(
                       () -> {
+                        log.debug("delete({})", destFile);
                         if (!backup.delete(destFile)) {
                           allSuccess.set(false);
                         }
                       }));
     }
 
+    log.info("Copying files from source that aren't on destination");
     try (ExecutorService threadPool =
-        Executors.newFixedThreadPool(10, Thread.ofVirtual().name("worker-", 1).factory())) {
-
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("put-worker-", 1).factory())) {
       Predicate<SourceFileT> canPut =
           sourceFile -> {
             Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
+            // either file not on dest -> create
+            // OR files different -> update
             return maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get());
           };
       sourceFileTree

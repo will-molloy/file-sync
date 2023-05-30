@@ -36,6 +36,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
     Path sourcePath = sourceFile.fullPath();
     Path destPath = destination.root().resolve(sourceFile.relativePath());
     try {
+      // TODO use ancestors to copy parent dirs to ensure last-modified (& other attributes) synced?
       return createParentDirs(sourcePath, destPath) && doCopy(sourcePath, destPath);
     } catch (Exception e) {
       log.error("Error copying: [{}] -> [{}]", sourcePath, destPath, e);

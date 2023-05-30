@@ -37,8 +37,8 @@ class LocalBackupIntegrationTest {
   @BeforeEach
   void setUp() throws IOException {
     fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
-    sourceRoot = createDirectory(fs.getPath("Documents"));
-    destRoot = createDirectory(fs.getPath("Backup"));
+    sourceRoot = createDirectories(fs.getPath("Documents"));
+    destRoot = createDirectories(fs.getPath("Backup"));
     sut = new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
   }
 
@@ -53,7 +53,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(sourceRoot.resolve("A.txt"), "source text");
     // empty directory
-    createDirectory(sourceRoot.resolve("B/C"));
+    createDirectories(sourceRoot.resolve("B/C"));
     // directory with multiple files
     createFile(sourceRoot.resolve("D/E.mp4"), "source video");
     createFile(sourceRoot.resolve("D/F.mp3"), "source audio");
@@ -93,7 +93,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(sourceRoot.resolve("A.txt"), "source text");
     // empty directory
-    createDirectory(sourceRoot.resolve("B/C"));
+    createDirectories(sourceRoot.resolve("B/C"));
     // directory with multiple files
     createFile(sourceRoot.resolve("D/E.mp4"), "source video");
     createFile(sourceRoot.resolve("D/F.mp3"), "source audio");
@@ -103,7 +103,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(destRoot.resolve("A.txt"), "dest text");
     // empty directory
-    createDirectory(destRoot.resolve("B/C"));
+    createDirectories(destRoot.resolve("B/C"));
     // directory with multiple files
     createFile(destRoot.resolve("D/E.mp4"), "dest video");
     createFile(destRoot.resolve("D/F.mp3"), "dest audio");
@@ -142,7 +142,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(destRoot.resolve("A.txt"), "dest text");
     // empty directory
-    createDirectory(destRoot.resolve("B/C"));
+    createDirectories(destRoot.resolve("B/C"));
     // directory with multiple files
     createFile(destRoot.resolve("D/E.mp4"), "dest video");
     createFile(destRoot.resolve("D/F.mp3"), "dest audio");
@@ -186,7 +186,6 @@ class LocalBackupIntegrationTest {
   void whenNonEmptyDirectoryOnSourceAndFileOnDestination_overwritesFileOnDestination()
       throws IOException {
     // Given
-    // TODO bug where 2nd worker tries delete after first worker copied...
     createFile(sourceRoot.resolve("A/B/C/D/E/F.txt"), "Hello");
     createFile(sourceRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
     createFile(destRoot.resolve("A/B/C"), "hello!");
@@ -218,8 +217,8 @@ class LocalBackupIntegrationTest {
   @Test
   void whenChildDirectoryOnlyOnSource_createsDirectoriesOnDestination() throws IOException {
     // Given
-    createDirectory(sourceRoot.resolve("A/B/C/X/Y/Z"));
-    createDirectory(destRoot.resolve("A/B/C"));
+    createDirectories(sourceRoot.resolve("A/B/C/X/Y/Z"));
+    createDirectories(destRoot.resolve("A/B/C"));
 
     // When
     boolean result = BackupRunner.run(sut);
@@ -243,8 +242,8 @@ class LocalBackupIntegrationTest {
   @Test
   void whenChildDirectoryOnlyOnDestination_deletesDirectoriesOnDestination() throws IOException {
     // Given
-    createDirectory(sourceRoot.resolve("A/B/C"));
-    createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
+    createDirectories(sourceRoot.resolve("A/B/C"));
+    createDirectories(destRoot.resolve("A/B/C/X/Y/Z"));
 
     // When
     boolean result = BackupRunner.run(sut);
@@ -265,12 +264,20 @@ class LocalBackupIntegrationTest {
     }
     Files.createFile(path);
     Files.writeString(path, contents);
-    Files.setLastModifiedTime(path, FileTime.from(lastModified));
+    setLastModified(path);
   }
 
-  private Path createDirectory(Path path) throws IOException {
+  private Path createDirectories(Path path) throws IOException {
     Files.createDirectories(path);
-    Files.setLastModifiedTime(path, FileTime.from(lastModified));
+    setLastModified(path);
     return path;
+  }
+
+  private void setLastModified(Path path) throws IOException {
+    Path parent = path.getParent();
+    if (parent != null) {
+      setLastModified(parent);
+    }
+    Files.setLastModifiedTime(path, FileTime.from(lastModified));
   }
 }
