@@ -30,4 +30,9 @@ public interface Backup<SourceFileT extends File, DestFileT extends File> {
    */
   // TODO accept FileTree<DestFileT> (i.e. subtree) here? then don't need caching
   boolean delete(DestFileT destFile);
+
+  default boolean syncAttributes(SourceFileT sourceFile, DestFileT destFile) {
+    // no-op
+    return true;
+  }
 }

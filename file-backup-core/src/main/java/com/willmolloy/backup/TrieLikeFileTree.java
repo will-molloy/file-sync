@@ -16,7 +16,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * {@link FileTree} implemented like a trie over {@link Path} {@linkplain Path#iterator name components}.
+ * {@link FileTree} implemented like a trie over {@link Path} {@linkplain Path#iterator name
+ * components}.
  *
  * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>

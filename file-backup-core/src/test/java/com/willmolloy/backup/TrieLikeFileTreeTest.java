@@ -5,7 +5,6 @@ import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
-
 import org.junit.jupiter.api.Test;
 
 /**

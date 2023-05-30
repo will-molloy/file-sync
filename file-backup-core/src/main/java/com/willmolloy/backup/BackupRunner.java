@@ -35,14 +35,15 @@ public final class BackupRunner {
     FileTree<SourceFileT> sourceFileTree = backup.source().fileTree();
     FileTree<DestFileT> destFileTree = backup.destination().fileTree();
 
+    // Doing delete first; otherwise there are scenarios where put can fail, e.g. non-empty dir
+    // overwriting a file
     log.info("Deleting files on destination that aren't on source");
-    try (ExecutorService threadPool =
-        Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("delete-worker-", 1).factory())) {
+    try (ExecutorService threadPool = threadPool("delete")) {
       // TODO push down into Backup class - for S3, delete before update is a waste
       Predicate<DestFileT> canDelete =
           destFile -> {
-            if (destFileTree.isRoot(destFile)){
+        // don't delete the root, it was created manually outside this app; if it's delete subsequent runs will fail
+            if (destFileTree.isRoot(destFile)) {
               return false;
             }
             Optional<SourceFileT> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
@@ -59,6 +60,7 @@ public final class BackupRunner {
               destFile ->
                   threadPool.submit(
                       () -> {
+                        // TODO make the logs here info and the ones below debug?
                         log.debug("delete({})", destFile);
                         if (!backup.delete(destFile)) {
                           allSuccess.set(false);
@@ -67,11 +69,10 @@ public final class BackupRunner {
     }
 
     log.info("Copying files from source that aren't on destination");
-    try (ExecutorService threadPool =
-        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("put-worker-", 1).factory())) {
+    try (ExecutorService threadPool = threadPool("put")) {
       Predicate<SourceFileT> canPut =
           sourceFile -> {
-            if (sourceFileTree.isRoot(sourceFile)){
+            if (sourceFileTree.isRoot(sourceFile)) {
               return false;
             }
             Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
@@ -94,8 +95,36 @@ public final class BackupRunner {
                       }));
     }
 
+    // need another pass to sync the attributes; even though they're copied on put, parent directory
+    // last-modified changes when children are put; this single pass is preferable to
+    // updating parents on each put (where it'd happen for each child put)
+    log.info("Syncing attributes");
+    try (ExecutorService threadPool = threadPool("attribute-sync")) {
+      destFileTree
+          .postorder()
+          // TODO filter; only need on files that were put right... well their parents...
+          .forEach(
+              destFile ->
+                  sourceFileTree
+                      .get(destFile.relativePath())
+                      .ifPresent(
+                          sourceFile ->
+                              threadPool.submit(
+                                  () -> {
+                                    log.debug("syncAttributes({})", sourceFile);
+                                    if (!backup.syncAttributes(sourceFile, destFile)) {
+                                      allSuccess.set(false);
+                                    }
+                                  })));
+    }
+
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));
     return allSuccess.get();
+  }
+
+  private static ExecutorService threadPool(String name) {
+    return Executors.newThreadPerTaskExecutor(
+        Thread.ofVirtual().name("%s-worker-".formatted(name), 1).factory());
   }
 
   private BackupRunner() {}
