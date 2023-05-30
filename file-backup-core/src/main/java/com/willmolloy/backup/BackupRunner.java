@@ -42,7 +42,8 @@ public final class BackupRunner {
       // TODO push down into Backup class - for S3, delete before update is a waste
       Predicate<DestFileT> canDelete =
           destFile -> {
-        // don't delete the root, it was created manually outside this app; if it's delete subsequent runs will fail
+            // don't delete the root, it was created manually outside this app; if it's deleted
+            // subsequent runs will fail
             if (destFileTree.isRoot(destFile)) {
               return false;
             }
@@ -93,29 +94,6 @@ public final class BackupRunner {
                           allSuccess.set(false);
                         }
                       }));
-    }
-
-    // need another pass to sync the attributes; even though they're copied on put, parent directory
-    // last-modified changes when children are put; this single pass is preferable to
-    // updating parents on each put (where it'd happen for each child put)
-    log.info("Syncing attributes");
-    try (ExecutorService threadPool = threadPool("attribute-sync")) {
-      destFileTree
-          .postorder()
-          // TODO filter; only need on files that were put right... well their parents...
-          .forEach(
-              destFile ->
-                  sourceFileTree
-                      .get(destFile.relativePath())
-                      .ifPresent(
-                          sourceFile ->
-                              threadPool.submit(
-                                  () -> {
-                                    log.debug("syncAttributes({})", sourceFile);
-                                    if (!backup.syncAttributes(sourceFile, destFile)) {
-                                      allSuccess.set(false);
-                                    }
-                                  })));
     }
 
     log.info("Finished: {} in: {}", backup, elapsed(runStartNanos));

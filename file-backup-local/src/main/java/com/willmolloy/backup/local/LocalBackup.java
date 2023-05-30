@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -141,17 +140,5 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       return false;
     }
     return allDeleted.get();
-  }
-
-  @Override
-  public boolean syncAttributes(LocalFile sourceFile, LocalFile destFile) {
-    try {
-      Path destPath = destFile.fullPath();
-      Files.setLastModifiedTime(destPath, FileTime.fromMillis(sourceFile.lastModified()));
-      return true;
-    } catch (Exception e) {
-      log.error("Error setting last-modified time: [{}]", destFile, e);
-      return false;
-    }
   }
 }
