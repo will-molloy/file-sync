@@ -49,7 +49,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   }
 
   @Override
-  protected boolean put(LocalFile sourceFile) {
+  public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     String destinationUri = s3Uri(sourceFile);
     try {
@@ -86,7 +86,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   }
 
   @Override
-  protected boolean delete(S3File destFile) {
+  public boolean delete(S3File destFile) {
     try {
       if (destFile.isDirectory()) {
         deleteFolder(destFile);

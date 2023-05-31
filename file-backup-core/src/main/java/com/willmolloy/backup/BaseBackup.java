@@ -1,25 +1,16 @@
 package com.willmolloy.backup;
 
-import static com.willmolloy.backup.util.TimeHelper.elapsed;
 import static java.util.Objects.requireNonNull;
 
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 /**
- * Base backup algorithm.
+ * Base {@link Backup} class with common methods implemented for convenience.
  *
  * @param <SourceFileT> source file type
  * @param <DestFileT> destination file type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public abstract class BaseBackup<SourceFileT extends File, DestFileT extends File> {
-
-  private static final Logger log = LogManager.getLogger();
+public abstract class BaseBackup<SourceFileT extends File, DestFileT extends File>
+    implements Backup<SourceFileT, DestFileT> {
 
   private final Location<SourceFileT> source;
   private final Location<DestFileT> destination;
@@ -29,102 +20,14 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     this.destination = requireNonNull(destination);
   }
 
-  /** Runs the backup. */
-  public final boolean run() {
-    log.info("Running: {}", this);
-    long runStartNanos = System.nanoTime();
-    AtomicBoolean allSuccess = new AtomicBoolean(true);
-
-    FileTree<SourceFileT> sourceFileTree = source.fileTree();
-    FileTree<DestFileT> destFileTree = destination.fileTree();
-
-    // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
-    // overwriting a file
-    try (ExecutorService threadPool = threadPool("delete")) {
-      destFileTree
-          .postorder()
-          .filter(this::needDelete)
-          // skip delete if covered by ancestor, since children are deleted too
-          .filter(destFile -> destFileTree.ancestors(destFile).noneMatch(this::needDelete))
-          .forEach(
-              destFile ->
-                  threadPool.submit(
-                      () -> {
-                        // TODO make the logs here info and the ones below debug?
-                        log.debug("delete({})", destFile);
-                        if (!delete(destFile)) {
-                          allSuccess.set(false);
-                        }
-                      }));
-    }
-
-    try (ExecutorService threadPool = threadPool("put")) {
-      sourceFileTree
-          // only need to put leaves, parents are created as necessary
-          .leaves()
-          .filter(this::needPut)
-          .forEach(
-              sourceFile ->
-                  threadPool.submit(
-                      () -> {
-                        log.debug("put({})", sourceFile);
-                        if (!put(sourceFile)) {
-                          allSuccess.set(false);
-                        }
-                      }));
-    }
-
-    log.info("Finished: {} in: {}", this, elapsed(runStartNanos));
-    return allSuccess.get();
+  @Override
+  public final Location<SourceFileT> source() {
+    return source;
   }
 
-  private static ExecutorService threadPool(String name) {
-    return Executors.newThreadPerTaskExecutor(
-        Thread.ofVirtual().name("%s-worker-".formatted(name), 1).factory());
-  }
-
-  /**
-   * Creates or updates the corresponding file on destination.
-   *
-   * @return {@code true} if create/update was successful
-   * @implSpec Creates parent directories when necessary
-   */
-  protected abstract boolean put(SourceFileT sourceFile);
-
-  /**
-   * Deletes the file on destination.
-   *
-   * @return {@code true} if delete was successful
-   * @implSpec Deletes child directories/files when necessary
-   */
-  protected abstract boolean delete(DestFileT destFile);
-
-  /** {@code true} if {@link #put} is necessary. */
-  protected boolean needPut(SourceFileT sourceFile) {
-    FileTree<SourceFileT> sourceFileTree = source.fileTree();
-    if (sourceFileTree.isRoot(sourceFile)) {
-      return false;
-    }
-
-    FileTree<DestFileT> destFileTree = destination.fileTree();
-    Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
-    // either file not on dest -> create
-    // OR files different -> update
-    return maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get());
-  }
-
-  /** {@code true} if {@link #delete} is necessary. */
-  protected boolean needDelete(DestFileT destFile) {
-    FileTree<DestFileT> destFileTree = destination.fileTree();
-    // don't delete the root, it was created manually outside this app; if it's deleted subsequent
-    // runs will fail
-    if (destFileTree.isRoot(destFile)) {
-      return false;
-    }
-
-    FileTree<SourceFileT> sourceFileTree = source.fileTree();
-    // file not on source -> delete
-    return !sourceFileTree.contains(destFile.relativePath());
+  @Override
+  public final Location<DestFileT> destination() {
+    return destination;
   }
 
   @Override

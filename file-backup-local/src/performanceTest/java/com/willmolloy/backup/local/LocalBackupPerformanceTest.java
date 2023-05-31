@@ -4,6 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.github.javafaker.Faker;
+import com.willmolloy.backup.BackupRunner;
 import com.willmolloy.backup.util.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
@@ -82,7 +83,7 @@ class LocalBackupPerformanceTest {
     long start = System.nanoTime();
     LocalBackup localBackup =
         new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
-    boolean result = localBackup.run();
+    boolean result = BackupRunner.run(localBackup);
     Duration duration = Duration.ofNanos(System.nanoTime() - start);
 
     // Then

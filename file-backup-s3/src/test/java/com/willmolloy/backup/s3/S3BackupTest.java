@@ -81,6 +81,16 @@ class S3BackupTest {
   }
 
   @Test
+  void source_returnsSource() {
+    assertThat(sut.source()).isSameInstanceAs(source);
+  }
+
+  @Test
+  void destination_returnsDestination() {
+    assertThat(sut.destination()).isSameInstanceAs(destination);
+  }
+
+  @Test
   void put_whenFile_makesPutObjectRequest() throws IOException {
     // Given
     LocalFile sourceFile = createLocalFile(fs.getPath("A/B/C"));

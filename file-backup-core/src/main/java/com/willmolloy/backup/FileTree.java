@@ -16,7 +16,7 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
   /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
 
-  /** Lookup test by {@link File#relativePath()}. */
+  /** Lookup test {@link File#relativePath()}. */
   default boolean contains(Path relativePath) {
     return get(relativePath).isPresent();
   }

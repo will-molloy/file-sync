@@ -22,17 +22,15 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final LocalStorage source;
   private final LocalStorage destination;
 
   LocalBackup(LocalStorage source, LocalStorage destination) {
     super(source, destination);
-    this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
   }
 
   @Override
-  protected boolean put(LocalFile sourceFile) {
+  public boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     Path destPath = destination.root().resolve(sourceFile.relativePath());
     try {
@@ -58,7 +56,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   }
 
   @Override
-  protected boolean delete(LocalFile destFile) {
+  public boolean delete(LocalFile destFile) {
     AtomicBoolean allDeleted = new AtomicBoolean(true);
     try {
       destination
@@ -86,15 +84,15 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   }
 
   @Override
-  protected boolean needDelete(LocalFile destFile) {
-    FileTree<LocalFile> destFileTree = destination.fileTree();
+  public boolean needDelete(LocalFile destFile) {
+    FileTree<LocalFile> destFileTree = destination().fileTree();
     // don't delete the root, it was created manually outside this app; if it's deleted subsequent
     // runs will fail
     if (destFileTree.isRoot(destFile)) {
       return false;
     }
 
-    FileTree<LocalFile> sourceFileTree = source.fileTree();
+    FileTree<LocalFile> sourceFileTree = source().fileTree();
     Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
     // either file not on source -> delete
     // OR files different -> need to delete before update, otherwise there are scenarios where it
