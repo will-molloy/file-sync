@@ -8,17 +8,17 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /**
- * TrieLikeFileTreeTest.
+ * FileTreeNodeTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class TrieLikeFileTreeTest {
+class FileTreeNodeTest {
 
   @Test
   void get_whenNodeInTree_present() {
     File expected = file("A/B");
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(expected)
             .insert(file("A/B/C"))
@@ -29,8 +29,8 @@ class TrieLikeFileTreeTest {
   @Test
   void get_whenMissingDirFilledIn_present() {
     File expected = file("A/B");
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
@@ -40,8 +40,8 @@ class TrieLikeFileTreeTest {
   @Test
   void get_whenNodeNotInTree_empty() {
     File notExpected = file("A/B/C/D");
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
@@ -51,8 +51,8 @@ class TrieLikeFileTreeTest {
   @Test
   void postorder_returnsNodesIncludingMissingDirsInPostorder() {
     // Given
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B"))
             .insert(file("A/B/C"))
@@ -81,8 +81,8 @@ class TrieLikeFileTreeTest {
   @Test
   void leaves_returnsLeavesLeftToRight() {
     // Given
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B"))
             .insert(file("A/B/C"))
@@ -101,8 +101,8 @@ class TrieLikeFileTreeTest {
   @Test
   void ancestors_returnsAncestorsIncludingMissingDirs() {
     // Given
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
@@ -119,8 +119,8 @@ class TrieLikeFileTreeTest {
   @Test
   void ancestors_whenNodeNotInTree_empty() {
     // Given
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
@@ -135,8 +135,8 @@ class TrieLikeFileTreeTest {
   @Test
   void subtree_returnsSubtreeRootedAtGivenNodeIncludingMissingDirs() {
     // Given
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
@@ -151,7 +151,7 @@ class TrieLikeFileTreeTest {
     assertThat(subtree)
         .isEqualTo(
             // null directoryFiller, otherwise it isn't tested!
-            new TrieLikeFileTree.Builder<>(directory("A/B/C"), path -> null)
+            new FileTreeNode.Builder<>(directory("A/B/C"), path -> null)
                 .insert(directory("A/B/C/D"))
                 .insert(file("A/B/C/D/E"))
                 .insert(file("A/B/C/D/F"))
@@ -172,8 +172,8 @@ class TrieLikeFileTreeTest {
   @Test
   void subtree_whenFileNotInTree_throws() {
     // Given
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B/C"))
             .insert(file("A/B/C/D/E"))
@@ -188,8 +188,8 @@ class TrieLikeFileTreeTest {
 
   @Test
   void fileCount_countsFiles() {
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B"))
             .insert(file("A/B/C"))
@@ -203,8 +203,8 @@ class TrieLikeFileTreeTest {
 
   @Test
   void totalSize_sumsFileSize() {
-    TrieLikeFileTree<File> fileTree =
-        new TrieLikeFileTree.Builder<>(directory(""), directoryFiller())
+    FileTreeNode<File> fileTree =
+        new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
             .insert(directory("A/B"))
             .insert(file("A/B/C"))
@@ -225,7 +225,7 @@ class TrieLikeFileTreeTest {
   }
 
   private static DirectoryFiller<File> directoryFiller() {
-    return TrieLikeFileTreeTest::directory;
+    return FileTreeNodeTest::directory;
   }
 
   private record TestFile(String uri, Path relativePath, long size, boolean isDirectory)
