@@ -50,16 +50,6 @@ class LocalBackupTest {
   }
 
   @Test
-  void source_returnsSource() {
-    assertThat(sut.source()).isSameInstanceAs(source);
-  }
-
-  @Test
-  void destination_returnsDestination() {
-    assertThat(sut.destination()).isSameInstanceAs(destination);
-  }
-
-  @Test
   void put_copiesFileFromSourceToDestination() throws IOException {
     // Given
     Path relativePath = fs.getPath("A");
