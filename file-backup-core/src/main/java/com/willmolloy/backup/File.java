@@ -32,6 +32,8 @@ public interface File {
    * @apiNote Used to determine if a file requires updating.
    * @implNote The default implementation just looks at file size.
    */
+  // TODO move this into Backup interface 'needUpdate'?
+  //  Then more control over what is source/dest file
   default boolean same(File other) {
     // for s3; considered last-modified, but it's really object-creation time.
     // also considered e-tag, but it's calculated differently for large (> 16MB) files.

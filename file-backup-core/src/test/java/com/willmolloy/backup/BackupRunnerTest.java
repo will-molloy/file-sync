@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,6 +27,7 @@ class BackupRunnerTest {
   @Mock private Location<File> mockSource;
   @Mock private Location<File> mockDest;
   @Mock private Backup<File, File> mockBackup;
+  @InjectMocks private BackupRunner<File, File> sut;
 
   @BeforeEach
   void setUp() {
@@ -50,7 +52,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -65,7 +67,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -79,7 +81,7 @@ class BackupRunnerTest {
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -94,7 +96,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -108,7 +110,7 @@ class BackupRunnerTest {
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -123,7 +125,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isFalse();
@@ -138,7 +140,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(false);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isFalse();
@@ -153,7 +155,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(false);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isFalse();
@@ -169,7 +171,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -186,7 +188,7 @@ class BackupRunnerTest {
     when(mockBackup.put(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -203,7 +205,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -220,7 +222,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -237,7 +239,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -256,7 +258,7 @@ class BackupRunnerTest {
     when(mockBackup.delete(any())).thenReturn(true);
 
     // When
-    boolean result = BackupRunner.run(mockBackup);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();

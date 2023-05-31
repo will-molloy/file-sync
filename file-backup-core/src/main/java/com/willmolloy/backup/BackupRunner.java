@@ -1,6 +1,7 @@
 package com.willmolloy.backup;
 
 import static com.willmolloy.backup.util.TimeHelper.elapsed;
+import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.concurrent.ExecutorService;
@@ -10,22 +11,24 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Runs a {@link Backup}.
+ * Contains the core algorithm for running a {@link Backup}.
  *
- * @see #run(Backup)
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings(
     value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
     justification = "Relying on default ExecutorService.close to wait for futures")
-public final class BackupRunner {
-  // highly coupled to Backup, pretty much an abstract class; used composition for testability
-
+final class BackupRunner<SourceFileT extends File, DestFileT extends File> {
   private static final Logger log = LogManager.getLogger();
 
-  /** Runs the backup. */
-  public static <SourceFileT extends File, DestFileT extends File> boolean run(
-      Backup<SourceFileT, DestFileT> backup) {
+  // highly coupled to Backup; could've been abstract class but prefer composition for testability
+  private final Backup<SourceFileT, DestFileT> backup;
+
+  BackupRunner(Backup<SourceFileT, DestFileT> backup) {
+    this.backup = requireNonNull(backup);
+  }
+
+  boolean run() {
     log.info("Running: {}", backup);
     long runStartNanos = System.nanoTime();
 
@@ -78,6 +81,4 @@ public final class BackupRunner {
     return Executors.newThreadPerTaskExecutor(
         Thread.ofVirtual().name("%s-worker-".formatted(name), 1).factory());
   }
-
-  private BackupRunner() {}
 }

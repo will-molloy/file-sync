@@ -5,7 +5,6 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.BackupRunner;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -61,7 +60,7 @@ class LocalBackupIntegrationTest {
     createFile(sourceRoot.resolve("X/Y/Z.pdf"), "source pdf");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -111,7 +110,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("X/Y/Z.pdf"), "dest pdf");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -150,7 +149,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("X/Y/Z.pdf"), "dest pdf");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -170,7 +169,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -191,7 +190,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("A/B/C"), "hello!");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -221,7 +220,7 @@ class LocalBackupIntegrationTest {
     createDirectories(destRoot.resolve("A/B/C"));
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -246,7 +245,7 @@ class LocalBackupIntegrationTest {
     createDirectories(destRoot.resolve("A/B/C/X/Y/Z"));
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();

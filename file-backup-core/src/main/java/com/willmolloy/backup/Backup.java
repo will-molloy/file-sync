@@ -59,4 +59,9 @@ public interface Backup<SourceFileT extends File, DestFileT extends File> {
     // file not on source -> delete
     return !sourceFileTree.contains(destFile.relativePath());
   }
+
+  /** Runs the backup. */
+  default boolean run() {
+    return new BackupRunner<>(this).run();
+  }
 }
