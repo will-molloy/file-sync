@@ -11,10 +11,15 @@ import java.util.stream.Stream;
  * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface FileTree<FileT extends File> {
+public sealed interface FileTree<FileT extends File> permits FileTreeNode {
 
   /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
+
+  /** Lookup test {@link File#relativePath()}. */
+  default boolean contains(Path relativePath) {
+    return get(relativePath).isPresent();
+  }
 
   boolean isRoot(FileT file);
 

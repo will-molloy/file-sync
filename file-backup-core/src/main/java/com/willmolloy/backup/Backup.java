@@ -1,5 +1,7 @@
 package com.willmolloy.backup;
 
+import java.util.Optional;
+
 /**
  * Backup type definition.
  *
@@ -26,8 +28,35 @@ public interface Backup<SourceFileT extends File, DestFileT extends File> {
    * Deletes the file on destination.
    *
    * @return {@code true} if delete was successful
-   * @implSpec Deletes children directories/files when necessary
+   * @implSpec Deletes child directories/files when necessary
    */
-  // TODO accept FileTree<DestFileT> (i.e. subtree) here? then don't need caching
   boolean delete(DestFileT destFile);
+
+  /** {@code true} if {@link #put} is necessary. */
+  default boolean needPut(SourceFileT sourceFile) {
+    FileTree<SourceFileT> sourceFileTree = source().fileTree();
+    if (sourceFileTree.isRoot(sourceFile)) {
+      return false;
+    }
+
+    FileTree<DestFileT> destFileTree = destination().fileTree();
+    Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
+    // either file not on dest -> create
+    // OR files different -> update
+    return maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get());
+  }
+
+  /** {@code true} if {@link #delete} is necessary. */
+  default boolean needDelete(DestFileT destFile) {
+    FileTree<DestFileT> destFileTree = destination().fileTree();
+    // don't delete the root, it was created manually outside this app; if it's deleted subsequent
+    // runs will fail
+    if (destFileTree.isRoot(destFile)) {
+      return false;
+    }
+
+    FileTree<SourceFileT> sourceFileTree = source().fileTree();
+    // file not on source -> delete
+    return !sourceFileTree.contains(destFile.relativePath());
+  }
 }

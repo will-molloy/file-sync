@@ -3,11 +3,9 @@ package com.willmolloy.backup;
 import static com.willmolloy.backup.util.TimeHelper.elapsed;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,6 +19,7 @@ import org.apache.logging.log4j.Logger;
     value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
     justification = "Relying on default ExecutorService.close to wait for futures")
 public final class BackupRunner {
+  // highly coupled to Backup, pretty much an abstract class; used composition for testability
 
   private static final Logger log = LogManager.getLogger();
 
@@ -35,28 +34,14 @@ public final class BackupRunner {
     FileTree<SourceFileT> sourceFileTree = backup.source().fileTree();
     FileTree<DestFileT> destFileTree = backup.destination().fileTree();
 
-    // Doing delete first; otherwise there are scenarios where put can fail, e.g. non-empty dir
+    // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
     // overwriting a file
-    log.info("Deleting files on destination that aren't on source");
     try (ExecutorService threadPool = threadPool("delete")) {
-      // TODO push down into Backup class - for S3, delete before update is a waste
-      Predicate<DestFileT> canDelete =
-          destFile -> {
-            // don't delete the root, it was created manually outside this app; if it's deleted
-            // subsequent runs will fail
-            if (destFileTree.isRoot(destFile)) {
-              return false;
-            }
-            Optional<SourceFileT> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
-            // either file not on source -> delete
-            // OR files different -> will update
-            return maybeSourceFile.isEmpty() || !maybeSourceFile.get().same(destFile);
-          };
       destFileTree
           .postorder()
-          .filter(canDelete)
-          // skip delete if covered by ancestor
-          .filter(destFile -> destFileTree.ancestors(destFile).noneMatch(canDelete))
+          .filter(backup::needDelete)
+          // skip delete if covered by ancestor, since children are deleted too
+          .filter(destFile -> destFileTree.ancestors(destFile).noneMatch(backup::needDelete))
           .forEach(
               destFile ->
                   threadPool.submit(
@@ -69,22 +54,11 @@ public final class BackupRunner {
                       }));
     }
 
-    log.info("Copying files from source that aren't on destination");
     try (ExecutorService threadPool = threadPool("put")) {
-      Predicate<SourceFileT> canPut =
-          sourceFile -> {
-            if (sourceFileTree.isRoot(sourceFile)) {
-              return false;
-            }
-            Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
-            // either file not on dest -> create
-            // OR files different -> update
-            return maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get());
-          };
       sourceFileTree
-          // only need to put leaves
+          // only need to put leaves, parents are created as necessary
           .leaves()
-          .filter(canPut)
+          .filter(backup::needPut)
           .forEach(
               sourceFile ->
                   threadPool.submit(

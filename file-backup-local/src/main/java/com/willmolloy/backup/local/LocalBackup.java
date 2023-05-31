@@ -3,10 +3,12 @@ package com.willmolloy.backup.local;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
+import com.willmolloy.backup.FileTree;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,5 +81,22 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       return false;
     }
     return allDeleted.get();
+  }
+
+  @Override
+  public boolean needDelete(LocalFile destFile) {
+    FileTree<LocalFile> destFileTree = destination().fileTree();
+    // don't delete the root, it was created manually outside this app; if it's deleted subsequent
+    // runs will fail
+    if (destFileTree.isRoot(destFile)) {
+      return false;
+    }
+
+    FileTree<LocalFile> sourceFileTree = source().fileTree();
+    Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
+    // either file not on source -> delete
+    // OR files different -> need to delete before update, otherwise there are scenarios where it
+    // can fail, e.g. non-empty dir overwriting a file
+    return maybeSourceFile.isEmpty() || !maybeSourceFile.get().same(destFile);
   }
 }
