@@ -104,7 +104,6 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   /** {@code true} if {@link #put} is necessary. */
   protected boolean needPut(SourceFileT sourceFile) {
-    log.debug("needPut({})", sourceFile);
     FileTree<DestFileT> destFileTree = destination.fileTree();
     Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
     // either file not on dest -> create
@@ -114,7 +113,6 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   /** {@code true} if {@link #delete} is necessary. */
   protected boolean needDelete(DestFileT destFile) {
-    log.debug("needDelete({})", destFile);
     FileTree<SourceFileT> sourceFileTree = source.fileTree();
     // file not on source -> delete
     return !sourceFileTree.contains(destFile.relativePath());
