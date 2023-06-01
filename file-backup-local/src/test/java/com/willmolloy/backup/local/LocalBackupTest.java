@@ -13,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -171,67 +172,6 @@ class LocalBackupTest {
   }
 
   @Test
-  void put_replacesNonEmptyDirectoryOnDestinationWithFileOnSource() throws IOException {
-    // Given
-    Path relativePath = fs.getPath("A/B/C");
-    LocalFile sourceFile = createFile(source, relativePath, "source");
-    createFile(destination, fs.getPath("A/B/C/D/E/F"), "dest");
-    createFile(destination, fs.getPath("A/B/C/X/Y/Z"), "dest2");
-
-    // When
-    boolean result = sut.put(sourceFile);
-
-    // Then
-    assertThat(result).isTrue();
-    Path sourcePath = sourceRoot.resolve(relativePath);
-    Path destPath = destRoot.resolve(relativePath);
-    assertThatFileSystem().containsExactly(sourcePath, destPath);
-    assertThat(Files.readString(sourcePath)).isEqualTo("source");
-    assertThat(Files.readString(destPath)).isEqualTo("source");
-  }
-
-  @Test
-  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_FileAlreadyExistsException()
-      throws IOException {
-    // Given
-    Path relativePath = fs.getPath("A/B/C/D");
-    LocalFile sourceFile = createFile(source, relativePath, "source");
-    createFile(destination, fs.getPath("A/B/C"), "dest");
-
-    // When
-    boolean result = sut.put(sourceFile);
-
-    // Then
-    assertThat(result).isTrue();
-    Path sourcePath = sourceRoot.resolve(relativePath);
-    Path destPath = destRoot.resolve(relativePath);
-    assertThatFileSystem().containsExactly(sourcePath, destPath);
-    assertThat(Files.readString(sourcePath)).isEqualTo("source");
-    assertThat(Files.readString(destPath)).isEqualTo("source");
-  }
-
-  @Test
-  void put_replacesFileOnDestinationWithNonEmptyDirectoryOnSource_NoSuchFileException()
-      throws IOException {
-    // Given
-    // this is when we get strange NoSuchFileException from Files.createDirectories...
-    Path relativePath = fs.getPath("A/B/C/D/E");
-    LocalFile sourceFile = createFile(source, relativePath, "source");
-    createFile(destination, fs.getPath("A/B/C"), "dest");
-
-    // When
-    boolean result = sut.put(sourceFile);
-
-    // Then
-    assertThat(result).isTrue();
-    Path sourcePath = sourceRoot.resolve(relativePath);
-    Path destPath = destRoot.resolve(relativePath);
-    assertThatFileSystem().containsExactly(sourcePath, destPath);
-    assertThat(Files.readString(sourcePath)).isEqualTo("source");
-    assertThat(Files.readString(destPath)).isEqualTo("source");
-  }
-
-  @Test
   void put_whenFileNotOnSource_failsGracefully() throws IOException {
     // Given
     LocalFile sourceFile = createFile(source, fs.getPath("A"), "source");
@@ -277,6 +217,8 @@ class LocalBackupTest {
   void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
     // Given
     LocalFile destFile = createFile(destination, fs.getPath("A"), "dest");
+    // delete after scan
+    destination.fileTree();
     Files.delete(destFile.fullPath());
 
     // When
@@ -285,6 +227,71 @@ class LocalBackupTest {
     // Then
     assertThat(result).isTrue();
     assertThatFileSystem().isEmpty();
+  }
+
+  @Test
+  void needDelete_whenSameFileOnSourceAndDestination_false() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile sourceFile = createFile(source, relativePath, "source");
+    LocalFile destFile = createFile(destination, relativePath, "source");
+
+    // Then
+    assertThat(sut.needDelete(destFile)).isFalse();
+  }
+
+  @Test
+  void needDelete_whenDifferentFileOnSourceAndDestination_false() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile sourceFile = createFile(source, relativePath, "source");
+    LocalFile destFile = createFile(destination, relativePath, "dest");
+
+    // Then
+    assertThat(sut.needDelete(destFile)).isFalse();
+  }
+
+  @Test
+  void needDelete_whenDirectoryOnSourceAndDestination_false() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A/B/C");
+    LocalFile sourceDir = createDirectory(source, relativePath);
+    LocalFile destDir = createDirectory(destination, relativePath);
+
+    // Then
+    assertThat(sut.needDelete(destDir)).isFalse();
+  }
+
+  @Test
+  void needDelete_whenFileOnlyOnDestination_true() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile destFile = createFile(destination, relativePath, "dest");
+
+    // Then
+    assertThat(sut.needDelete(destFile)).isTrue();
+  }
+
+  @Test
+  void needDelete_whenFileOnSourceAndDirectoryOnDestination_true() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile sourceFile = createFile(source, relativePath, "source");
+    LocalFile destDir = createDirectory(destination, relativePath);
+
+    // Then
+    assertThat(sut.needDelete(destDir)).isTrue();
+  }
+
+  @Test
+  void needDelete_whenDirectoryOnSourceAndFileOnDestination_true() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile sourceDir = createDirectory(source, relativePath);
+    LocalFile destFile = createFile(destination, relativePath, "dest");
+
+    // Then
+    assertThat(sut.needDelete(destFile)).isTrue();
   }
 
   @Test
@@ -321,6 +328,8 @@ class LocalBackupTest {
     }
     Files.createFile(path);
     Files.writeString(path, contents);
+    // set fixed value, removing this variable from the unit tests here.
+    Files.setLastModifiedTime(path, FileTime.fromMillis(0));
     return LocalFile.fromPath(localStorage, path);
   }
 

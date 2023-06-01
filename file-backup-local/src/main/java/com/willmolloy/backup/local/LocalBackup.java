@@ -87,9 +87,10 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   public boolean needDelete(LocalFile destFile) {
     FileTree<LocalFile> sourceFileTree = source().fileTree();
     Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
-    // either file not on source -> delete
-    // OR files different -> need to delete before update, otherwise there are scenarios where it
-    // can fail, e.g. non-empty dir overwriting a file
-    return maybeSourceFile.isEmpty() || !maybeSourceFile.get().same(destFile);
+    // file not on source -> delete
+    // OR one is file, one is dir -> need to delete before update, otherwise we get errors
+    // overwriting non-empty dir, or failing to create dirs because file is in the way.
+    return maybeSourceFile.isEmpty()
+        || maybeSourceFile.get().isDirectory() != destFile.isDirectory();
   }
 }

@@ -10,7 +10,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -261,7 +260,7 @@ class LocalBackupIntegrationTest {
     Files.createFile(path);
     Files.writeString(path, contents);
     // set fixed value for files, otherwise tests are flaky
-    Files.setLastModifiedTime(path, FileTime.from(Instant.MIN));
+    Files.setLastModifiedTime(path, FileTime.fromMillis(0));
   }
 
   private Path createDirectory(Path path) throws IOException {
