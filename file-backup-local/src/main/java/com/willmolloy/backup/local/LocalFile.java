@@ -69,11 +69,7 @@ public final class LocalFile extends BaseFile {
 
   @Override
   public boolean same(File other) {
-    // ignore last-modified test for directories; it isn't reliable because directory last-modified
-    // changes when children are copied in, and therefore desyncs from source dir
-    // it would work if we synced the attributes at the end of the backup run, however that doesn't
-    // always work (not sure why... some bug when doing multiple Files.setLastModifiedTime at once?)
-    if (!other.isDirectory() && other instanceof LocalFile localFile) {
+    if (other instanceof LocalFile localFile) {
       return super.same(other) && lastModified == localFile.lastModified;
     }
     return super.same(other);

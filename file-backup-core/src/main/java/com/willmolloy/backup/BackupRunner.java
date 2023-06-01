@@ -51,7 +51,6 @@ final class BackupRunner<SourceFileT extends File, DestFileT extends File> {
               destFile ->
                   threadPool.submit(
                       () -> {
-                        // TODO make the logs here info and the ones below debug?
                         log.debug("delete({})", destFile);
                         if (!backup.delete(destFile)) {
                           allSuccess.set(false);
