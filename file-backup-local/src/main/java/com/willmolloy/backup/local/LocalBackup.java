@@ -85,13 +85,6 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   @Override
   public boolean needDelete(LocalFile destFile) {
-    FileTree<LocalFile> destFileTree = destination().fileTree();
-    // don't delete the root, it was created manually outside this app; if it's deleted subsequent
-    // runs will fail
-    if (destFileTree.isRoot(destFile)) {
-      return false;
-    }
-
     FileTree<LocalFile> sourceFileTree = source().fileTree();
     Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
     // either file not on source -> delete

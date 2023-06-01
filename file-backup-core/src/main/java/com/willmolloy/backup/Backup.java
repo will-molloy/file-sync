@@ -34,11 +34,6 @@ public interface Backup<SourceFileT extends File, DestFileT extends File> {
 
   /** {@code true} if {@link #put} is necessary. */
   default boolean needPut(SourceFileT sourceFile) {
-    FileTree<SourceFileT> sourceFileTree = source().fileTree();
-    if (sourceFileTree.isRoot(sourceFile)) {
-      return false;
-    }
-
     FileTree<DestFileT> destFileTree = destination().fileTree();
     Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
     // either file not on dest -> create
@@ -48,13 +43,6 @@ public interface Backup<SourceFileT extends File, DestFileT extends File> {
 
   /** {@code true} if {@link #delete} is necessary. */
   default boolean needDelete(DestFileT destFile) {
-    FileTree<DestFileT> destFileTree = destination().fileTree();
-    // don't delete the root, it was created manually outside this app; if it's deleted subsequent
-    // runs will fail
-    if (destFileTree.isRoot(destFile)) {
-      return false;
-    }
-
     FileTree<SourceFileT> sourceFileTree = source().fileTree();
     // file not on source -> delete
     return !sourceFileTree.contains(destFile.relativePath());

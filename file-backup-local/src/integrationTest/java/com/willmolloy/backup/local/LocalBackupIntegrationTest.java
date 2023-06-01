@@ -30,14 +30,11 @@ class LocalBackupIntegrationTest {
   private Path destRoot;
   private LocalBackup sut;
 
-  // set fixed value, otherwise tests are flaky
-  private final Instant lastModified = Instant.now();
-
   @BeforeEach
   void setUp() throws IOException {
     fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
-    sourceRoot = createDirectories(fs.getPath("Documents"));
-    destRoot = createDirectories(fs.getPath("Backup"));
+    sourceRoot = createDirectory(fs.getPath("Documents"));
+    destRoot = createDirectory(fs.getPath("Backup"));
     sut = new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
   }
 
@@ -52,7 +49,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(sourceRoot.resolve("A.txt"), "source text");
     // empty directory
-    createDirectories(sourceRoot.resolve("B/C"));
+    createDirectory(sourceRoot.resolve("B/C"));
     // directory with multiple files
     createFile(sourceRoot.resolve("D/E.mp4"), "source video");
     createFile(sourceRoot.resolve("D/F.mp3"), "source audio");
@@ -92,7 +89,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(sourceRoot.resolve("A.txt"), "source text");
     // empty directory
-    createDirectories(sourceRoot.resolve("B/C"));
+    createDirectory(sourceRoot.resolve("B/C"));
     // directory with multiple files
     createFile(sourceRoot.resolve("D/E.mp4"), "source video");
     createFile(sourceRoot.resolve("D/F.mp3"), "source audio");
@@ -102,7 +99,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(destRoot.resolve("A.txt"), "dest text");
     // empty directory
-    createDirectories(destRoot.resolve("B/C"));
+    createDirectory(destRoot.resolve("B/C"));
     // directory with multiple files
     createFile(destRoot.resolve("D/E.mp4"), "dest video");
     createFile(destRoot.resolve("D/F.mp3"), "dest audio");
@@ -141,7 +138,7 @@ class LocalBackupIntegrationTest {
     // simple file
     createFile(destRoot.resolve("A.txt"), "dest text");
     // empty directory
-    createDirectories(destRoot.resolve("B/C"));
+    createDirectory(destRoot.resolve("B/C"));
     // directory with multiple files
     createFile(destRoot.resolve("D/E.mp4"), "dest video");
     createFile(destRoot.resolve("D/F.mp3"), "dest audio");
@@ -216,8 +213,8 @@ class LocalBackupIntegrationTest {
   @Test
   void whenChildDirectoryOnlyOnSource_createsDirectoriesOnDestination() throws IOException {
     // Given
-    createDirectories(sourceRoot.resolve("A/B/C/X/Y/Z"));
-    createDirectories(destRoot.resolve("A/B/C"));
+    createDirectory(sourceRoot.resolve("A/B/C/X/Y/Z"));
+    createDirectory(destRoot.resolve("A/B/C"));
 
     // When
     boolean result = sut.run();
@@ -241,8 +238,8 @@ class LocalBackupIntegrationTest {
   @Test
   void whenChildDirectoryOnlyOnDestination_deletesDirectoriesOnDestination() throws IOException {
     // Given
-    createDirectories(sourceRoot.resolve("A/B/C"));
-    createDirectories(destRoot.resolve("A/B/C/X/Y/Z"));
+    createDirectory(sourceRoot.resolve("A/B/C"));
+    createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
 
     // When
     boolean result = sut.run();
@@ -263,20 +260,12 @@ class LocalBackupIntegrationTest {
     }
     Files.createFile(path);
     Files.writeString(path, contents);
-    setLastModified(path);
+    // set fixed value for files, otherwise tests are flaky
+    Files.setLastModifiedTime(path, FileTime.from(Instant.MIN));
   }
 
-  private Path createDirectories(Path path) throws IOException {
+  private Path createDirectory(Path path) throws IOException {
     Files.createDirectories(path);
-    setLastModified(path);
     return path;
-  }
-
-  private void setLastModified(Path path) throws IOException {
-    Path parent = path.getParent();
-    if (parent != null) {
-      setLastModified(parent);
-    }
-    Files.setLastModifiedTime(path, FileTime.from(lastModified));
   }
 }

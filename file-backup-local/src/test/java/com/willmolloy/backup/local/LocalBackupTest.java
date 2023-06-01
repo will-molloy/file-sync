@@ -275,6 +275,7 @@ class LocalBackupTest {
 
   @Test
   void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
+    // Given
     LocalFile destFile = createFile(destination, fs.getPath("A"), "dest");
     Files.delete(destFile.fullPath());
 

@@ -21,8 +21,6 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
     return get(relativePath).isPresent();
   }
 
-  boolean isRoot(FileT file);
-
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();
 

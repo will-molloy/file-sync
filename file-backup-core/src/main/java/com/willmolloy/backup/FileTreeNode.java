@@ -43,11 +43,6 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public boolean isRoot(FileT file) {
-    return file == this.file;
-  }
-
-  @Override
   public Stream<FileT> postorder() {
     return postorderNodes().map(getFile);
   }
