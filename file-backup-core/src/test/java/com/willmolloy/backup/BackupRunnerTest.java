@@ -3,6 +3,7 @@ package com.willmolloy.backup;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -33,14 +34,17 @@ class BackupRunnerTest {
   void setUp() {
     when(mockBackup.source()).thenReturn(mockSource);
     when(mockBackup.destination()).thenReturn(mockDest);
+    // kinda weird... partial mock... the only alternative I can think of atm is an abstract class,
+    // which is also not ideal for testing
+    when(mockBackup.needPut(any())).thenCallRealMethod();
+    when(mockBackup.needDelete(any())).thenCallRealMethod();
   }
 
   @AfterEach
   void tearDown() {
-    verify(mockSource).fileTree();
-    verify(mockDest).fileTree();
     verifyNoMoreInteractions(mockSource);
     verifyNoMoreInteractions(mockDest);
+    // TODO doesn't really work since 'when' breaks this... maybe abstract class (spy) is better
     verifyNoMoreInteractions(mockBackup);
   }
 
