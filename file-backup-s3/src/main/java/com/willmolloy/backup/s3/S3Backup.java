@@ -12,7 +12,7 @@ import com.willmolloy.backup.local.LocalStorage;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,7 +68,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
         s3Client.putObject(request, sourcePath);
       }
 
-      wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
+      wait(s3Key(sourceFile), S3Waiter::waitUntilObjectExists);
 
       log.info("Put: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
@@ -123,7 +123,7 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
     DeleteObjectRequest request =
         DeleteObjectRequest.builder().bucket(destination.bucketName()).key(s3Key(destFile)).build();
     s3Client.deleteObject(request);
-    wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
+    wait(s3Key(destFile), S3Waiter::waitUntilObjectNotExists);
   }
 
   private String s3Uri(File file) {
@@ -137,14 +137,13 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
     return file.isDirectory() ? key + "/" : key;
   }
 
-  // TODO this just throws errors - not using it right?
-  private void wait(String key, Function<HeadObjectRequest, WaiterResponse<?>> waiter) {
+  private void wait(String key, BiFunction<S3Waiter, HeadObjectRequest, WaiterResponse<?>> waiter) {
     HeadObjectRequest headRequest =
         HeadObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
     // we are supposed to ignore the ResponseOrException here?
     // only populated when successful (even the Exception e.g. 404 for waitUntilObjectNotExists)
     // the method call itself will throw an exception if something went wrong.
     // https://github.com/aws/aws-sdk-java-v2/issues/2460#issuecomment-837136429
-    waiter.apply(headRequest);
+    waiter.apply(s3Waiter, headRequest);
   }
 }
