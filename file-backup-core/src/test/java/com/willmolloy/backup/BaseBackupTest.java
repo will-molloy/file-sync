@@ -42,12 +42,12 @@ class BaseBackupTest {
             new BaseBackup<>(mockSource, mockDest) {
               @Override
               protected boolean put(File sourceFile) {
-                return false;
+                return true;
               }
 
               @Override
               protected boolean delete(File destFile) {
-                return false;
+                return true;
               }
             });
   }
@@ -63,17 +63,15 @@ class BaseBackupTest {
     // Given
     when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
-    when(sut.put(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A"));
-    inOrder.verify(sut).put(file("A"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
+    verify(sut).put(file("A"));
   }
 
   @Test
@@ -81,18 +79,16 @@ class BaseBackupTest {
     // Given
     when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(differentFile("A")).build());
-    when(sut.put(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(differentFile("A"));
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A"));
-    inOrder.verify(sut).put(file("A"));
+    verify(sut).needDelete(differentFile("A"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
+    verify(sut).put(file("A"));
   }
 
   @Test
@@ -106,10 +102,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A"));
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A"));
+    verify(sut).needDelete(file("A"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
   }
 
   @Test
@@ -117,18 +112,16 @@ class BaseBackupTest {
     // Given
     when(mockSource.fileTree()).thenReturn(fileTreeBuilder().build());
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
-    when(sut.delete(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A"));
-    inOrder.verify(sut, times(2)).needDelete(directory(""));
-    inOrder.verify(sut).delete(file("A"));
-    inOrder.verify(sut).needPut(directory(""));
+    verify(sut).needDelete(file("A"));
+    verify(sut, times(2)).needDelete(directory(""));
+    verify(sut).delete(file("A"));
+    verify(sut).needPut(directory(""));
   }
 
   @Test
@@ -142,10 +135,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A"));
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A"));
+    verify(sut).needDelete(file("A"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
   }
 
   @Test
@@ -160,10 +152,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A"));
-    inOrder.verify(sut).put(file("A"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
+    verify(sut).put(file("A"));
   }
 
   @Test
@@ -178,11 +169,10 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(differentFile("A"));
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A"));
-    inOrder.verify(sut).put(file("A"));
+    verify(sut).needDelete(differentFile("A"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
+    verify(sut).put(file("A"));
   }
 
   @Test
@@ -197,11 +187,10 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A"));
-    inOrder.verify(sut, times(2)).needDelete(directory(""));
-    inOrder.verify(sut).delete(file("A"));
-    inOrder.verify(sut).needPut(directory(""));
+    verify(sut).needDelete(file("A"));
+    verify(sut, times(2)).needDelete(directory(""));
+    verify(sut).delete(file("A"));
+    verify(sut).needPut(directory(""));
   }
 
   @Test
@@ -210,17 +199,15 @@ class BaseBackupTest {
     when(mockSource.fileTree())
         .thenReturn(fileTreeBuilder().insert(directory("A")).insert(file("A/B")).build());
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
-    when(sut.put(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A/B"));
-    inOrder.verify(sut).put(file("A/B"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A/B"));
+    verify(sut).put(file("A/B"));
   }
 
   @Test
@@ -234,17 +221,15 @@ class BaseBackupTest {
                 .insert(file("A/B/C"))
                 .build());
     when(mockDest.fileTree()).thenReturn(fileTreeBuilder().build());
-    when(sut.put(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needPut(file("A/B/C"));
-    inOrder.verify(sut).put(file("A/B/C"));
+    verify(sut).needDelete(directory(""));
+    verify(sut).needPut(file("A/B/C"));
+    verify(sut).put(file("A/B/C"));
   }
 
   @Test
@@ -253,19 +238,17 @@ class BaseBackupTest {
     when(mockSource.fileTree()).thenReturn(fileTreeBuilder().build());
     when(mockDest.fileTree())
         .thenReturn(fileTreeBuilder().insert(directory("A")).insert(file("A/B")).build());
-    when(sut.delete(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A/B"));
-    inOrder.verify(sut, times(2)).needDelete(directory("A"));
-    inOrder.verify(sut, times(2)).needDelete(directory(""));
-    inOrder.verify(sut).delete(directory("A"));
-    inOrder.verify(sut).needPut(directory(""));
+    verify(sut).needDelete(file("A/B"));
+    verify(sut, times(2)).needDelete(directory("A"));
+    verify(sut, times(2)).needDelete(directory(""));
+    verify(sut).delete(directory("A"));
+    verify(sut).needPut(directory(""));
   }
 
   @Test
@@ -279,20 +262,18 @@ class BaseBackupTest {
                 .insert(directory("A/B"))
                 .insert(file("A/B/C"))
                 .build());
-    when(sut.delete(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A/B/C"));
-    inOrder.verify(sut, times(2)).needDelete(directory("A/B"));
-    inOrder.verify(sut, times(2)).needDelete(directory("A"));
-    inOrder.verify(sut, times(2)).needDelete(directory(""));
-    inOrder.verify(sut).delete(directory("A"));
-    inOrder.verify(sut).needPut(directory(""));
+    verify(sut).needDelete(file("A/B/C"));
+    verify(sut, times(2)).needDelete(directory("A/B"));
+    verify(sut, times(2)).needDelete(directory("A"));
+    verify(sut, times(2)).needDelete(directory(""));
+    verify(sut).delete(directory("A"));
+    verify(sut).needPut(directory(""));
   }
 
   @Test
@@ -301,21 +282,17 @@ class BaseBackupTest {
     when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(directory("A")).build());
     when(mockDest.fileTree())
         .thenReturn(fileTreeBuilder().insert(directory("A")).insert(file("A/B")).build());
-    when(sut.delete(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A/B"));
-    inOrder.verify(sut).needDelete(directory("A"));
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needDelete(directory("A"));
-    inOrder.verify(sut).needDelete(directory(""));
+    verify(sut).needDelete(file("A/B"));
+    verify(sut, times(2)).needDelete(directory("A"));
+    verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A/B"));
-    inOrder.verify(sut).needPut(directory("A"));
+    verify(sut).needPut(directory("A"));
   }
 
   @Test
@@ -330,23 +307,37 @@ class BaseBackupTest {
                 .insert(directory("A/B"))
                 .insert(file("A/B/C"))
                 .build());
-    when(sut.delete(any())).thenReturn(true);
 
     // When
     boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
-    InOrder inOrder = inOrder(sut);
-    inOrder.verify(sut).needDelete(file("A/B/C"));
-    inOrder.verify(sut).needDelete(directory("A/B"));
-    inOrder.verify(sut).needDelete(directory("A"));
-    inOrder.verify(sut).needDelete(directory(""));
-    inOrder.verify(sut).needDelete(directory("A/B"));
-    inOrder.verify(sut).needDelete(directory("A"));
-    inOrder.verify(sut).needDelete(directory(""));
+    verify(sut).needDelete(file("A/B/C"));
+    verify(sut, times(2)).needDelete(directory("A/B"));
+    verify(sut, times(2)).needDelete(directory("A"));
+    verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A/B/C"));
-    inOrder.verify(sut).needPut(directory("A/B"));
+    verify(sut).needPut(directory("A/B"));
+  }
+
+  @Test
+  void deletesBeforePut() {
+    // Given
+    when(mockSource.fileTree()).thenReturn(fileTreeBuilder().insert(file("A")).build());
+    when(mockDest.fileTree()).thenReturn(fileTreeBuilder().insert(file("B")).build());
+
+    // When
+    boolean result = sut.run();
+
+    // Then
+    assertThat(result).isTrue();
+    verify(sut).needDelete(file("B"));
+    verify(sut, times(2)).needDelete(directory(""));
+    verify(sut).needPut(file("A"));
+    InOrder inOrder = inOrder(sut);
+    inOrder.verify(sut).delete(file("B"));
+    inOrder.verify(sut).put(file("A"));
   }
 
   private static FileTree.Builder<File> fileTreeBuilder() {
