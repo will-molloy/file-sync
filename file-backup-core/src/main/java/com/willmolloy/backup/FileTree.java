@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * @param <FileT> type of file stored in this file tree
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface FileTree<FileT extends File> {
+public sealed interface FileTree<FileT extends File> permits FileTreeNode {
 
   /** Lookup by {@link File#relativePath()}. */
   Optional<FileT> get(Path relativePath);
@@ -65,7 +65,7 @@ public interface FileTree<FileT extends File> {
    */
   static <FileT extends File> Builder<FileT> builder(
       FileT root, DirectoryFiller<FileT> directoryFiller) {
-    return new TrieBasedFileTree.Builder<>(root, directoryFiller);
+    return new FileTreeNode.Builder<>(root, directoryFiller);
   }
 
   /**

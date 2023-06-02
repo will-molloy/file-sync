@@ -5,13 +5,11 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.BackupRunner;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,9 +28,6 @@ class LocalBackupIntegrationTest {
   private Path sourceRoot;
   private Path destRoot;
   private LocalBackup sut;
-
-  // set fixed value, otherwise tests are flaky
-  private final Instant lastModified = Instant.now();
 
   @BeforeEach
   void setUp() throws IOException {
@@ -61,7 +56,7 @@ class LocalBackupIntegrationTest {
     createFile(sourceRoot.resolve("X/Y/Z.pdf"), "source pdf");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -111,7 +106,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("X/Y/Z.pdf"), "dest pdf");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -150,7 +145,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("X/Y/Z.pdf"), "dest pdf");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -170,7 +165,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("A/B/C/X/Y/Z.pdf"), "World.");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -191,7 +186,7 @@ class LocalBackupIntegrationTest {
     createFile(destRoot.resolve("A/B/C"), "hello!");
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -221,7 +216,7 @@ class LocalBackupIntegrationTest {
     createDirectory(destRoot.resolve("A/B/C"));
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -246,7 +241,7 @@ class LocalBackupIntegrationTest {
     createDirectory(destRoot.resolve("A/B/C/X/Y/Z"));
 
     // When
-    boolean result = BackupRunner.run(sut);
+    boolean result = sut.run();
 
     // Then
     assertThat(result).isTrue();
@@ -264,12 +259,12 @@ class LocalBackupIntegrationTest {
     }
     Files.createFile(path);
     Files.writeString(path, contents);
-    Files.setLastModifiedTime(path, FileTime.from(lastModified));
+    // set fixed value for files, otherwise tests are flaky
+    Files.setLastModifiedTime(path, FileTime.fromMillis(0));
   }
 
   private Path createDirectory(Path path) throws IOException {
     Files.createDirectories(path);
-    Files.setLastModifiedTime(path, FileTime.from(lastModified));
     return path;
   }
 }

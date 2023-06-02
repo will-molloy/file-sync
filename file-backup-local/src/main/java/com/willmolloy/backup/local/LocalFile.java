@@ -4,7 +4,6 @@ import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseFile;
-import com.willmolloy.backup.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,13 +64,5 @@ public final class LocalFile extends BaseFile {
 
   long lastModified() {
     return lastModified;
-  }
-
-  @Override
-  public boolean same(File other) {
-    if (other instanceof LocalFile localFile) {
-      return super.same(other) && lastModified == localFile.lastModified;
-    }
-    return super.same(other);
   }
 }

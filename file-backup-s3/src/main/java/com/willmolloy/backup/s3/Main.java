@@ -3,7 +3,6 @@ package com.willmolloy.backup.s3;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.BackupRunner;
 import com.willmolloy.backup.local.LocalStorage;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -43,7 +42,7 @@ final class Main {
       S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
       S3Backup s3Backup = new S3Backup(s3Client, s3Waiter, source, dest);
-      if (!BackupRunner.run(s3Backup)) {
+      if (!s3Backup.run()) {
         System.exit(1);
       }
     } catch (Throwable t) {

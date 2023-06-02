@@ -3,14 +3,12 @@ package com.willmolloy.backup.local;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
-import java.io.IOException;
-import java.nio.file.DirectoryNotEmptyException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystem;
+import com.willmolloy.backup.FileTree;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,62 +22,24 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
+  private final LocalStorage source;
   private final LocalStorage destination;
 
   LocalBackup(LocalStorage source, LocalStorage destination) {
     super(source, destination);
+    this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
   }
 
   @Override
-  public boolean put(LocalFile sourceFile) {
+  protected boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     Path destPath = destination.root().resolve(sourceFile.relativePath());
-    try {
-      return createParentDirs(sourcePath, destPath) && doCopy(sourcePath, destPath);
-    } catch (Exception e) {
-      log.error("Error copying: [{}] -> [{}]", sourcePath, destPath, e);
-      return false;
-    }
-  }
-
-  private boolean createParentDirs(Path sourcePath, Path destPath) throws IOException {
     try {
       Path destParent = destPath.getParent();
       if (destParent != null) {
         Files.createDirectories(destParent);
       }
-      return true;
-    } catch (FileAlreadyExistsException e) {
-      // TODO if we do the deletes first, we won't end up in these scenarios? Good to be safe?
-      // failed to create directory since it already exists as a file
-      log.warn(
-          "Error copying: [{}] -> [{}]. Deleting file to allow creation of directories first",
-          sourcePath,
-          destPath,
-          e);
-      FileSystem fs = destination.root().getFileSystem();
-      Path badPath = destination.root().relativize(fs.getPath(e.getFile()));
-      return delete(getDestFile(badPath)) && createParentDirs(sourcePath, destPath);
-    } catch (NoSuchFileException e) {
-      // same as above, except its thrown when the parent already exists as a file
-      // (see https://stackoverflow.com/a/76278968/6122976)
-      log.warn(
-          "Error copying: [{}] -> [{}]. Deleting file to allow creation of directories first",
-          sourcePath,
-          destPath,
-          e);
-      FileSystem fs = destination.root().getFileSystem();
-      // for some reason e.getFile here is in absolute form, so take that into account
-      // TODO what if the jdk changes this behaviour? create a 'safe relativize' method?
-      Path badPath =
-          destination.root().toAbsolutePath().relativize(fs.getPath(e.getFile()).getParent());
-      return delete(getDestFile(badPath)) && createParentDirs(sourcePath, destPath);
-    }
-  }
-
-  private boolean doCopy(Path sourcePath, Path destPath) throws IOException {
-    try {
       Files.copy(
           sourcePath,
           destPath,
@@ -91,30 +51,14 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       log.warn(
           "Skipped copy: [{}] -> [{}]. Source file deleted since scan", sourcePath, destPath, e);
       return true;
-    } catch (DirectoryNotEmptyException e) {
-      log.warn(
-          "Error copying: [{}] -> [{}]. Deleting non-empty directory on destination first",
-          sourcePath,
-          destPath,
-          e);
-      FileSystem fs = destination.root().getFileSystem();
-      Path badPath = destination.root().relativize(fs.getPath(e.getFile()));
-      return delete(getDestFile(badPath)) && doCopy(sourcePath, destPath);
+    } catch (Exception e) {
+      log.error("Error copying: [{}] -> [{}]", sourcePath, destPath, e);
+      return false;
     }
   }
 
-  private LocalFile getDestFile(Path relativePath) {
-    return destination
-        .fileTree()
-        .get(relativePath)
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    "Path [%s] not in destination file tree".formatted(relativePath)));
-  }
-
   @Override
-  public boolean delete(LocalFile destFile) {
+  protected boolean delete(LocalFile destFile) {
     AtomicBoolean allDeleted = new AtomicBoolean(true);
     try {
       destination
@@ -139,5 +83,22 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
       return false;
     }
     return allDeleted.get();
+  }
+
+  @Override
+  protected boolean needUpdate(LocalFile sourceFile, LocalFile destFile) {
+    return super.needUpdate(sourceFile, destFile)
+        || sourceFile.lastModified() != destFile.lastModified();
+  }
+
+  @Override
+  protected boolean needDelete(LocalFile destFile) {
+    FileTree<LocalFile> sourceFileTree = source.fileTree();
+    Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
+    // file not on source -> delete
+    // OR one is file, one is dir -> need to delete before update, otherwise we get errors
+    // overwriting non-empty dir, or failing to create dirs because file is in the way.
+    return maybeSourceFile.isEmpty()
+        || maybeSourceFile.get().isDirectory() != destFile.isDirectory();
   }
 }

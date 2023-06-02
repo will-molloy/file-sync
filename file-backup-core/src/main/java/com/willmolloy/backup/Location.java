@@ -1,7 +1,7 @@
 package com.willmolloy.backup;
 
 /**
- * {@link Backup} location (source or destination).
+ * Backup location (source or destination).
  *
  * @param <FileT> type of file stored in this location
  * @see BaseLocation
