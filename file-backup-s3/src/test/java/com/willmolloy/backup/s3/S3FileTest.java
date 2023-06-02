@@ -3,23 +3,15 @@ package com.willmolloy.backup.s3;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 import com.github.javafaker.Faker;
-import com.willmolloy.backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -113,28 +105,6 @@ class S3FileTest {
 
     // Then
     assertThat(file.isDirectory()).isTrue();
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  void same_onlyTrueIfSizeEqual(long thisSize, long otherSize, boolean expected) {
-    // Given
-    S3Object s3Object = S3Object.builder().key("prefix/A").size(thisSize).build();
-    S3File thisFile = spy(S3File.fromS3Object(bucket, s3Object));
-
-    File otherFile = mock(File.class);
-    when(otherFile.size()).thenReturn(otherSize);
-
-    // Then
-    assertThat(thisFile.same(otherFile)).isEqualTo(expected);
-  }
-
-  static Stream<Arguments> same_onlyTrueIfSizeEqual() {
-    long randomLong = FAKER.number().numberBetween(1, 10);
-    return Stream.of(
-        Arguments.of(randomLong, randomLong, true),
-        Arguments.of(randomLong, randomLong + 1, false),
-        Arguments.of(randomLong, randomLong - 1, false));
   }
 
   @Test

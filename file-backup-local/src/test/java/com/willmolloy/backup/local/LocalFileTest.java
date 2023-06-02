@@ -3,20 +3,15 @@ package com.willmolloy.backup.local;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.File;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,66 +117,6 @@ class LocalFileTest {
 
     // Then
     assertThat(file.isDirectory()).isTrue();
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  void same_whenOtherIsLocalFile_onlyTrueWhenSizeAndLastModifiedEqual(
-      String thisContents,
-      long thisLastModified,
-      String otherContents,
-      long otherLastModified,
-      boolean expected)
-      throws IOException {
-    // Given
-    Path thisFilePath = Files.createFile(storage.root().resolve("A"));
-    Files.writeString(thisFilePath, thisContents);
-    Files.setLastModifiedTime(thisFilePath, FileTime.fromMillis(thisLastModified));
-    LocalFile thisFile = spy(LocalFile.fromPath(storage, thisFilePath));
-
-    Path otherFilePath = Files.createFile(storage.root().resolve("B"));
-    Files.writeString(otherFilePath, otherContents);
-    Files.setLastModifiedTime(otherFilePath, FileTime.fromMillis(otherLastModified));
-    LocalFile otherFile = spy(LocalFile.fromPath(storage, otherFilePath));
-
-    // Then
-    assertThat(thisFile.same(otherFile)).isEqualTo(expected);
-  }
-
-  static Stream<Arguments> same_whenOtherIsLocalFile_onlyTrueWhenSizeAndLastModifiedEqual() {
-    long currentMillis = System.currentTimeMillis();
-    return Stream.of(
-        Arguments.of("ABC", currentMillis, "ABC", currentMillis, true),
-        Arguments.of("ABC", currentMillis, "XYZ", currentMillis, true),
-        Arguments.of("ABC", currentMillis, "ABCD", currentMillis, false),
-        Arguments.of("ABC", currentMillis, "ABC", currentMillis + 1, false),
-        Arguments.of("ABC", currentMillis, "XYZ", currentMillis + 1, false),
-        Arguments.of("ABC", currentMillis, "ABCD", currentMillis + 1, false));
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  void same_whenOtherNotLocalFile_onlyTrueWhenSizeEqual(
-      String thisContents, String otherContents, boolean expected) throws IOException {
-    // Given
-    Path thisFilePath = Files.createFile(storage.root().resolve("A"));
-    Files.writeString(thisFilePath, thisContents);
-    LocalFile thisFile = spy(LocalFile.fromPath(storage, thisFilePath));
-
-    File otherFile = mock(File.class);
-    when(otherFile.size()).thenReturn((long) otherContents.length());
-
-    // Then
-    assertThat(thisFile.same(otherFile)).isEqualTo(expected);
-  }
-
-  // TODO coverage for isDirectory() == other.isDirectory()???
-  static Stream<Arguments> same_whenOtherNotLocalFile_onlyTrueWhenSizeEqual() {
-    return Stream.of(
-        Arguments.of("ABC", "ABC", true),
-        Arguments.of("ABC", "XYZ", true),
-        Arguments.of("ABC", "ABCD", false),
-        Arguments.of("XYZ", "AB", false));
   }
 
   @Test

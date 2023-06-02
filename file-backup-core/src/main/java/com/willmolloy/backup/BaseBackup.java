@@ -40,7 +40,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   /** Runs the backup. */
   public final boolean run() {
     log.info("Running: {}", this);
-    long runStartNanos = System.nanoTime();
+    long startNanos = System.nanoTime();
 
     AtomicBoolean allSuccess = new AtomicBoolean(true);
 
@@ -82,7 +82,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
                       }));
     }
 
-    log.info("Finished: {} in: {}", this, elapsed(runStartNanos));
+    log.info("Finished: {} in: {}", this, elapsed(startNanos));
     return allSuccess.get();
   }
 
@@ -108,7 +108,16 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
     // either file not on dest -> create
     // OR files different -> update
-    return maybeDestFile.isEmpty() || !sourceFile.same(maybeDestFile.get());
+    return maybeDestFile.isEmpty() || needUpdate(sourceFile, maybeDestFile.get());
+  }
+
+  /** {@code true} if update (via {@link #put}) is necessary. */
+  protected boolean needUpdate(SourceFileT sourceFile, DestFileT destFile) {
+    // for s3; considered last-modified, but it's really object-creation time.
+    // also considered e-tag, but it's calculated differently for large (> 16MB) files.
+    // file size is good enough?
+    return sourceFile.isDirectory() != destFile.isDirectory()
+        || sourceFile.size() != destFile.size();
   }
 
   /** {@code true} if {@link #delete} is necessary. */

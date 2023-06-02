@@ -18,6 +18,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * LocalBackupTest.
@@ -217,6 +220,63 @@ class LocalBackupTest {
     // Then
     assertThat(result).isTrue();
     assertThatFileSystem().isEmpty();
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  void needUpdate_trueWhenSizeOrLastModifiedNotEqual(
+      String sourceContents,
+      long sourceLastModified,
+      String destContents,
+      long destLastModified,
+      boolean expected)
+      throws IOException {
+    // Given
+    Path sourcePath = Files.createFile(source.root().resolve("A"));
+    Files.writeString(sourcePath, sourceContents);
+    Files.setLastModifiedTime(sourcePath, FileTime.fromMillis(sourceLastModified));
+    LocalFile sourceFile = LocalFile.fromPath(source, sourcePath);
+
+    Path destPath = Files.createFile(destination.root().resolve("B"));
+    Files.writeString(destPath, destContents);
+    Files.setLastModifiedTime(destPath, FileTime.fromMillis(destLastModified));
+    LocalFile destFile = LocalFile.fromPath(destination, destPath);
+
+    // Then
+    assertThat(sut.needUpdate(sourceFile, destFile)).isEqualTo(expected);
+  }
+
+  static Stream<Arguments> needUpdate_trueWhenSizeOrLastModifiedNotEqual() {
+    long currentMillis = System.currentTimeMillis();
+    return Stream.of(
+        Arguments.of("ABC", currentMillis, "ABC", currentMillis, false),
+        Arguments.of("ABC", currentMillis, "XYZ", currentMillis, false),
+        Arguments.of("ABC", currentMillis, "ABCD", currentMillis, true),
+        Arguments.of("ABC", currentMillis, "ABC", currentMillis + 1, true),
+        Arguments.of("ABC", currentMillis, "XYZ", currentMillis + 1, true),
+        Arguments.of("ABC", currentMillis, "ABCD", currentMillis + 1, true));
+  }
+
+  @Test
+  void needUpdate_whenFileOnSourceAndDirectoryOnDestination_true() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile sourceFile = createFile(source, relativePath, "source");
+    LocalFile destDir = createDirectory(destination, relativePath);
+
+    // Then
+    assertThat(sut.needUpdate(sourceFile, destDir)).isTrue();
+  }
+
+  @Test
+  void needUpdate_whenDirectoryOnSourceAndFileOnDestination_true() throws IOException {
+    // Given
+    Path relativePath = fs.getPath("A");
+    LocalFile sourceDir = createDirectory(source, relativePath);
+    LocalFile destFile = createFile(destination, relativePath, "dest");
+
+    // Then
+    assertThat(sut.needUpdate(sourceDir, destFile)).isTrue();
   }
 
   @Test

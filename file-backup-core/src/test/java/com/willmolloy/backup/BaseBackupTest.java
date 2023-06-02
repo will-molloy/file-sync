@@ -88,6 +88,7 @@ class BaseBackupTest {
     verify(sut).needDelete(differentFile("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
+    verify(sut).needUpdate(file("A"), differentFile("A"));
     verify(sut).put(file("A"));
   }
 
@@ -105,6 +106,7 @@ class BaseBackupTest {
     verify(sut).needDelete(file("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
+    verify(sut).needUpdate(file("A"), file("A"));
   }
 
   @Test
@@ -122,6 +124,7 @@ class BaseBackupTest {
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A"));
     verify(sut).needPut(directory(""));
+    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
@@ -138,6 +141,7 @@ class BaseBackupTest {
     verify(sut).needDelete(file("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
+    verify(sut).needUpdate(file("A"), file("A"));
   }
 
   @Test
@@ -172,6 +176,7 @@ class BaseBackupTest {
     verify(sut).needDelete(differentFile("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
+    verify(sut).needUpdate(file("A"), differentFile("A"));
     verify(sut).put(file("A"));
   }
 
@@ -191,6 +196,7 @@ class BaseBackupTest {
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A"));
     verify(sut).needPut(directory(""));
+    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
@@ -249,6 +255,7 @@ class BaseBackupTest {
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(directory("A"));
     verify(sut).needPut(directory(""));
+    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
@@ -274,6 +281,7 @@ class BaseBackupTest {
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(directory("A"));
     verify(sut).needPut(directory(""));
+    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
@@ -293,6 +301,7 @@ class BaseBackupTest {
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A/B"));
     verify(sut).needPut(directory("A"));
+    verify(sut).needUpdate(directory("A"), directory("A"));
   }
 
   @Test
@@ -319,6 +328,7 @@ class BaseBackupTest {
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A/B/C"));
     verify(sut).needPut(directory("A/B"));
+    verify(sut).needUpdate(directory("A/B"), directory("A/B"));
   }
 
   @Test

@@ -86,6 +86,12 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   }
 
   @Override
+  protected boolean needUpdate(LocalFile sourceFile, LocalFile destFile) {
+    return super.needUpdate(sourceFile, destFile)
+        || sourceFile.lastModified() != destFile.lastModified();
+  }
+
+  @Override
   protected boolean needDelete(LocalFile destFile) {
     FileTree<LocalFile> sourceFileTree = source.fileTree();
     Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
