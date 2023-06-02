@@ -96,6 +96,7 @@ class LocalBackupPerformanceTest {
 
   static Stream<Arguments> performanceTest() {
     return Stream.of(
+        Arguments.of(10_000, 1),
         Arguments.of(1_000, 10),
         Arguments.of(100, 100),
         Arguments.of(10, 1_000),
