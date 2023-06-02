@@ -69,6 +69,7 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
   @Override
   public long fileCount() {
+    // TODO make this leaves? put is counting empty dir, delete is not
     return files().count();
   }
 
