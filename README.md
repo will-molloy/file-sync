@@ -34,7 +34,7 @@ Backup to locally mounted storage. E.g. another disk or NAS.
 
 2. Run:
    ```bash
-   docker run --rm -v <source_path>:/source -v <destination_path>:/destination file-backup-local
+   docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination file-backup-local
    ```
 
 ### S3 Backup
@@ -48,7 +48,7 @@ Backup to AWS S3 bucket (Glacier Deep Archive).
 
 2. Run:
    ```bash
-   docker run --rm -v <source_path>:/source -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> file-backup-s3
+   docker run --rm -v <source_path>:/source:ro -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> file-backup-s3
    ```
 
 ## Project layout
