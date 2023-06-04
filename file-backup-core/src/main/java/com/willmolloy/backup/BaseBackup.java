@@ -1,17 +1,14 @@
 package com.willmolloy.backup;
 
-import static com.willmolloy.backup.util.TimeHelper.elapsed;
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.statistics.BackupObserver;
+import com.willmolloy.backup.statistics.Statistics;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.text.NumberFormat;
-import java.util.Locale;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,8 +24,6 @@ import org.apache.logging.log4j.Logger;
     justification = "Relying on default ExecutorService.close to wait for futures")
 public abstract class BaseBackup<SourceFileT extends File, DestFileT extends File> {
   private static final Logger log = LogManager.getLogger();
-  private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
-  private static final int MEGA = 1_000_000;
 
   private static ExecutorService threadPool(String name) {
     return Executors.newThreadPerTaskExecutor(
@@ -37,25 +32,23 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   private final Location<SourceFileT> source;
   private final Location<DestFileT> destination;
+  private final List<BackupObserver> observers;
 
-  protected BaseBackup(Location<SourceFileT> source, Location<DestFileT> destination) {
+  protected BaseBackup(
+      Location<SourceFileT> source,
+      Location<DestFileT> destination,
+      List<BackupObserver> observers) {
     this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
+    this.observers = List.copyOf(observers);
   }
 
   /** Runs the backup. */
   public final boolean run() {
-    log.info("Running: {}", this);
-    long startNanos = System.nanoTime();
-
-    AtomicInteger puts = new AtomicInteger();
-    AtomicInteger deletes = new AtomicInteger();
-    AtomicInteger failedPuts = new AtomicInteger();
-    AtomicInteger failedDeletes = new AtomicInteger();
-    AtomicLong bytesAdded = new AtomicLong();
-    // TODO doesn't include cases where file is updated
-    //  - but shouldn't count create after delete as update
-    AtomicLong bytesRemoved = new AtomicLong();
+    Statistics statistics = new Statistics();
+    for (BackupObserver observer : observers) {
+      observer.notifyStarted(this);
+    }
 
     FileTree<SourceFileT> sourceFileTree = source.fileTree();
     FileTree<DestFileT> destFileTree = destination.fileTree();
@@ -75,10 +68,10 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
                         log.debug("delete({})", destFile);
                         if (delete(destFile)) {
                           FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
-                          deletes.addAndGet((int)subtree.fileCount());
-                          bytesRemoved.addAndGet(subtree.totalSize());
+                          statistics.recordDelete(subtree);
                         } else {
-                          failedDeletes.incrementAndGet();
+                          FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
+                          statistics.recordFailedDelete(subtree);
                         }
                       }));
     }
@@ -94,27 +87,18 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
                       () -> {
                         log.debug("put({})", sourceFile);
                         if (put(sourceFile)) {
-                          puts.incrementAndGet();
-                          bytesAdded.addAndGet(sourceFile.size());
+                          statistics.recordPut(sourceFile);
                         } else {
-                          failedPuts.incrementAndGet();
+                          statistics.recordFailedPut(sourceFile);
                         }
                       }));
     }
 
-    log.info(
-        "Finished: {} in: {}. {} puts, {} deletes. {}MB added, {}MB removed",
-        this,
-        elapsed(startNanos),
-        puts.get(),
-        deletes.get(),
-        NUMBER_FORMAT.format(bytesAdded.get() / MEGA),
-        NUMBER_FORMAT.format(bytesRemoved.get() / MEGA));
-    boolean allSuccess = IntStream.of(failedPuts.get(), failedDeletes.get()).allMatch(i -> i == 0);
-    if (!allSuccess) {
-      log.warn("Failed {} puts and {} deletes", failedPuts.get(), failedDeletes.get());
+    Statistics.Snapshot snapshot = statistics.snapshot();
+    for (BackupObserver observer : observers) {
+      observer.notifyFinished(this, snapshot);
     }
-    return allSuccess;
+    return snapshot.allSuccess();
   }
 
   /**

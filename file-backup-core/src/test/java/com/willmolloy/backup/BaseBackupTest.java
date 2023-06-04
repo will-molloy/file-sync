@@ -2,6 +2,8 @@ package com.willmolloy.backup;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -9,14 +11,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.Statistics;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -32,6 +39,7 @@ class BaseBackupTest {
 
   @Mock private Location<File> mockSource;
   @Mock private Location<File> mockDest;
+  @Spy private LoggingBackupObserver observer;
   private BaseBackup<File, File> sut;
 
   @BeforeEach
@@ -39,7 +47,7 @@ class BaseBackupTest {
     // kinda strange testing an abstract class like this... but I can't think of a better design atm
     sut =
         spy(
-            new BaseBackup<>(mockSource, mockDest) {
+            new BaseBackup<>(mockSource, mockDest, List.of(observer)) {
               @Override
               protected boolean put(File sourceFile) {
                 return true;
@@ -54,6 +62,10 @@ class BaseBackupTest {
 
   @AfterEach
   void tearDown() {
+    verifyNoMoreInteractions(mockSource);
+    verifyNoMoreInteractions(mockDest);
+    verify(observer).notifyStarted(same(sut));
+    verifyNoMoreInteractions(observer);
     verify(sut).run();
     verifyNoMoreInteractions(sut);
   }
@@ -69,6 +81,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
     verify(sut).put(file("A"));
@@ -85,6 +100,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
     verify(sut).needDelete(differentFile("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
@@ -103,6 +121,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 0, 0, 0, 0, null))));
     verify(sut).needDelete(file("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
@@ -120,6 +141,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
     verify(sut).needDelete(file("A"));
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A"));
@@ -138,6 +162,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 0, 0, 0, 0, null))));
     verify(sut).needDelete(file("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
@@ -156,6 +183,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, null))));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
     verify(sut).put(file("A"));
@@ -173,6 +203,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, null))));
     verify(sut).needDelete(differentFile("A"));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A"));
@@ -192,6 +225,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 0, 1, 0, 0, null))));
     verify(sut).needDelete(file("A"));
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).delete(file("A"));
@@ -211,6 +247,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A/B"));
     verify(sut).put(file("A/B"));
@@ -233,6 +272,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
     verify(sut).needDelete(directory(""));
     verify(sut).needPut(file("A/B/C"));
     verify(sut).put(file("A/B/C"));
@@ -250,6 +292,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
     verify(sut).needDelete(file("A/B"));
     verify(sut, times(2)).needDelete(directory("A"));
     verify(sut, times(2)).needDelete(directory(""));
@@ -275,6 +320,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
     verify(sut).needDelete(file("A/B/C"));
     verify(sut, times(2)).needDelete(directory("A/B"));
     verify(sut, times(2)).needDelete(directory("A"));
@@ -296,6 +344,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
     verify(sut).needDelete(file("A/B"));
     verify(sut, times(2)).needDelete(directory("A"));
     verify(sut, times(2)).needDelete(directory(""));
@@ -322,6 +373,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
     verify(sut).needDelete(file("A/B/C"));
     verify(sut, times(2)).needDelete(directory("A/B"));
     verify(sut, times(2)).needDelete(directory("A"));
@@ -342,6 +396,9 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(
+            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 1, 0, 0, 1, 1, null))));
     verify(sut).needDelete(file("B"));
     verify(sut, times(2)).needDelete(directory(""));
     verify(sut).needPut(file("A"));
@@ -364,6 +421,17 @@ class BaseBackupTest {
 
   private static File differentFile(String path) {
     return new TestFile(path, Path.of(path), 2, false);
+  }
+
+  private static ArgumentMatcher<Statistics.Snapshot> ignoringElapsed(
+      Statistics.Snapshot snapshot) {
+    return actual ->
+        actual.puts() == snapshot.puts()
+            && actual.deletes() == snapshot.deletes()
+            && actual.failedPuts() == snapshot.failedPuts()
+            && actual.failedDeletes() == snapshot.failedDeletes()
+            && actual.bytesAdded() == snapshot.bytesAdded()
+            && actual.bytesRemoved() == snapshot.bytesRemoved();
   }
 
   private record TestFile(String uri, Path relativePath, long size, boolean isDirectory)

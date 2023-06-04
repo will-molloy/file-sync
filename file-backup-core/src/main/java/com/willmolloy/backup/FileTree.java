@@ -33,8 +33,8 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
   /** Returns the subtree rooted at the given {@code file}. */
   FileTree<FileT> subtree(FileT file);
 
-  /** Count of files (where {@link File#isDirectory()} is {@code false}). */
-  long fileCount();
+  /** Count of leaves. */
+  long leafCount();
 
   /**
    * Total size in bytes.

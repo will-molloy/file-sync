@@ -159,7 +159,7 @@ class FileTreeNodeTest {
                 .insert(directory("A/B/C/D/X/Y"))
                 .insert(file("A/B/C/D/X/Y/Z"))
                 .build());
-    // verify ancestors ends at the new root
+    // verify ancestors ends at the new root; need since parents not included in equals
     assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z")))
         .containsExactly(
             directory("A/B/C/D/X/Y"),
@@ -187,7 +187,7 @@ class FileTreeNodeTest {
   }
 
   @Test
-  void fileCount_countsFiles() {
+  void leafCount_countsLeaves() {
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
@@ -196,9 +196,9 @@ class FileTreeNodeTest {
             .insert(file("A/B/D"))
             .insert(directory("X"))
             .insert(directory("X/Y"))
-            .insert(file("X/Y/Z"))
+            .insert(directory("X/Y/Z"))
             .build();
-    assertThat(fileTree.fileCount()).isEqualTo(3);
+    assertThat(fileTree.leafCount()).isEqualTo(3);
   }
 
   @Test
@@ -211,9 +211,9 @@ class FileTreeNodeTest {
             .insert(file("A/B/D"))
             .insert(directory("X"))
             .insert(directory("X/Y"))
-            .insert(file("X/Y/Z"))
+            .insert(directory("X/Y/Z"))
             .build();
-    assertThat(fileTree.totalSize()).isEqualTo(6);
+    assertThat(fileTree.totalSize()).isEqualTo(4);
   }
 
   private static File file(String path) {

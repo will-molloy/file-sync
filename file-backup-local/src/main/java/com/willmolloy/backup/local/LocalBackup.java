@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
@@ -26,7 +27,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   private final LocalStorage destination;
 
   LocalBackup(LocalStorage source, LocalStorage destination) {
-    super(source, destination);
+    super(source, destination, List.of());
     this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
   }

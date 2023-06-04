@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
  * @param <FileT> type of file stored in this location
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
+// TODO just merge these interfaces/abstract classes...?
 public abstract class BaseLocation<FileT extends File> implements Location<FileT> {
 
   private static final Logger log = LogManager.getLogger();
@@ -25,6 +26,7 @@ public abstract class BaseLocation<FileT extends File> implements Location<FileT
   public final FileTree<FileT> fileTree() {
     // simple double-checked locking
     if (fileTree == null) {
+      // TODO synchronized technically bad for virtual thread... semaphore pls
       synchronized (this) {
         if (fileTree == null) {
           long scanStartNanos = System.nanoTime();
@@ -34,7 +36,7 @@ public abstract class BaseLocation<FileT extends File> implements Location<FileT
               "Scanned: {} in: {}. {} files. {}MB",
               this,
               elapsed(scanStartNanos),
-              NUMBER_FORMAT.format(fileTree.fileCount()),
+              NUMBER_FORMAT.format(fileTree.leafCount()),
               NUMBER_FORMAT.format(fileTree.totalSize() / MEGA));
           this.fileTree = fileTree;
         }
