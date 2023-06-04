@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,7 +48,8 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   /** Runs the backup. */
   public final boolean run() {
-    Statistics statistics = new Statistics();
+    long startNanos = System.nanoTime();
+    Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
     for (BackupObserver observer : observers) {
       observer.notifyStarted(this);
     }
@@ -57,15 +59,43 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
     // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
     // overwriting a file
+    executeDeletes(sourceFileTree, destFileTree, statistics);
+    executePuts(sourceFileTree, destFileTree, statistics);
+
+    Statistics.Snapshot snapshot = statistics.snapshot();
+    Duration elapsed = elapsed(startNanos);
+    for (BackupObserver observer : observers) {
+      observer.notifyFinished(this, snapshot, elapsed);
+    }
+    return snapshot.allSuccess();
+  }
+
+  private <T extends File> FileTree<T> scan(Location<T> location) {
+    long startNanos = System.nanoTime();
+    log.info("Scanning: {}", location);
+    FileTree<T> fileTree = location.scan();
+    Duration elapsed = elapsed(startNanos);
+    for (BackupObserver observer : observers) {
+      observer.notifyScanned(location, fileTree, elapsed);
+    }
+    return fileTree;
+  }
+
+  private void executeDeletes(
+      FileTree<SourceFileT> sourceFileTree,
+      FileTree<DestFileT> destFileTree,
+      Statistics<SourceFileT, DestFileT> statistics) {
     try (ExecutorService threadPool = threadPool("delete")) {
       destFileTree
           .postorder()
+          .filter(skipRoot(destFileTree))
           .filter(destFile -> needDelete(sourceFileTree.correspondent(destFile), destFile))
           // skip delete if covered by ancestor, since children are deleted too
           .filter(
               destFile ->
                   destFileTree
                       .ancestors(destFile)
+                      .filter(skipRoot(destFileTree))
                       .noneMatch(
                           ancestor -> needDelete(sourceFileTree.correspondent(ancestor), ancestor)))
           .forEach(
@@ -75,47 +105,62 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
                         log.debug("delete({})", destFile);
                         FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
                         if (delete(subtree)) {
-                          statistics.recordDelete(subtree);
+                          statistics.countDelete(subtree);
                         } else {
-                          statistics.recordFailedDelete(subtree);
+                          statistics.countFailedDelete(subtree);
                         }
                       }));
     }
+  }
 
+  private void executePuts(
+      FileTree<SourceFileT> sourceFileTree,
+      FileTree<DestFileT> destFileTree,
+      Statistics<SourceFileT, DestFileT> statistics) {
     try (ExecutorService threadPool = threadPool("put")) {
       sourceFileTree
           // only need to put leaves, parents are created as necessary
           .leaves()
-          .filter(sourceFile -> needPut(sourceFile, destFileTree.correspondent(sourceFile)))
+          .filter(skipRoot(sourceFileTree))
           .forEach(
-              sourceFile ->
+              sourceFile -> {
+                Optional<DestFileT> optionalDestFile = destFileTree.correspondent(sourceFile);
+                if (needCreate(sourceFile, optionalDestFile)
+                    // if it was deleted first, count as create rather than update
+                    || needDelete(Optional.of(sourceFile), optionalDestFile.orElseThrow())) {
                   threadPool.submit(
                       () -> {
-                        log.debug("put({})", sourceFile);
+                        // TODO make the logs here info and ones below debug? This is higher level..
+                        log.debug("create({})", sourceFile);
                         if (put(sourceFile)) {
-                          statistics.recordPut(sourceFile);
+                          statistics.countCreate(sourceFile);
                         } else {
-                          statistics.recordFailedPut(sourceFile);
+                          statistics.countFailedCreate(sourceFile);
                         }
-                      }));
+                      });
+                } else {
+                  DestFileT destFile = optionalDestFile.orElseThrow();
+                  if (needUpdate(sourceFile, destFile)) {
+                    threadPool.submit(
+                        () -> {
+                          log.debug("update({}, {})", sourceFile, destFile);
+                          if (put(sourceFile)) {
+                            statistics.countUpdate(sourceFile, optionalDestFile.get());
+                          } else {
+                            statistics.countFailedUpdate(sourceFile, optionalDestFile.get());
+                          }
+                        });
+                  } else {
+                    log.debug("same({}, {})", sourceFile, destFile);
+                    statistics.countSame();
+                  }
+                }
+              });
     }
-
-    Statistics.Snapshot snapshot = statistics.snapshot();
-    for (BackupObserver observer : observers) {
-      observer.notifyFinished(this, snapshot);
-    }
-    return snapshot.allSuccess();
   }
 
-  private <T extends File> FileTree<T> scan(Location<T> location) {
-    long scanStartNanos = System.nanoTime();
-    log.info("Scanning: {}", location);
-    FileTree<T> fileTree = location.scan();
-    Duration elapsed = elapsed(scanStartNanos);
-    for (BackupObserver observer : observers) {
-      observer.notifyScanned(location, fileTree, elapsed);
-    }
-    return fileTree;
+  private <T extends File> Predicate<T> skipRoot(FileTree<T> fileTree) {
+    return file -> file != fileTree.root();
   }
 
   /**
@@ -134,11 +179,9 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
    */
   protected abstract boolean delete(FileTree<DestFileT> destSubtree);
 
-  /** {@code true} if {@link #put} is necessary. */
-  protected boolean needPut(SourceFileT sourceFile, Optional<DestFileT> maybeDestFile) {
-    // either file not on dest -> create
-    // OR files different -> update
-    return maybeDestFile.isEmpty() || needUpdate(sourceFile, maybeDestFile.get());
+  /** {@code true} if create (via {@link #put}) is necessary. */
+  protected boolean needCreate(SourceFileT sourceFile, Optional<DestFileT> optionalDestFile) {
+    return optionalDestFile.isEmpty();
   }
 
   /** {@code true} if update (via {@link #put}) is necessary. */
@@ -151,9 +194,8 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   }
 
   /** {@code true} if {@link #delete} is necessary. */
-  protected boolean needDelete(Optional<SourceFileT> maybeSourceFile, DestFileT destFile) {
-    // file not on source -> delete
-    return maybeSourceFile.isEmpty();
+  protected boolean needDelete(Optional<SourceFileT> optionalSourceFile, DestFileT destFile) {
+    return optionalSourceFile.isEmpty();
   }
 
   @Override

@@ -129,13 +129,9 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
     if (this == o) {
       return true;
     }
-    if (o == null) {
-      return false;
-    }
-    if (o instanceof FileTreeNode<?> node) {
-      return Objects.equals(file, node.file) && Objects.equals(children, node.children);
-    }
-    return false;
+    return o instanceof FileTreeNode<?> node
+        && Objects.equals(file, node.file)
+        && Objects.equals(children, node.children);
   }
 
   @Override

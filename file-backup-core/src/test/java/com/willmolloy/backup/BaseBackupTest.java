@@ -3,6 +3,7 @@ package com.willmolloy.backup;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.spy;
@@ -85,10 +86,8 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.empty());
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 0, 0, 0, 0, 0, 1, 0)), any());
+    verify(sut).needCreate(file("A"), Optional.empty());
     verify(sut).put(file("A"));
   }
 
@@ -104,11 +103,9 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
-    verify(sut).needDelete(Optional.of(file("A")), differentFile("A"));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.of(differentFile("A")));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 1, 0, 0, 0, 0, 0, 1, 2)), any());
+    verify(sut, times(2)).needDelete(Optional.of(file("A")), differentFile("A"));
+    verify(sut).needCreate(file("A"), Optional.of(differentFile("A")));
     verify(sut).needUpdate(file("A"), differentFile("A"));
     verify(sut).put(file("A"));
   }
@@ -125,11 +122,9 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 0, 0, 0, 0, null))));
-    verify(sut).needDelete(Optional.of(file("A")), file("A"));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.of(file("A")));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 1, 0, 0, 0, 0, 0)), any());
+    verify(sut, times(2)).needDelete(Optional.of(file("A")), file("A"));
+    verify(sut).needCreate(file("A"), Optional.of(file("A")));
     verify(sut).needUpdate(file("A"), file("A"));
   }
 
@@ -145,13 +140,9 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
     verify(sut).delete(argThat(rootedAt(file("A"))));
-    verify(sut).needPut(directory(""), Optional.of(directory("")));
-    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
@@ -166,11 +157,9 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 0, 0, 0, 0, null))));
-    verify(sut).needDelete(Optional.of(file("A")), file("A"));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.of(file("A")));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 1, 0, 0, 0, 0, 0)), any());
+    verify(sut, times(2)).needDelete(Optional.of(file("A")), file("A"));
+    verify(sut).needCreate(file("A"), Optional.of(file("A")));
     verify(sut).needUpdate(file("A"), file("A"));
   }
 
@@ -187,10 +176,8 @@ class BaseBackupTest {
     // Then
     assertThat(result).isFalse();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, null))));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.empty());
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 0, 1, 0, 0, 0, 0)), any());
+    verify(sut).needCreate(file("A"), Optional.empty());
     verify(sut).put(file("A"));
   }
 
@@ -207,11 +194,9 @@ class BaseBackupTest {
     // Then
     assertThat(result).isFalse();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, null))));
-    verify(sut).needDelete(Optional.of(file("A")), differentFile("A"));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.of(differentFile("A")));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 0, 0, 1, 0, 0, 0)), any());
+    verify(sut, times(2)).needDelete(Optional.of(file("A")), differentFile("A"));
+    verify(sut).needCreate(file("A"), Optional.of(differentFile("A")));
     verify(sut).needUpdate(file("A"), differentFile("A"));
     verify(sut).put(file("A"));
   }
@@ -229,17 +214,13 @@ class BaseBackupTest {
     // Then
     assertThat(result).isFalse();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 0, 0, 1, 0, 0, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 0, 0, 0, 1, 0, 0)), any());
     verify(sut).needDelete(Optional.empty(), file("A"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
     verify(sut).delete(argThat(rootedAt(file("A"))));
-    verify(sut).needPut(directory(""), Optional.of(directory("")));
-    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
-  void whenChildExists_skipsPut() {
+  void whenChildExists_onlyPutsChild() {
     // Given
     when(mockSource.scan())
         .thenReturn(fileTreeBuilder().insert(directory("A")).insert(file("A/B")).build());
@@ -251,15 +232,13 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A/B"), Optional.empty());
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 0, 0, 0, 0, 0, 1, 0)), any());
+    verify(sut).needCreate(file("A/B"), Optional.empty());
     verify(sut).put(file("A/B"));
   }
 
   @Test
-  void whenGrandChildExists_skipsPut() {
+  void whenGrandChildExists_onlyPutsGrandChild() {
     // Given
     when(mockSource.scan())
         .thenReturn(
@@ -276,15 +255,13 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 0, 0, 0, 1, 0, null))));
-    verify(sut).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A/B/C"), Optional.empty());
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 0, 0, 0, 0, 0, 1, 0)), any());
+    verify(sut).needCreate(file("A/B/C"), Optional.empty());
     verify(sut).put(file("A/B/C"));
   }
 
   @Test
-  void whenParentExists_skipsDelete() {
+  void whenParentExists_onlyDeletesParent() {
     // Given
     when(mockSource.scan()).thenReturn(fileTreeBuilder().build());
     when(mockDest.scan())
@@ -296,18 +273,14 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B"));
     verify(sut, times(2)).needDelete(Optional.empty(), directory("A"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
     verify(sut).delete(argThat(rootedAt(directory("A"))));
-    verify(sut).needPut(directory(""), Optional.of(directory("")));
-    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
-  void whenGrandParentExists_skipsDelete() {
+  void whenGrandParentExists_onlyDeletesGrandParent() {
     // Given
     when(mockSource.scan()).thenReturn(fileTreeBuilder().build());
     when(mockDest.scan())
@@ -324,19 +297,15 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B/C"));
     verify(sut, times(2)).needDelete(Optional.empty(), directory("A/B"));
     verify(sut, times(2)).needDelete(Optional.empty(), directory("A"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
     verify(sut).delete(argThat(rootedAt(directory("A"))));
-    verify(sut).needPut(directory(""), Optional.of(directory("")));
-    verify(sut).needUpdate(directory(""), directory(""));
   }
 
   @Test
-  void whenParentExistsButParentInSource_deletesChild() {
+  void whenParentExistsButParentInSource_stillDeletesChild() {
     // Given
     when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(directory("A")).build());
     when(mockDest.scan())
@@ -348,18 +317,16 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 1, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("A")), directory("A"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
+    verify(sut, times(3)).needDelete(Optional.of(directory("A")), directory("A"));
     verify(sut).delete(argThat(rootedAt(file("A/B"))));
-    verify(sut).needPut(directory("A"), Optional.of(directory("A")));
+    verify(sut).needCreate(directory("A"), Optional.of(directory("A")));
     verify(sut).needUpdate(directory("A"), directory("A"));
   }
 
   @Test
-  void whenGrandParentExistsButGrandParentInSource_deletesGrandChild() {
+  void whenGrandParentExistsButGrandParentInSource_stillDeletesGrandChild() {
     // Given
     when(mockSource.scan())
         .thenReturn(fileTreeBuilder().insert(directory("A")).insert(directory("A/B")).build());
@@ -377,14 +344,12 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(0, 1, 0, 0, 0, 1, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 1, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B/C"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("A/B")), directory("A/B"));
+    verify(sut, times(3)).needDelete(Optional.of(directory("A/B")), directory("A/B"));
     verify(sut, times(2)).needDelete(Optional.of(directory("A")), directory("A"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
     verify(sut).delete(argThat(rootedAt(file("A/B/C"))));
-    verify(sut).needPut(directory("A/B"), Optional.of(directory("A/B")));
+    verify(sut).needCreate(directory("A/B"), Optional.of(directory("A/B")));
     verify(sut).needUpdate(directory("A/B"), directory("A/B"));
   }
 
@@ -400,14 +365,33 @@ class BaseBackupTest {
     // Then
     assertThat(result).isTrue();
     verify(observer)
-        .notifyFinished(
-            same(sut), argThat(ignoringElapsed(new Statistics.Snapshot(1, 1, 0, 0, 1, 1, null))));
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 1, 0, 0, 0, 0, 1, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("B"));
-    verify(sut, times(2)).needDelete(Optional.of(directory("")), directory(""));
-    verify(sut).needPut(file("A"), Optional.empty());
+    verify(sut).needCreate(file("A"), Optional.empty());
     InOrder inOrder = inOrder(sut);
     inOrder.verify(sut).delete(argThat(rootedAt(file("B"))));
     inOrder.verify(sut).put(file("A"));
+  }
+
+  @Test
+  void whenDeleteBeforeUpdate_countsAsCreate() {
+    // Given
+    when(mockSource.scan()).thenReturn(fileTreeBuilder().insert(file("B")).build());
+    when(mockDest.scan()).thenReturn(fileTreeBuilder().insert(differentFile("B")).build());
+    when(sut.needDelete(Optional.of(file("B")), differentFile("B"))).thenReturn(true);
+
+    // When
+    boolean result = sut.run();
+
+    // Then
+    assertThat(result).isTrue();
+    verify(observer)
+        .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 1, 0, 0, 0, 0, 1, 2)), any());
+    verify(sut, times(2)).needDelete(Optional.of(file("B")), differentFile("B"));
+    verify(sut).needCreate(file("B"), Optional.of(differentFile("B")));
+    InOrder inOrder = inOrder(sut);
+    inOrder.verify(sut).delete(argThat(rootedAt(differentFile("B"))));
+    inOrder.verify(sut).put(file("B"));
   }
 
   private static FileTree.Builder<File> fileTreeBuilder() {
@@ -424,17 +408,6 @@ class BaseBackupTest {
 
   private static File differentFile(String path) {
     return new TestFile(path, Path.of(path), 2, false);
-  }
-
-  private static ArgumentMatcher<Statistics.Snapshot> ignoringElapsed(
-      Statistics.Snapshot snapshot) {
-    return actual ->
-        actual.puts() == snapshot.puts()
-            && actual.deletes() == snapshot.deletes()
-            && actual.failedPuts() == snapshot.failedPuts()
-            && actual.failedDeletes() == snapshot.failedDeletes()
-            && actual.bytesAdded() == snapshot.bytesAdded()
-            && actual.bytesRemoved() == snapshot.bytesRemoved();
   }
 
   private static ArgumentMatcher<FileTree<File>> rootedAt(File file) {

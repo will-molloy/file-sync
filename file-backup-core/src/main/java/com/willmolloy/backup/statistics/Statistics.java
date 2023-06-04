@@ -1,10 +1,7 @@
 package com.willmolloy.backup.statistics;
 
-import static com.willmolloy.backup.util.TimeHelper.elapsed;
-
 import com.willmolloy.backup.File;
 import com.willmolloy.backup.FileTree;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
@@ -12,73 +9,95 @@ import java.util.stream.IntStream;
 /**
  * Backup statistics.
  *
+ * @param <SourceFileT> source file type
+ * @param <DestFileT> destination file type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class Statistics {
+public final class Statistics<SourceFileT extends File, DestFileT extends File> {
 
-  private final AtomicInteger puts = new AtomicInteger();
+  private final AtomicInteger creates = new AtomicInteger();
+  private final AtomicInteger updates = new AtomicInteger();
   private final AtomicInteger deletes = new AtomicInteger();
-  private final AtomicInteger failedPuts = new AtomicInteger();
+  private final AtomicInteger same = new AtomicInteger();
+  private final AtomicInteger failedCreates = new AtomicInteger();
+  private final AtomicInteger failedUpdates = new AtomicInteger();
   private final AtomicInteger failedDeletes = new AtomicInteger();
   private final AtomicLong bytesAdded = new AtomicLong();
   private final AtomicLong bytesRemoved = new AtomicLong();
-  private final long startNanos = System.nanoTime();
 
-  /** Count put. */
-  public void recordPut(File file) {
-    puts.incrementAndGet();
-    // TODO doesn't account for bytes removed by update... need to distinct create/update?
-    //  ^ shouldn't do it for cases where delete occurred before create, only pure update
-    bytesAdded.addAndGet(file.size());
+  public void countCreate(SourceFileT sourceFile) {
+    creates.incrementAndGet();
+    bytesAdded.addAndGet(sourceFile.size());
   }
 
-  public void recordFailedPut(File file) {
-    failedPuts.incrementAndGet();
+  public void countFailedCreate(SourceFileT file) {
+    failedCreates.incrementAndGet();
   }
 
-  public void recordDelete(FileTree<?> fileTree) {
+  /** Count update. */
+  public void countUpdate(SourceFileT sourceFile, DestFileT destFile) {
+    updates.incrementAndGet();
+    bytesAdded.addAndGet(sourceFile.size());
+    bytesRemoved.addAndGet(destFile.size());
+  }
+
+  public void countFailedUpdate(SourceFileT sourceFile, DestFileT destFile) {
+    failedUpdates.incrementAndGet();
+  }
+
+  public void countDelete(FileTree<DestFileT> fileTree) {
     deletes.addAndGet((int) fileTree.leafCount());
     bytesRemoved.addAndGet(fileTree.totalSize());
   }
 
-  public void recordFailedDelete(FileTree<?> fileTree) {
+  public void countFailedDelete(FileTree<DestFileT> fileTree) {
     failedDeletes.addAndGet((int) fileTree.leafCount());
+  }
+
+  public void countSame() {
+    same.incrementAndGet();
   }
 
   /** Get snapshot of current backup statistics. */
   public Snapshot snapshot() {
     return new Snapshot(
-        puts.get(),
+        creates.get(),
+        updates.get(),
         deletes.get(),
-        failedPuts.get(),
+        same.get(),
+        failedCreates.get(),
+        failedUpdates.get(),
         failedDeletes.get(),
         bytesAdded.get(),
-        bytesRemoved.get(),
-        elapsed(startNanos));
+        bytesRemoved.get());
   }
 
   /**
    * Snapshot of current backup statistics.
    *
-   * @param puts put count
-   * @param deletes delete count
-   * @param failedPuts failed put count
-   * @param failedDeletes failed delete count
+   * @param creates count of files created
+   * @param updates count of files updated
+   * @param deletes count of files deleted
+   * @param same count of files that remained the same
+   * @param failedCreates failed creates
+   * @param failedUpdates failed updates
+   * @param failedDeletes failed deletes
    * @param bytesAdded bytes added
    * @param bytesRemoved bytes removed
-   * @param elapsed elapsed duration
    */
   public record Snapshot(
-      int puts,
+      int creates,
+      int updates,
       int deletes,
-      int failedPuts,
+      int same,
+      int failedCreates,
+      int failedUpdates,
       int failedDeletes,
       long bytesAdded,
-      long bytesRemoved,
-      Duration elapsed) {
+      long bytesRemoved) {
 
     public boolean allSuccess() {
-      return IntStream.of(failedPuts, failedDeletes).allMatch(i -> i == 0);
+      return IntStream.of(failedCreates, failedUpdates, failedDeletes).allMatch(i -> i == 0);
     }
   }
 }

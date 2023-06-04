@@ -85,11 +85,11 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   }
 
   @Override
-  protected boolean needDelete(Optional<LocalFile> maybeSourceFile, LocalFile destFile) {
+  protected boolean needDelete(Optional<LocalFile> optionalSourceFile, LocalFile destFile) {
     // file not on source -> delete
     // OR one is file, one is dir -> need to delete before update, otherwise we get errors
     // overwriting non-empty dir, or failing to create dirs because file is in the way.
-    return maybeSourceFile.isEmpty()
-        || maybeSourceFile.get().isDirectory() != destFile.isDirectory();
+    return optionalSourceFile.isEmpty()
+        || optionalSourceFile.get().isDirectory() != destFile.isDirectory();
   }
 }

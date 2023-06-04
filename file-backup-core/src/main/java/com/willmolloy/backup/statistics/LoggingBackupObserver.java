@@ -28,7 +28,7 @@ public final class LoggingBackupObserver implements BackupObserver {
   @Override
   public void notifyScanned(Location<?> location, FileTree<?> fileTree, Duration elapsed) {
     log.info(
-        "Scanned: {} in: {}. {} files ({}MB)",
+        "Scanned: {} in: {}. {} files. {}MB",
         location,
         elapsed,
         NUMBER_FORMAT.format(fileTree.leafCount()),
@@ -36,18 +36,23 @@ public final class LoggingBackupObserver implements BackupObserver {
   }
 
   @Override
-  public void notifyFinished(BaseBackup<?, ?> backup, Statistics.Snapshot statistics) {
+  public void notifyFinished(BaseBackup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
     log.info(
-        "Finished: {} in: {}. {} files put ({}MB), {} files deleted ({}MB)",
+        "Finished: {} in: {}. {} files created, {} files updated, {} files deleted, {} files same. {}MB added, {}MB removed",
         backup,
-        statistics.elapsed(),
-        statistics.puts(),
-        NUMBER_FORMAT.format(statistics.bytesAdded() / MEGA),
-        statistics.deletes(),
-        NUMBER_FORMAT.format(statistics.bytesRemoved() / MEGA));
-    if (!statistics.allSuccess()) {
+        elapsed,
+        NUMBER_FORMAT.format(stats.creates()),
+        NUMBER_FORMAT.format(stats.updates()),
+        NUMBER_FORMAT.format(stats.deletes()),
+        NUMBER_FORMAT.format(stats.same()),
+        NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
+        NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA));
+    if (!stats.allSuccess()) {
       log.warn(
-          "Failed: {} puts and {} deletes", statistics.failedPuts(), statistics.failedDeletes());
+          "Failed: {} creates, {} updates, {} deletes",
+          NUMBER_FORMAT.format(stats.failedCreates()),
+          NUMBER_FORMAT.format(stats.failedUpdates()),
+          NUMBER_FORMAT.format(stats.failedDeletes()));
     }
   }
 }
