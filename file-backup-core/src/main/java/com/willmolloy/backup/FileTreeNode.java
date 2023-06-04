@@ -42,8 +42,8 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public Optional<FileT> get(Path relativePath) {
-    return getNode(relativePath).map(getFile);
+  public Optional<FileT> correspondent(File file) {
+    return getNode(file.relativePath()).map(getFile);
   }
 
   @Override

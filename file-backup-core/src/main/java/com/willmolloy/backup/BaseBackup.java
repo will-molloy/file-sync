@@ -60,15 +60,14 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     try (ExecutorService threadPool = threadPool("delete")) {
       destFileTree
           .postorder()
-          .filter(destFile -> needDelete(sourceFileTree.get(destFile.relativePath()), destFile))
+          .filter(destFile -> needDelete(sourceFileTree.correspondent(destFile), destFile))
           // skip delete if covered by ancestor, since children are deleted too
           .filter(
               destFile ->
                   destFileTree
                       .ancestors(destFile)
                       .noneMatch(
-                          ancestor ->
-                              needDelete(sourceFileTree.get(ancestor.relativePath()), ancestor)))
+                          ancestor -> needDelete(sourceFileTree.correspondent(ancestor), ancestor)))
           .forEach(
               destFile ->
                   threadPool.submit(
@@ -87,7 +86,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       sourceFileTree
           // only need to put leaves, parents are created as necessary
           .leaves()
-          .filter(sourceFile -> needPut(sourceFile, destFileTree.get(sourceFile.relativePath())))
+          .filter(sourceFile -> needPut(sourceFile, destFileTree.correspondent(sourceFile)))
           .forEach(
               sourceFile ->
                   threadPool.submit(

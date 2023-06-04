@@ -1,6 +1,5 @@
 package com.willmolloy.backup;
 
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -16,9 +15,12 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
   /** Gets root file. */
   FileT root();
 
-  /** Lookup by {@link File#relativePath()}. */
-  // TODO make this 'getCorresponding' so File passed in?
-  Optional<FileT> get(Path relativePath);
+  /**
+   * Gets the corresponding file via {@link File#relativePath()}.
+   *
+   * @apiNote useful for comparing files across different {@link Location}s.
+   */
+  Optional<FileT> correspondent(File file);
 
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();

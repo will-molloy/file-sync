@@ -1,7 +1,5 @@
 package com.willmolloy.backup.statistics;
 
-import static com.willmolloy.backup.util.TimeHelper.elapsed;
-
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;

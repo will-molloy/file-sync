@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class FileTreeNodeTest {
 
   @Test
-  void get_whenNodeInTree_present() {
+  void correspondent_whenNodeInTree_present() {
     File expected = file("A/B");
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
@@ -23,29 +23,29 @@ class FileTreeNodeTest {
             .insert(expected)
             .insert(file("A/B/C"))
             .build();
-    assertThat(fileTree.get(expected.relativePath())).hasValue(expected);
+    assertThat(fileTree.correspondent(expected)).hasValue(expected);
   }
 
   @Test
-  void get_whenMissingDirFilledIn_present() {
+  void correspondent_whenMissingDirFilledIn_present() {
     File expected = file("A/B");
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
-    assertThat(fileTree.get(expected.relativePath())).hasValue(directory("A/B"));
+    assertThat(fileTree.correspondent(expected)).hasValue(directory("A/B"));
   }
 
   @Test
-  void get_whenNodeNotInTree_empty() {
+  void correspondent_whenNodeNotInTree_empty() {
     File notExpected = file("A/B/C/D");
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
-    assertThat(fileTree.get(notExpected.relativePath())).isEmpty();
+    assertThat(fileTree.correspondent(notExpected)).isEmpty();
   }
 
   @Test
