@@ -60,12 +60,12 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
     Path sourcePath = sourceFile.fullPath();
     String destinationUri = s3Uri(sourceFile);
     try {
+      log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
               .key(s3Key(sourceFile))
               .storageClass(StorageClass.DEEP_ARCHIVE);
-
       if (sourceFile.isDirectory()) {
         PutObjectRequest request = baseRequest.build();
         s3Client.putObject(request, RequestBody.empty());
@@ -74,10 +74,8 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
       }
-
       wait(s3Key(sourceFile), S3Waiter::waitUntilObjectExists);
-
-      log.info("Put: [{}] -> [{}]", sourceFile, destinationUri);
+      log.debug("Sent put request: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
       log.warn(
@@ -95,12 +93,13 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   @Override
   protected boolean delete(FileTree<S3File> destSubtree) {
     try {
+      log.debug("Sending delete request: [{}]", destSubtree.root().uri());
       if (destSubtree.root().isDirectory()) {
         deleteFolder(destSubtree);
       } else {
         deleteObject(destSubtree.root());
       }
-      log.info("Deleted: [{}]", destSubtree.root().uri());
+      log.debug("Sent delete request: [{}]", destSubtree.root().uri());
       return true;
     } catch (Exception e) {
       log.error("Error deleting: [{}]", destSubtree.root().uri(), e);

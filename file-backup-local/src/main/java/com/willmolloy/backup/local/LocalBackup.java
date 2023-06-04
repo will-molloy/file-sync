@@ -36,6 +36,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
     Path sourcePath = sourceFile.fullPath();
     Path destPath = destination.root().resolve(sourceFile.relativePath());
     try {
+      log.debug("Copying: [{}] -> [{}]", sourcePath, destPath);
       Path destParent = destPath.getParent();
       if (destParent != null) {
         Files.createDirectories(destParent);
@@ -45,7 +46,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
           destPath,
           StandardCopyOption.COPY_ATTRIBUTES,
           StandardCopyOption.REPLACE_EXISTING);
-      log.info("Copied: [{}] -> [{}]", sourcePath, destPath);
+      log.debug("Copied: [{}] -> [{}]", sourcePath, destPath);
       return true;
     } catch (NoSuchFileException e) {
       log.warn(
@@ -66,8 +67,9 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
         .forEach(
             destPath -> {
               try {
+                log.debug("Deleting: [{}]", destPath);
                 Files.delete(destPath);
-                log.info("Deleted: [{}]", destPath);
+                log.debug("Deleted: [{}]", destPath);
               } catch (NoSuchFileException e) {
                 log.debug("Already deleted: [{}]", destPath, e);
               } catch (Exception e) {

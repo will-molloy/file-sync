@@ -102,7 +102,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
               destFile ->
                   threadPool.submit(
                       () -> {
-                        log.debug("delete({})", destFile);
+                        log.info("delete({})", destFile);
                         FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
                         if (delete(subtree)) {
                           statistics.countDelete(subtree);
@@ -130,8 +130,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
                     || needDelete(Optional.of(sourceFile), optionalDestFile.orElseThrow())) {
                   threadPool.submit(
                       () -> {
-                        // TODO make the logs here info and ones below debug? This is higher level..
-                        log.debug("create({})", sourceFile);
+                        log.info("create({})", sourceFile);
                         if (put(sourceFile)) {
                           statistics.countCreate(sourceFile);
                         } else {
@@ -143,7 +142,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
                   if (needUpdate(sourceFile, destFile)) {
                     threadPool.submit(
                         () -> {
-                          log.debug("update({}, {})", sourceFile, destFile);
+                          log.info("update({}, {})", sourceFile, destFile);
                           if (put(sourceFile)) {
                             statistics.countUpdate(sourceFile, optionalDestFile.get());
                           } else {
