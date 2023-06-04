@@ -7,6 +7,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.File;
+import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
 import java.nio.file.NoSuchFileException;
@@ -86,23 +87,23 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   }
 
   @Override
-  protected boolean delete(S3File destFile) {
+  protected boolean delete(FileTree<S3File> destSubtree) {
     try {
-      if (destFile.isDirectory()) {
-        deleteFolder(destFile);
+      if (destSubtree.root().isDirectory()) {
+        deleteFolder(destSubtree);
       } else {
-        deleteObject(destFile);
+        deleteObject(destSubtree.root());
       }
-      log.info("Deleted: [{}]", destFile.uri());
+      log.info("Deleted: [{}]", destSubtree.root().uri());
       return true;
     } catch (Exception e) {
-      log.error("Error deleting: [{}]", destFile.uri(), e);
+      log.error("Error deleting: [{}]", destSubtree.root().uri(), e);
       return false;
     }
   }
 
-  private void deleteFolder(S3File destFile) {
-    Stream<S3File> filesToDelete = destination.fileTree().subtree(destFile).leaves();
+  private void deleteFolder(FileTree<S3File> destSubtree) {
+    Stream<S3File> filesToDelete = destSubtree.leaves();
     Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);
     chunks
         .map(

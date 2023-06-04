@@ -37,6 +37,11 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
+  public FileT root() {
+    return file;
+  }
+
+  @Override
   public Optional<FileT> get(Path relativePath) {
     return getNode(relativePath).map(getFile);
   }
@@ -117,7 +122,7 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
         children.values().stream().flatMap(FileTreeNode::postorderNodes), Stream.of(this));
   }
 
-  private final Function<FileTreeNode<FileT>, FileT> getFile = node -> node.file;
+  private final Function<FileTreeNode<FileT>, FileT> getFile = FileTreeNode::root;
 
   @Override
   public boolean equals(Object o) {

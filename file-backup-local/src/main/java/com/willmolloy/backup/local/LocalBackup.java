@@ -23,12 +23,10 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final LocalStorage source;
   private final LocalStorage destination;
 
   LocalBackup(LocalStorage source, LocalStorage destination) {
     super(source, destination, List.of());
-    this.source = requireNonNull(source);
     this.destination = requireNonNull(destination);
   }
 
@@ -59,30 +57,23 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   }
 
   @Override
-  protected boolean delete(LocalFile destFile) {
+  protected boolean delete(FileTree<LocalFile> destSubtree) {
     AtomicBoolean allDeleted = new AtomicBoolean(true);
-    try {
-      destination
-          .fileTree()
-          .subtree(destFile)
-          .postorder()
-          .map(LocalFile::fullPath)
-          .forEach(
-              destPath -> {
-                try {
-                  Files.delete(destPath);
-                  log.info("Deleted: [{}]", destPath);
-                } catch (NoSuchFileException e) {
-                  log.debug("Already deleted: [{}]", destPath, e);
-                } catch (Exception e) {
-                  log.error("Error deleting: [{}]", destPath, e);
-                  allDeleted.set(false);
-                }
-              });
-    } catch (Exception e) {
-      log.error("Error deleting: [{}]", destFile.uri(), e);
-      return false;
-    }
+    destSubtree
+        .postorder()
+        .map(LocalFile::fullPath)
+        .forEach(
+            destPath -> {
+              try {
+                Files.delete(destPath);
+                log.info("Deleted: [{}]", destPath);
+              } catch (NoSuchFileException e) {
+                log.debug("Already deleted: [{}]", destPath, e);
+              } catch (Exception e) {
+                log.error("Error deleting: [{}]", destPath, e);
+                allDeleted.set(false);
+              }
+            });
     return allDeleted.get();
   }
 
@@ -93,9 +84,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
   }
 
   @Override
-  protected boolean needDelete(LocalFile destFile) {
-    FileTree<LocalFile> sourceFileTree = source.fileTree();
-    Optional<LocalFile> maybeSourceFile = sourceFileTree.get(destFile.relativePath());
+  protected boolean needDelete(Optional<LocalFile> maybeSourceFile, LocalFile destFile) {
     // file not on source -> delete
     // OR one is file, one is dir -> need to delete before update, otherwise we get errors
     // overwriting non-empty dir, or failing to create dirs because file is in the way.

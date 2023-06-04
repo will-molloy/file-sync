@@ -1,10 +1,12 @@
 package com.willmolloy.backup;
 
+import static com.willmolloy.backup.util.TimeHelper.elapsed;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -50,27 +52,32 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       observer.notifyStarted(this);
     }
 
-    FileTree<SourceFileT> sourceFileTree = source.fileTree();
-    FileTree<DestFileT> destFileTree = destination.fileTree();
+    FileTree<SourceFileT> sourceFileTree = scan(source);
+    FileTree<DestFileT> destFileTree = scan(destination);
 
     // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
     // overwriting a file
     try (ExecutorService threadPool = threadPool("delete")) {
       destFileTree
           .postorder()
-          .filter(this::needDelete)
+          .filter(destFile -> needDelete(sourceFileTree.get(destFile.relativePath()), destFile))
           // skip delete if covered by ancestor, since children are deleted too
-          .filter(destFile -> destFileTree.ancestors(destFile).noneMatch(this::needDelete))
+          .filter(
+              destFile ->
+                  destFileTree
+                      .ancestors(destFile)
+                      .noneMatch(
+                          ancestor ->
+                              needDelete(sourceFileTree.get(ancestor.relativePath()), ancestor)))
           .forEach(
               destFile ->
                   threadPool.submit(
                       () -> {
                         log.debug("delete({})", destFile);
-                        if (delete(destFile)) {
-                          FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
+                        FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
+                        if (delete(subtree)) {
                           statistics.recordDelete(subtree);
                         } else {
-                          FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
                           statistics.recordFailedDelete(subtree);
                         }
                       }));
@@ -80,7 +87,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       sourceFileTree
           // only need to put leaves, parents are created as necessary
           .leaves()
-          .filter(this::needPut)
+          .filter(sourceFile -> needPut(sourceFile, destFileTree.get(sourceFile.relativePath())))
           .forEach(
               sourceFile ->
                   threadPool.submit(
@@ -101,26 +108,35 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     return snapshot.allSuccess();
   }
 
+  private <T extends File> FileTree<T> scan(Location<T> location) {
+    long scanStartNanos = System.nanoTime();
+    log.info("Scanning: {}", location);
+    FileTree<T> fileTree = location.scan();
+    Duration elapsed = elapsed(scanStartNanos);
+    for (BackupObserver observer : observers) {
+      observer.notifyScanned(location, fileTree, elapsed);
+    }
+    return fileTree;
+  }
+
   /**
    * Creates or updates the corresponding file on destination.
    *
    * @return {@code true} if create/update was successful
-   * @implSpec Creates parent directories when necessary
+   * @implSpec Creates parent directories as necessary
    */
   protected abstract boolean put(SourceFileT sourceFile);
 
   /**
-   * Deletes the file on destination.
+   * Deletes the subtree on destination.
    *
    * @return {@code true} if delete was successful
-   * @implSpec Deletes child directories/files when necessary
+   * @implSpec Deletes all child directories/files
    */
-  protected abstract boolean delete(DestFileT destFile);
+  protected abstract boolean delete(FileTree<DestFileT> destSubtree);
 
   /** {@code true} if {@link #put} is necessary. */
-  protected boolean needPut(SourceFileT sourceFile) {
-    FileTree<DestFileT> destFileTree = destination.fileTree();
-    Optional<DestFileT> maybeDestFile = destFileTree.get(sourceFile.relativePath());
+  protected boolean needPut(SourceFileT sourceFile, Optional<DestFileT> maybeDestFile) {
     // either file not on dest -> create
     // OR files different -> update
     return maybeDestFile.isEmpty() || needUpdate(sourceFile, maybeDestFile.get());
@@ -136,10 +152,9 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   }
 
   /** {@code true} if {@link #delete} is necessary. */
-  protected boolean needDelete(DestFileT destFile) {
-    FileTree<SourceFileT> sourceFileTree = source.fileTree();
+  protected boolean needDelete(Optional<SourceFileT> maybeSourceFile, DestFileT destFile) {
     // file not on source -> delete
-    return !sourceFileTree.contains(destFile.relativePath());
+    return maybeSourceFile.isEmpty();
   }
 
   @Override

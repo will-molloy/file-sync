@@ -5,6 +5,7 @@ import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -27,8 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-// CHECKSTYLE IGNORE RegexpSinglelineJava FOR NEXT 1 LINES
-import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -125,8 +125,7 @@ class S3BackupTest {
                     .key("my/bucket/prefix/backups/A/B/C/")
                     .storageClass(StorageClass.DEEP_ARCHIVE)
                     .build()),
-            // CHECKSTYLE IGNORE RegexpSinglelineJava FOR NEXT 1 LINES
-            ArgumentMatchers.<RequestBody>argThat(body -> body.contentLength() == 0));
+            argThat(emptyRequestBody()));
     verify(mockS3Waiter)
         .waitUntilObjectExists(
             HeadObjectRequest.builder()
@@ -168,7 +167,7 @@ class S3BackupTest {
     S3File destFile = createS3Object("X/Y/Z");
 
     // When
-    boolean result = sut.delete(destFile);
+    boolean result = sut.delete(destination.scan().subtree(destFile));
 
     // Then
     assertThat(result).isTrue();
@@ -189,35 +188,10 @@ class S3BackupTest {
   @Test
   void delete_whenFolder_makesDeleteObjectsRequest() {
     // Given
-    S3File destFile = createS3Folder("folder/");
-
-    ListObjectsV2Response page1 =
-        ListObjectsV2Response.builder()
-            .contents(S3Object.builder().key("my/bucket/prefix/backups/folder/A").build())
-            .build();
-    ListObjectsV2Response page2 =
-        ListObjectsV2Response.builder()
-            .contents(
-                S3Object.builder().key("my/bucket/prefix/backups/folder/B").build(),
-                S3Object.builder().key("my/bucket/prefix/backups/folder/C").build())
-            .build();
-    ListObjectsV2Response page3 =
-        ListObjectsV2Response.builder()
-            .contents(
-                S3Object.builder().key("my/bucket/prefix/backups/folder/D/E").build(),
-                S3Object.builder().key("my/bucket/prefix/backups/folder/D/F/G").build())
-            .build();
-    ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
-    when(response.iterator()).thenReturn(List.of(page1, page2, page3).iterator());
-    when(mockS3Client.listObjectsV2Paginator(
-            ListObjectsV2Request.builder()
-                .bucket("my-bucket")
-                .prefix("my/bucket/prefix/backups/")
-                .build()))
-        .thenReturn(response);
+    S3File destFolder = createS3Folder("folder/", List.of("A", "B", "C", "D/E", "D/F/G"));
 
     // When
-    boolean result = sut.delete(destFile);
+    boolean result = sut.delete(destination.scan().subtree(destFolder));
 
     // Then
     assertThat(result).isTrue();
@@ -250,24 +224,12 @@ class S3BackupTest {
   @Test
   void delete_whenFolder_makesDeleteObjectsRequestsInChunksOf1000Keys() {
     // Given
-    S3File destFile = createS3Folder("folder/");
-
-    List<S3Object> s3Objects =
-        IntStream.rangeClosed(0, 2010)
-            .mapToObj(i -> S3Object.builder().key("my/bucket/prefix/backups/folder/" + i).build())
-            .toList();
-    ListObjectsV2Response page = ListObjectsV2Response.builder().contents(s3Objects).build();
-    ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
-    when(response.iterator()).thenReturn(List.of(page).iterator());
-    when(mockS3Client.listObjectsV2Paginator(
-            ListObjectsV2Request.builder()
-                .bucket("my-bucket")
-                .prefix("my/bucket/prefix/backups/")
-                .build()))
-        .thenReturn(response);
+    S3File destFolder =
+        createS3Folder(
+            "folder/", IntStream.rangeClosed(0, 2010).mapToObj(String::valueOf).toList());
 
     // When
-    boolean result = sut.delete(destFile);
+    boolean result = sut.delete(destination.scan().subtree(destFolder));
 
     // Then
     assertThat(result).isTrue();
@@ -300,7 +262,7 @@ class S3BackupTest {
         .thenThrow(new RuntimeException());
 
     // When
-    boolean result = assertDoesNotThrow(() -> sut.delete(destFile));
+    boolean result = assertDoesNotThrow(() -> sut.delete(destination.scan().subtree(destFile)));
 
     // Then
     assertThat(result).isFalse();
@@ -330,16 +292,39 @@ class S3BackupTest {
   }
 
   private S3File createS3Object(String key) {
-    S3Object s3Object =
+    S3Object object =
         S3Object.builder().key(ensureUnixSeparator(destination.prefix().resolve(key))).build();
-    return S3File.fromS3Object(destination, s3Object);
+    mockListResponse(List.of(object));
+    return S3File.fromS3Object(destination, object);
   }
 
-  private S3File createS3Folder(String key) {
-    S3Object s3Object =
+  private S3File createS3Folder(String key, List<String> childObjectKeys) {
+    S3Object folder =
         S3Object.builder()
             .key(ensureUnixSeparator(destination.prefix().resolve(key)) + "/")
             .build();
-    return S3File.fromS3Object(destination, s3Object);
+    List<S3Object> objects =
+        childObjectKeys.stream()
+            .map(objectKey -> S3Object.builder().key(folder.key() + objectKey).build())
+            .toList();
+    mockListResponse(objects);
+    return S3File.fromS3Object(destination, folder);
+  }
+
+  private void mockListResponse(List<S3Object> objects) {
+    ListObjectsV2Response page = ListObjectsV2Response.builder().contents(objects).build();
+    ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
+    when(response.iterator()).thenReturn(List.of(page).iterator());
+    when(mockS3Client.listObjectsV2Paginator(
+            ListObjectsV2Request.builder()
+                .bucket("my-bucket")
+                .prefix("my/bucket/prefix/backups/")
+                .build()))
+        .thenReturn(response);
+  }
+
+  private ArgumentMatcher<RequestBody> emptyRequestBody() {
+    return actual ->
+        actual.optionalContentLength().map(contentLength -> contentLength == 0).orElse(false);
   }
 }

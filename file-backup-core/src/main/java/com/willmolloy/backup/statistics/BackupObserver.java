@@ -1,6 +1,9 @@
 package com.willmolloy.backup.statistics;
 
 import com.willmolloy.backup.BaseBackup;
+import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.Location;
+import java.time.Duration;
 
 /**
  * Observes a backup run.
@@ -9,9 +12,9 @@ import com.willmolloy.backup.BaseBackup;
  */
 public interface BackupObserver {
 
-  // TODO notifyScanned?
-
   void notifyStarted(BaseBackup<?, ?> backup);
+
+  void notifyScanned(Location<?> location, FileTree<?> fileTree, Duration elapsed);
 
   void notifyFinished(BaseBackup<?, ?> backup, Statistics.Snapshot statistics);
 }

@@ -13,13 +13,12 @@ import java.util.stream.Stream;
  */
 public sealed interface FileTree<FileT extends File> permits FileTreeNode {
 
-  /** Lookup by {@link File#relativePath()}. */
-  Optional<FileT> get(Path relativePath);
+  /** Gets root file. */
+  FileT root();
 
-  /** Lookup test by {@link File#relativePath()}. */
-  default boolean contains(Path relativePath) {
-    return get(relativePath).isPresent();
-  }
+  /** Lookup by {@link File#relativePath()}. */
+  // TODO make this 'getCorresponding' so File passed in?
+  Optional<FileT> get(Path relativePath);
 
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();

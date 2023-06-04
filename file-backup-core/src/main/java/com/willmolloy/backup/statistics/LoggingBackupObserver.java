@@ -1,7 +1,12 @@
 package com.willmolloy.backup.statistics;
 
+import static com.willmolloy.backup.util.TimeHelper.elapsed;
+
 import com.willmolloy.backup.BaseBackup;
+import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.Location;
 import java.text.NumberFormat;
+import java.time.Duration;
 import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,6 +25,16 @@ public final class LoggingBackupObserver implements BackupObserver {
   @Override
   public void notifyStarted(BaseBackup<?, ?> backup) {
     log.info("Started: {}", backup);
+  }
+
+  @Override
+  public void notifyScanned(Location<?> location, FileTree<?> fileTree, Duration elapsed) {
+    log.info(
+        "Scanned: {} in: {}. {} files ({}MB)",
+        location,
+        elapsed,
+        NUMBER_FORMAT.format(fileTree.leafCount()),
+        NUMBER_FORMAT.format(fileTree.totalSize() / MEGA));
   }
 
   @Override
