@@ -17,6 +17,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -70,7 +71,9 @@ class S3BackupTest {
     Files.createDirectory(sourceRoot);
     source = new LocalStorage(sourceRoot);
     destination = new S3Bucket(mockS3Client, "my-bucket", fs.getPath("my/bucket/prefix/backups/"));
-    sut = new S3Backup(mockS3Client, mockS3Waiter, source, destination);
+    sut =
+        new S3Backup(
+            mockS3Client, mockS3Waiter, source, destination, List.of(new LoggingBackupObserver()));
   }
 
   @AfterEach

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,6 +15,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +48,7 @@ class LocalBackupTest {
     source = new LocalStorage(sourceRoot);
     destRoot = Files.createDirectory(fs.getPath("dest"));
     destination = new LocalStorage(destRoot);
-    sut = new LocalBackup(source, destination);
+    sut = new LocalBackup(source, destination, List.of(new LoggingBackupObserver()));
   }
 
   @AfterEach

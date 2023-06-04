@@ -10,6 +10,7 @@ import com.willmolloy.backup.File;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
+import com.willmolloy.backup.statistics.BackupObserver;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -42,8 +43,13 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   private final S3Waiter s3Waiter;
   private final S3Bucket destination;
 
-  S3Backup(S3Client s3Client, S3Waiter s3Waiter, LocalStorage source, S3Bucket destination) {
-    super(source, destination, List.of());
+  S3Backup(
+      S3Client s3Client,
+      S3Waiter s3Waiter,
+      LocalStorage source,
+      S3Bucket destination,
+      List<BackupObserver> observers) {
+    super(source, destination, observers);
     this.s3Client = requireNonNull(s3Client);
     this.s3Waiter = requireNonNull(s3Waiter);
     this.destination = requireNonNull(destination);

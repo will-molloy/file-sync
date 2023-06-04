@@ -122,7 +122,7 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
         children.values().stream().flatMap(FileTreeNode::postorderNodes), Stream.of(this));
   }
 
-  private final Function<FileTreeNode<FileT>, FileT> getFile = FileTreeNode::root;
+  private final Function<FileTreeNode<FileT>, FileT> getFile = node -> node.file;
 
   @Override
   public boolean equals(Object o) {

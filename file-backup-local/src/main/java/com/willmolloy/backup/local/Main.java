@@ -2,8 +2,10 @@ package com.willmolloy.backup.local;
 
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,7 +29,7 @@ final class Main {
       LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
       LocalStorage dest = new LocalStorage(fs.getPath(destPath));
 
-      LocalBackup localBackup = new LocalBackup(source, dest);
+      LocalBackup localBackup = new LocalBackup(source, dest, List.of(new LoggingBackupObserver()));
       if (!localBackup.run()) {
         System.exit(1);
       }

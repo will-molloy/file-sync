@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.statistics.BackupObserver;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -25,8 +26,8 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   private final LocalStorage destination;
 
-  LocalBackup(LocalStorage source, LocalStorage destination) {
-    super(source, destination, List.of());
+  LocalBackup(LocalStorage source, LocalStorage destination, List<BackupObserver> observers) {
+    super(source, destination, observers);
     this.destination = requireNonNull(destination);
   }
 
