@@ -21,6 +21,5 @@ jobs:
           distribution: corretto
           java-version: 19
 
-      # TODO PUSH (after build and test)
       - name: Run Jib
         run: ./gradlew jibDockerBuild
