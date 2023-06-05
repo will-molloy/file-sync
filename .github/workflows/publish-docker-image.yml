@@ -31,4 +31,4 @@ jobs:
         run: echo "COMMIT_TIME=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_ENV`s
 
       - name: Build and push Docker image
-        run: gradle jib --image="$DOCKER_USERNAME/wilmol:${{ env.COMMIT_TIME }}"
+        run: gradle jib --image="$DOCKER_USERNAME/file-backup:${{ env.COMMIT_TIME }}"
