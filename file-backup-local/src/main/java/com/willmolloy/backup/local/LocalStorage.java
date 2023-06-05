@@ -3,8 +3,8 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
-import com.willmolloy.backup.BaseLocation;
 import com.willmolloy.backup.FileTree;
+import com.willmolloy.backup.Location;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class LocalStorage extends BaseLocation<LocalFile> {
+public final class LocalStorage implements Location<LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -34,7 +34,7 @@ public final class LocalStorage extends BaseLocation<LocalFile> {
   }
 
   @Override
-  protected FileTree<LocalFile> scan() {
+  public FileTree<LocalFile> scan() {
     try {
       FileTree.Builder<LocalFile> builder = FileTree.builder(LocalFile.fromPath(this, rootDir));
       BiConsumer<Path, BasicFileAttributes> consumer =

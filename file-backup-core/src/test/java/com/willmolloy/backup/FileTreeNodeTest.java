@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class FileTreeNodeTest {
 
   @Test
-  void get_whenNodeInTree_present() {
+  void correspondent_whenNodeInTree_present() {
     File expected = file("A/B");
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
@@ -23,29 +23,29 @@ class FileTreeNodeTest {
             .insert(expected)
             .insert(file("A/B/C"))
             .build();
-    assertThat(fileTree.get(expected.relativePath())).hasValue(expected);
+    assertThat(fileTree.correspondent(expected)).hasValue(expected);
   }
 
   @Test
-  void get_whenMissingDirFilledIn_present() {
+  void correspondent_whenMissingDirFilledIn_present() {
     File expected = file("A/B");
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
-    assertThat(fileTree.get(expected.relativePath())).hasValue(directory("A/B"));
+    assertThat(fileTree.correspondent(expected)).hasValue(directory("A/B"));
   }
 
   @Test
-  void get_whenNodeNotInTree_empty() {
+  void correspondent_whenNodeNotInTree_empty() {
     File notExpected = file("A/B/C/D");
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(file("A"))
             .insert(file("A/B/C"))
             .build();
-    assertThat(fileTree.get(notExpected.relativePath())).isEmpty();
+    assertThat(fileTree.correspondent(notExpected)).isEmpty();
   }
 
   @Test
@@ -159,7 +159,7 @@ class FileTreeNodeTest {
                 .insert(directory("A/B/C/D/X/Y"))
                 .insert(file("A/B/C/D/X/Y/Z"))
                 .build());
-    // verify ancestors ends at the new root
+    // verify ancestors ends at the new root; need since parents not included in equals
     assertThat(subtree.ancestors(file("A/B/C/D/X/Y/Z")))
         .containsExactly(
             directory("A/B/C/D/X/Y"),
@@ -187,7 +187,7 @@ class FileTreeNodeTest {
   }
 
   @Test
-  void fileCount_countsFiles() {
+  void leafCount_countsLeaves() {
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
             .insert(directory("A"))
@@ -196,9 +196,9 @@ class FileTreeNodeTest {
             .insert(file("A/B/D"))
             .insert(directory("X"))
             .insert(directory("X/Y"))
-            .insert(file("X/Y/Z"))
+            .insert(directory("X/Y/Z"))
             .build();
-    assertThat(fileTree.fileCount()).isEqualTo(3);
+    assertThat(fileTree.leafCount()).isEqualTo(3);
   }
 
   @Test
@@ -211,9 +211,9 @@ class FileTreeNodeTest {
             .insert(file("A/B/D"))
             .insert(directory("X"))
             .insert(directory("X/Y"))
-            .insert(file("X/Y/Z"))
+            .insert(directory("X/Y/Z"))
             .build();
-    assertThat(fileTree.totalSize()).isEqualTo(6);
+    assertThat(fileTree.totalSize()).isEqualTo(4);
   }
 
   private static File file(String path) {

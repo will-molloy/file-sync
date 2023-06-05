@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -14,6 +15,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +48,7 @@ class LocalBackupTest {
     source = new LocalStorage(sourceRoot);
     destRoot = Files.createDirectory(fs.getPath("dest"));
     destination = new LocalStorage(destRoot);
-    sut = new LocalBackup(source, destination);
+    sut = new LocalBackup(source, destination, List.of(new LoggingBackupObserver()));
   }
 
   @AfterEach
@@ -184,7 +187,7 @@ class LocalBackupTest {
     LocalFile destFile = createFile(destination, fs.getPath("A"), "dest");
 
     // When
-    boolean result = sut.delete(destFile);
+    boolean result = sut.delete(destination.scan().subtree(destFile));
 
     // Then
     assertThat(result).isTrue();
@@ -199,23 +202,7 @@ class LocalBackupTest {
     createFile(destination, fs.getPath("A/X/Y/Z"), "dest");
 
     // When
-    boolean result = sut.delete(destDir);
-
-    // Then
-    assertThat(result).isTrue();
-    assertThatFileSystem().isEmpty();
-  }
-
-  @Test
-  void delete_whenFileNotOnDestination_failsGracefully() throws IOException {
-    // Given
-    LocalFile destFile = createFile(destination, fs.getPath("A"), "dest");
-    // delete after scan
-    destination.fileTree();
-    Files.delete(destFile.fullPath());
-
-    // When
-    boolean result = assertDoesNotThrow(() -> sut.delete(destFile));
+    boolean result = sut.delete(destination.scan().subtree(destDir));
 
     // Then
     assertThat(result).isTrue();
@@ -287,7 +274,7 @@ class LocalBackupTest {
     LocalFile destFile = createFile(destination, relativePath, "source");
 
     // Then
-    assertThat(sut.needDelete(destFile)).isFalse();
+    assertThat(sut.needDelete(Optional.of(sourceFile), destFile)).isFalse();
   }
 
   @Test
@@ -298,7 +285,7 @@ class LocalBackupTest {
     LocalFile destFile = createFile(destination, relativePath, "dest");
 
     // Then
-    assertThat(sut.needDelete(destFile)).isFalse();
+    assertThat(sut.needDelete(Optional.of(sourceFile), destFile)).isFalse();
   }
 
   @Test
@@ -309,7 +296,7 @@ class LocalBackupTest {
     LocalFile destDir = createDirectory(destination, relativePath);
 
     // Then
-    assertThat(sut.needDelete(destDir)).isFalse();
+    assertThat(sut.needDelete(Optional.of(sourceDir), destDir)).isFalse();
   }
 
   @Test
@@ -319,7 +306,7 @@ class LocalBackupTest {
     LocalFile destFile = createFile(destination, relativePath, "dest");
 
     // Then
-    assertThat(sut.needDelete(destFile)).isTrue();
+    assertThat(sut.needDelete(Optional.empty(), destFile)).isTrue();
   }
 
   @Test
@@ -330,7 +317,7 @@ class LocalBackupTest {
     LocalFile destDir = createDirectory(destination, relativePath);
 
     // Then
-    assertThat(sut.needDelete(destDir)).isTrue();
+    assertThat(sut.needDelete(Optional.of(sourceFile), destDir)).isTrue();
   }
 
   @Test
@@ -341,7 +328,7 @@ class LocalBackupTest {
     LocalFile destFile = createFile(destination, relativePath, "dest");
 
     // Then
-    assertThat(sut.needDelete(destFile)).isTrue();
+    assertThat(sut.needDelete(Optional.of(sourceDir), destFile)).isTrue();
   }
 
   @Test

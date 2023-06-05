@@ -1,6 +1,5 @@
 package com.willmolloy.backup;
 
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -13,13 +12,15 @@ import java.util.stream.Stream;
  */
 public sealed interface FileTree<FileT extends File> permits FileTreeNode {
 
-  /** Lookup by {@link File#relativePath()}. */
-  Optional<FileT> get(Path relativePath);
+  /** Gets root file. */
+  FileT root();
 
-  /** Lookup test by {@link File#relativePath()}. */
-  default boolean contains(Path relativePath) {
-    return get(relativePath).isPresent();
-  }
+  /**
+   * Lookup the corresponding file (via {@link File#relativePath()}).
+   *
+   * @apiNote useful for comparing files across different {@link Location}s.
+   */
+  Optional<FileT> correspondent(File file);
 
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();
@@ -33,8 +34,8 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
   /** Returns the subtree rooted at the given {@code file}. */
   FileTree<FileT> subtree(FileT file);
 
-  /** Count of files (where {@link File#isDirectory()} is {@code false}). */
-  long fileCount();
+  /** Count of leaves. */
+  long leafCount();
 
   /**
    * Total size in bytes.

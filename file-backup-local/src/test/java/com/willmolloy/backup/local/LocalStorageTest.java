@@ -60,7 +60,7 @@ class LocalStorageTest {
     Files.createFile(root.resolve("X/Y/Z"));
 
     // When
-    FileTree<LocalFile> scan = sut.fileTree();
+    FileTree<LocalFile> scan = sut.scan();
 
     // Then
     assertThat(scan)
