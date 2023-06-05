@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -191,7 +192,7 @@ class S3BackupTest {
   @Test
   void delete_whenFolder_makesDeleteObjectsRequest() {
     // Given
-    S3File destFolder = createS3Folder("folder/", List.of("A", "B", "C", "D/E", "D/F/G"));
+    S3File destFolder = createS3Folder("folder/", Stream.of("A", "B", "C", "D/E", "D/F/G"));
 
     // When
     boolean result = sut.delete(destination.scan().subtree(destFolder));
@@ -228,8 +229,7 @@ class S3BackupTest {
   void delete_whenFolder_makesDeleteObjectsRequestsInChunksOf1000Keys() {
     // Given
     S3File destFolder =
-        createS3Folder(
-            "folder/", IntStream.rangeClosed(0, 2010).mapToObj(String::valueOf).toList());
+        createS3Folder("folder/", IntStream.rangeClosed(0, 2010).mapToObj(String::valueOf));
 
     // When
     boolean result = sut.delete(destination.scan().subtree(destFolder));
@@ -301,13 +301,13 @@ class S3BackupTest {
     return S3File.fromS3Object(destination, object);
   }
 
-  private S3File createS3Folder(String key, List<String> childObjectKeys) {
+  private S3File createS3Folder(String key, Stream<String> childObjectKeys) {
     S3Object folder =
         S3Object.builder()
             .key(ensureUnixSeparator(destination.prefix().resolve(key)) + "/")
             .build();
     List<S3Object> objects =
-        childObjectKeys.stream()
+        childObjectKeys
             .map(objectKey -> S3Object.builder().key(folder.key() + objectKey).build())
             .toList();
     mockListResponse(objects);

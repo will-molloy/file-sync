@@ -16,7 +16,7 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
   FileT root();
 
   /**
-   * Gets the corresponding file via {@link File#relativePath()}.
+   * Lookup the corresponding file (via {@link File#relativePath()}).
    *
    * @apiNote useful for comparing files across different {@link Location}s.
    */

@@ -45,13 +45,13 @@ public final class Statistics<SourceFileT extends File, DestFileT extends File> 
     failedUpdates.incrementAndGet();
   }
 
-  public void countDelete(FileTree<DestFileT> fileTree) {
-    deletes.addAndGet((int) fileTree.leafCount());
-    bytesRemoved.addAndGet(fileTree.totalSize());
+  public void countDelete(FileTree<DestFileT> subtree) {
+    deletes.addAndGet((int) subtree.leafCount());
+    bytesRemoved.addAndGet(subtree.totalSize());
   }
 
-  public void countFailedDelete(FileTree<DestFileT> fileTree) {
-    failedDeletes.addAndGet((int) fileTree.leafCount());
+  public void countFailedDelete(FileTree<DestFileT> subtree) {
+    failedDeletes.addAndGet((int) subtree.leafCount());
   }
 
   public void countSame() {
