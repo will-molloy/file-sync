@@ -14,6 +14,8 @@
 
 ## Build and test
 
+Requires JDK 19.
+
 ```bash
 ./gradlew spotlessApply build integrationTest performanceTest
 ```
@@ -50,6 +52,10 @@ Backup to AWS S3 bucket (Glacier Deep Archive).
    ```bash
    docker run --rm -v <source_path>:/source:ro -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> file-backup-s3
    ```
+
+## Schedules
+
+Write a script wrapping the `docker run` command and use e.g. Windows Task Scheduler.
 
 ## Project layout
 
