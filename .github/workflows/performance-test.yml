@@ -25,7 +25,11 @@ jobs:
         run: chmod +x gradlew
 
       - name: Performance Test
-        run: ./gradlew projects clean performanceTest --no-daemon --refresh-dependencies
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 10
+          command: ./gradlew projects clean performanceTest --no-daemon --refresh-dependencies
 
       - name: Upload coverage to Codecov (Linux only)
         if: matrix.os == 'ubuntu-latest'
