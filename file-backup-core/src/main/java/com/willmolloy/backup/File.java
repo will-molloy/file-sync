@@ -17,6 +17,7 @@ public interface File {
    * {@linkplain Path#relativize Relative path}.
    *
    * @apiNote Enables a consistent key across different {@link Location}s.
+   * @see FileTree#correspondent(File)
    */
   Path relativePath();
 

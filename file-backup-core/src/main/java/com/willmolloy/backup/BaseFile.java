@@ -44,13 +44,7 @@ public abstract class BaseFile implements File {
     if (this == o) {
       return true;
     }
-    if (o == null) {
-      return false;
-    }
-    if (o instanceof File file) {
-      return Objects.equals(uri(), file.uri());
-    }
-    return false;
+    return o instanceof File file && Objects.equals(uri(), file.uri());
   }
 
   @Override

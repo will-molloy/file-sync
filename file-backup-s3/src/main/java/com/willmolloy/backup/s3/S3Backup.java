@@ -7,8 +7,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.File;
+import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
+import com.willmolloy.backup.statistics.BackupObserver;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -41,8 +43,13 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   private final S3Waiter s3Waiter;
   private final S3Bucket destination;
 
-  S3Backup(S3Client s3Client, S3Waiter s3Waiter, LocalStorage source, S3Bucket destination) {
-    super(source, destination);
+  S3Backup(
+      S3Client s3Client,
+      S3Waiter s3Waiter,
+      LocalStorage source,
+      S3Bucket destination,
+      List<BackupObserver> observers) {
+    super(source, destination, observers);
     this.s3Client = requireNonNull(s3Client);
     this.s3Waiter = requireNonNull(s3Waiter);
     this.destination = requireNonNull(destination);
@@ -53,12 +60,12 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
     Path sourcePath = sourceFile.fullPath();
     String destinationUri = s3Uri(sourceFile);
     try {
+      log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
               .key(s3Key(sourceFile))
               .storageClass(StorageClass.DEEP_ARCHIVE);
-
       if (sourceFile.isDirectory()) {
         PutObjectRequest request = baseRequest.build();
         s3Client.putObject(request, RequestBody.empty());
@@ -67,10 +74,8 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
       }
-
       wait(s3Key(sourceFile), S3Waiter::waitUntilObjectExists);
-
-      log.info("Put: [{}] -> [{}]", sourceFile, destinationUri);
+      log.debug("Sent put request: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
       log.warn(
@@ -86,23 +91,24 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   }
 
   @Override
-  protected boolean delete(S3File destFile) {
+  protected boolean delete(FileTree<S3File> destSubtree) {
     try {
-      if (destFile.isDirectory()) {
-        deleteFolder(destFile);
+      log.debug("Sending delete request: [{}]", destSubtree.root().uri());
+      if (destSubtree.root().isDirectory()) {
+        deleteFolder(destSubtree);
       } else {
-        deleteObject(destFile);
+        deleteObject(destSubtree.root());
       }
-      log.info("Deleted: [{}]", destFile.uri());
+      log.debug("Sent delete request: [{}]", destSubtree.root().uri());
       return true;
     } catch (Exception e) {
-      log.error("Error deleting: [{}]", destFile.uri(), e);
+      log.error("Error deleting: [{}]", destSubtree.root().uri(), e);
       return false;
     }
   }
 
-  private void deleteFolder(S3File destFile) {
-    Stream<S3File> filesToDelete = destination.fileTree().subtree(destFile).leaves();
+  private void deleteFolder(FileTree<S3File> destSubtree) {
+    Stream<S3File> filesToDelete = destSubtree.leaves();
     Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);
     chunks
         .map(

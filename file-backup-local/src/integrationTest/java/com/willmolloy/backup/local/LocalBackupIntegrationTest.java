@@ -5,6 +5,7 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -34,7 +35,11 @@ class LocalBackupIntegrationTest {
     fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
     sourceRoot = createDirectory(fs.getPath("Documents"));
     destRoot = createDirectory(fs.getPath("Backup"));
-    sut = new LocalBackup(new LocalStorage(sourceRoot), new LocalStorage(destRoot));
+    sut =
+        new LocalBackup(
+            new LocalStorage(sourceRoot),
+            new LocalStorage(destRoot),
+            List.of(new LoggingBackupObserver()));
   }
 
   @AfterEach

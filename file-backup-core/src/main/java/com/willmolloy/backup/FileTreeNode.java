@@ -2,7 +2,6 @@ package com.willmolloy.backup;
 
 import static com.willmolloy.backup.util.PathHelper.nameComponents;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Predicate.not;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -38,8 +37,13 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public Optional<FileT> get(Path relativePath) {
-    return getNode(relativePath).map(getFile);
+  public FileT root() {
+    return file;
+  }
+
+  @Override
+  public Optional<FileT> correspondent(File file) {
+    return getNode(file.relativePath()).map(getFile);
   }
 
   @Override
@@ -68,17 +72,13 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   }
 
   @Override
-  public long fileCount() {
-    return files().count();
+  public long leafCount() {
+    return leaves().count();
   }
 
   @Override
   public long totalSize() {
-    return files().mapToLong(File::size).sum();
-  }
-
-  private Stream<FileT> files() {
-    return postorder().filter(not(File::isDirectory));
+    return leaves().mapToLong(File::size).sum();
   }
 
   private Optional<FileTreeNode<FileT>> getNode(Path path) {
@@ -129,13 +129,9 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
     if (this == o) {
       return true;
     }
-    if (o == null) {
-      return false;
-    }
-    if (o instanceof FileTreeNode<?> node) {
-      return Objects.equals(file, node.file) && Objects.equals(children, node.children);
-    }
-    return false;
+    return o instanceof FileTreeNode<?> node
+        && Objects.equals(file, node.file)
+        && Objects.equals(children, node.children);
   }
 
   @Override

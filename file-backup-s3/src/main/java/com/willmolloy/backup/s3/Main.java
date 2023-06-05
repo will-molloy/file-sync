@@ -4,9 +4,11 @@ import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.local.LocalStorage;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Duration;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.regions.Region;
@@ -41,7 +43,8 @@ final class Main {
       require(destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
       S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
-      S3Backup s3Backup = new S3Backup(s3Client, s3Waiter, source, dest);
+      S3Backup s3Backup =
+          new S3Backup(s3Client, s3Waiter, source, dest, List.of(new LoggingBackupObserver()));
       if (!s3Backup.run()) {
         System.exit(1);
       }
