@@ -1,13 +1,17 @@
 package com.willmolloy.backup.s3;
 
+import static com.willmolloy.backup.util.EnvHelper.readOptionalEnvVariable;
+import static com.willmolloy.backup.util.EnvHelper.readRequiredEnvVariable;
 import static com.willmolloy.backup.util.Preconditions.require;
-import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.local.LocalStorage;
+import com.willmolloy.backup.statistics.BackupObserver;
+import com.willmolloy.backup.statistics.DiscordWebhook;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,7 +29,7 @@ final class Main {
   private static final Logger log = LogManager.getLogger();
 
   /** Main method. */
-  public static void main(String... args) {
+  public static void main(String... args) throws InterruptedException {
     try (S3Client s3Client =
             S3Client.builder().region(Region.US_EAST_1).forcePathStyle(true).build();
         S3Waiter s3Waiter =
@@ -33,9 +37,9 @@ final class Main {
                 .client(s3Client)
                 .overrideConfiguration(config -> config.waitTimeout(Duration.ofHours(1)))
                 .build()) {
-      String sourcePath = readEnvVariable("SOURCE_PATH");
-      String destBucket = readEnvVariable("DESTINATION_BUCKET");
-      String destPrefix = readEnvVariable("DESTINATION_BUCKET_PREFIX");
+      String sourcePath = readRequiredEnvVariable("SOURCE_PATH");
+      String destBucket = readRequiredEnvVariable("DESTINATION_BUCKET");
+      String destPrefix = readRequiredEnvVariable("DESTINATION_BUCKET_PREFIX");
 
       FileSystem fs = FileSystems.getDefault();
 
@@ -43,19 +47,20 @@ final class Main {
       require(destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
       S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
-      S3Backup s3Backup =
-          new S3Backup(s3Client, s3Waiter, source, dest, List.of(new LoggingBackupObserver()));
+      List<BackupObserver> observers = new ArrayList<>();
+      observers.add(new LoggingBackupObserver());
+      readOptionalEnvVariable("DISCORD_WEBHOOK")
+          .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
+
+      S3Backup s3Backup = new S3Backup(s3Client, s3Waiter, source, dest, observers);
       if (!s3Backup.run()) {
         System.exit(1);
       }
     } catch (Throwable t) {
       log.fatal("Fatal error", t);
+      Thread.sleep(Duration.ofHours(1));
       System.exit(1);
     }
-  }
-
-  private static String readEnvVariable(String name) {
-    return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
   }
 
   private Main() {}
