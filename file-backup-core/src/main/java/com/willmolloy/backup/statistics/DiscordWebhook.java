@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -53,9 +52,6 @@ public final class DiscordWebhook implements BackupObserver {
                     "Backup Started",
                     null,
                     colorCode(88, 185, 255),
-                    new Author(
-                        "file-backup",
-                        "https://w7.pngwing.com/pngs/496/218/png-transparent-computer-icons-backup-data-backup-icon-text-trademark-logo.png"),
                     List.of(
                         new Field("Source", backup.source().toString()),
                         new Field("Destination", backup.destination().toString())),
@@ -88,9 +84,6 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
                               NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
                       colorCode(0, 153, 0),
-                      new Author(
-                          "file-backup",
-                          "https://w7.pngwing.com/pngs/496/218/png-transparent-computer-icons-backup-data-backup-icon-text-trademark-logo.png"),
                       List.of(
                           new Field("Source", backup.source().toString()),
                           new Field("Destination", backup.destination().toString())),
@@ -115,9 +108,6 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.failedUpdates()),
                               NUMBER_FORMAT.format(stats.failedDeletes())),
                       colorCode(255, 140, 47),
-                      new Author(
-                          "file-backup",
-                          "https://w7.pngwing.com/pngs/496/218/png-transparent-computer-icons-backup-data-backup-icon-text-trademark-logo.png"),
                       List.of(
                           new Field("Source", backup.source().toString()),
                           new Field("Destination", backup.destination().toString())),
@@ -137,9 +127,6 @@ public final class DiscordWebhook implements BackupObserver {
                     "Backup Failed",
                     t.toString(),
                     colorCode(226, 40, 40),
-                    new Author(
-                        "file-backup",
-                        "https://w7.pngwing.com/pngs/496/218/png-transparent-computer-icons-backup-data-backup-icon-text-trademark-logo.png"),
                     List.of(
                         new Field("Source", backup.source().toString()),
                         new Field("Destination", backup.destination().toString())),
@@ -163,13 +150,10 @@ public final class DiscordWebhook implements BackupObserver {
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       int status = response.statusCode();
       if (!(status >= 200 && status < 300)) {
-        log.error("Unsuccessful status: {} {}", status, response.body());
+        log.error("Unsuccessful status sending discord webhook: {} {}", status, response.body());
       }
-    } catch (IOException e) {
-      log.error("Error", e);
-    } catch (InterruptedException e) {
-      log.error("Error", e);
-      Thread.currentThread().interrupt();
+    } catch (Exception e) {
+      log.error("Error sending discord webhook", e);
     }
   }
 
@@ -188,12 +172,9 @@ public final class DiscordWebhook implements BackupObserver {
       String title,
       String description,
       int color,
-      Author author,
       List<Field> fields,
       Thumbnail thumbnail,
       String timestamp) {}
-
-  private record Author(String name, String icon_url) {}
 
   private record Field(String name, String value) {}
 
