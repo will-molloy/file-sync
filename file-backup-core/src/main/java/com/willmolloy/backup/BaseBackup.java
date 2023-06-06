@@ -59,26 +59,33 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   /** Runs the backup. */
   public final boolean run() {
-    long startNanos = System.nanoTime();
-    Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
-    for (BackupObserver observer : observers) {
-      observer.notifyStarted(this);
+    try {
+      long startNanos = System.nanoTime();
+      Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
+      for (BackupObserver observer : observers) {
+        observer.notifyStarted(this);
+      }
+
+      FileTree<SourceFileT> sourceFileTree = scan(source);
+      FileTree<DestFileT> destFileTree = scan(destination);
+
+      // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
+      // overwriting a file
+      executeDeletes(sourceFileTree, destFileTree, statistics);
+      executePuts(sourceFileTree, destFileTree, statistics);
+
+      Statistics.Snapshot snapshot = statistics.snapshot();
+      Duration elapsed = elapsed(startNanos);
+      for (BackupObserver observer : observers) {
+        observer.notifyFinished(this, snapshot, elapsed);
+      }
+      return snapshot.allSuccess();
+    } catch (Throwable t) {
+      for (BackupObserver observer : observers) {
+        observer.notifyFailed(this, t);
+      }
+      return false;
     }
-
-    FileTree<SourceFileT> sourceFileTree = scan(source);
-    FileTree<DestFileT> destFileTree = scan(destination);
-
-    // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
-    // overwriting a file
-    executeDeletes(sourceFileTree, destFileTree, statistics);
-    executePuts(sourceFileTree, destFileTree, statistics);
-
-    Statistics.Snapshot snapshot = statistics.snapshot();
-    Duration elapsed = elapsed(startNanos);
-    for (BackupObserver observer : observers) {
-      observer.notifyFinished(this, snapshot, elapsed);
-    }
-    return snapshot.allSuccess();
   }
 
   private <T extends File> FileTree<T> scan(Location<T> location) {

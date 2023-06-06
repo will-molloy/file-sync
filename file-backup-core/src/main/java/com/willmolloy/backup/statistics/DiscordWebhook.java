@@ -128,6 +128,27 @@ public final class DiscordWebhook implements BackupObserver {
     send(body);
   }
 
+  @Override
+  public void notifyFailed(Backup<?, ?> backup, Throwable t) {
+    Body body =
+        new Body(
+            List.of(
+                new EmbedObject(
+                    "Backup Failed",
+                    t.toString(),
+                    colorCode(226, 40, 40),
+                    new Author(
+                        "file-backup",
+                        "https://w7.pngwing.com/pngs/496/218/png-transparent-computer-icons-backup-data-backup-icon-text-trademark-logo.png"),
+                    List.of(
+                        new Field("Source", backup.source().toString()),
+                        new Field("Destination", backup.destination().toString())),
+                    new Thumbnail(
+                        "https://craftassets.unraid.net/uploads/discord/notify-alert.png"),
+                    Instant.now().toString())));
+    send(body);
+  }
+
   private void send(Body body) {
     try {
       String json = gson.toJson(body);

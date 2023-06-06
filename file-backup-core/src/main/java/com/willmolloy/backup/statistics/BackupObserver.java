@@ -17,4 +17,6 @@ public interface BackupObserver {
   void notifyScanned(Location<?> location, FileTree<?> fileTree, Duration elapsed);
 
   void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot statistics, Duration elapsed);
+
+  void notifyFailed(Backup<?, ?> backup, Throwable t);
 }

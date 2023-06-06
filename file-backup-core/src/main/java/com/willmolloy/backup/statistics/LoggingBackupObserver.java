@@ -55,4 +55,9 @@ public final class LoggingBackupObserver implements BackupObserver {
           NUMBER_FORMAT.format(stats.failedDeletes()));
     }
   }
+
+  @Override
+  public void notifyFailed(Backup<?, ?> backup, Throwable t) {
+    log.fatal("Fatal error", t);
+  }
 }

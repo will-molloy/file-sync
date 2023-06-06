@@ -13,8 +13,6 @@ import java.nio.file.FileSystems;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
@@ -26,10 +24,8 @@ import software.amazon.awssdk.services.s3.waiters.S3Waiter;
  */
 final class Main {
 
-  private static final Logger log = LogManager.getLogger();
-
   /** Main method. */
-  public static void main(String... args) throws InterruptedException {
+  public static void main(String... args) {
     try (S3Client s3Client =
             S3Client.builder().region(Region.US_EAST_1).forcePathStyle(true).build();
         S3Waiter s3Waiter =
@@ -56,10 +52,6 @@ final class Main {
       if (!s3Backup.run()) {
         System.exit(1);
       }
-    } catch (Throwable t) {
-      log.fatal("Fatal error", t);
-      Thread.sleep(Duration.ofHours(1));
-      System.exit(1);
     }
   }
 
