@@ -76,7 +76,7 @@ public final class DiscordWebhook implements BackupObserver {
               List.of(
                   new EmbedObject(
                       "Backup Finished in: %s".formatted(formatDuration(elapsed)),
-                      "%s files created, %s files updated, %s files deleted, %s files same.\n\n%sMB added, %sMB removed."
+                      "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed."
                           .formatted(
                               NUMBER_FORMAT.format(stats.creates()),
                               NUMBER_FORMAT.format(stats.updates()),
@@ -97,7 +97,7 @@ public final class DiscordWebhook implements BackupObserver {
               List.of(
                   new EmbedObject(
                       "Backup Finished in: %s".formatted(formatDuration(elapsed)),
-                      "%s files created, %s files updated, %s files deleted, %s files same.\n\n%sMB added, %sMB removed.\n\nFailed: %s creates, %s updates, %s deletes."
+                      "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed.\n\nFailed: %s creates, %s updates, %s deletes."
                           .formatted(
                               NUMBER_FORMAT.format(stats.creates()),
                               NUMBER_FORMAT.format(stats.updates()),
