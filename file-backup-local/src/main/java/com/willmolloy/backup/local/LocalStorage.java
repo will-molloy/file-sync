@@ -58,6 +58,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
   @Override
   public String toString() {
+    // TODO displaying host path when running via docker container...
     return "%s[%s]".formatted(getClass().getSimpleName(), rootDir);
   }
 
