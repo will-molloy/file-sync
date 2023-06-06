@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
+import java.awt.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -158,7 +159,7 @@ public final class DiscordWebhook implements BackupObserver {
   }
 
   private int colorCode(int r, int g, int b) {
-    return (((r << 8) + g) << 8) + b;
+    return (((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF)));
   }
 
   private String formatDuration(Duration duration) {
