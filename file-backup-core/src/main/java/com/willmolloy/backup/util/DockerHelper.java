@@ -1,13 +1,18 @@
 package com.willmolloy.backup.util;
 
+import static com.willmolloy.backup.util.EnvHelper.readRequiredEnvVariable;
 import static com.willmolloy.backup.util.Preconditions.require;
 
 import com.google.gson.Gson;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,80 +28,86 @@ public final class DockerHelper {
 
   private static final Logger log = LogManager.getLogger();
 
+  private static final HttpClient HTTP_CLIENT =
+      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
   private static final Gson GSON = new Gson();
 
-  public static boolean isRunningInsideDocker() {
+  /** {@code true} if running in docker container. */
+  public static boolean isRunningInDocker() {
     return Files.exists(Path.of("/.dockerenv"));
   }
 
-  public static Optional<String> hostPath(String path) {
-    log.debug("hostPath({})", path);
+  /** Gets the corresponding host path for the mount/volume. */
+  public static Optional<String> getHostPath(String dockerPath) {
+    log.debug("getHostPath({})", dockerPath);
+    return containerInspect()
+        .flatMap(
+            containerInspect ->
+                containerInspect.Mounts().stream()
+                    .filter(mount -> mount.Destination().equals(dockerPath))
+                    .findFirst())
+        .flatMap(mount -> extractHostPath(mount));
+  }
+
+  private static Optional<String> extractHostPath(ContainerInspect.Mount mount) {
+    return switch (mount.Type()) {
+      case "bind" -> Optional.of(mount.Source());
+      case "volume" -> {
+        Pattern p = Pattern.compile("^/var/lib/docker/volumes/(.*)/_data$");
+        Matcher m = p.matcher(mount.Source());
+        require(m.matches(), "Doesn't match pattern: %s".formatted(p));
+        String volume = m.group(1);
+        yield volumeInspect(volume).map(volumeInspect -> volumeInspect.Options().device());
+      }
+      default -> Optional.empty();
+    };
+  }
+
+  private static Optional<ContainerInspect> containerInspect() {
+    // https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect
+    String hostname = readRequiredEnvVariable("HOSTNAME");
+    return getAndDeser(
+        "http://host.docker.internal:2375/containers/%s/json".formatted(hostname),
+        ContainerInspect.class);
+  }
+
+  private static Optional<VolumeInspect> volumeInspect(String volume) {
+    // https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect
+    return getAndDeser(
+        "http://host.docker.internal:2375/volumes/%s".formatted(volume), VolumeInspect.class);
+  }
+
+  @SuppressFBWarnings("REC_CATCH_EXCEPTION")
+  private static <T> Optional<T> getAndDeser(String getUrl, Class<T> classOfT) {
     try {
-      Inspect inspect = dockerInspect();
-      Inspect.Mount mount =
-          Arrays.stream(inspect.Mounts())
-              .filter(m -> m.Destination().equals(path))
-              .findFirst()
-              // TODO chaining options, no throw
-              .orElseThrow();
-      return Optional.of(extractHostPath(mount));
+      HttpRequest request = HttpRequest.newBuilder().uri(new URI(getUrl)).GET().build();
+      HttpResponse<String> response =
+          HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+      int status = response.statusCode();
+      if (status != 200) {
+        log.error(
+            "Unsuccessful status sending GET request: {} ({} {})", getUrl, status, response.body());
+        return Optional.empty();
+      }
+      return Optional.of(GSON.fromJson(response.body(), classOfT));
     } catch (Exception e) {
-      log.error("Error", e);
+      log.error("Error sending GET request: {}", getUrl, e);
       return Optional.empty();
     }
   }
 
-  private static String extractHostPath(Inspect.Mount mount) throws IOException {
-    return switch (mount.Type) {
-      case "bind" -> {
-        Pattern p = Pattern.compile("^/run/desktop/mnt/host(.*)$");
-        Matcher m = p.matcher(mount.Source());
-        require(m.matches());
-        yield m.group(1);
-      }
-      case "volume" -> {
-        Pattern p = Pattern.compile("^/var/lib/docker/volumes/(.*)/_data$");
-        Matcher m = p.matcher(mount.Source());
-        require(m.matches());
-        String volume = m.group(1);
-        InspectVolume inspectVolume = dockerInspectVolume(volume);
-        yield inspectVolume.Options().device();
-      }
-      default -> throw new IllegalArgumentException();
-    };
-  }
-
-  private static Inspect dockerInspect() throws IOException {
-    String[] cmd = {"docker", "inspect", "005"};
-    Inspect[] inspect = executeAndDeser(cmd, Inspect[].class);
-    return inspect[0];
-  }
-
-  private static InspectVolume dockerInspectVolume(String volume) throws IOException {
-    String[] cmd = {"docker", "inspect", "volume", volume};
-    InspectVolume[] inspectVolume = executeAndDeser(cmd, InspectVolume[].class);
-    return inspectVolume[0];
-  }
-
-  private static <T> T executeAndDeser(String[] cmd, Class<T> classOfT) throws IOException {
-    Process process = Runtime.getRuntime().exec(cmd);
-    try (InputStreamReader reader = new InputStreamReader(process.getInputStream())) {
-      return GSON.fromJson(reader, classOfT);
-    }
-  }
-
-  private record Inspect(Mount[] Mounts) {
+  @SuppressFBWarnings(
+      value = "NM_METHOD_NAMING_CONVENTION",
+      justification = "Docker API uses uppercase...")
+  private record ContainerInspect(List<Mount> Mounts) {
     private record Mount(String Type, String Source, String Destination) {}
   }
 
-  private record InspectVolume(Options Options) {
+  @SuppressFBWarnings(
+      value = "NM_METHOD_NAMING_CONVENTION",
+      justification = "Docker API uses uppercase...")
+  private record VolumeInspect(Options Options) {
     private record Options(String device) {}
-  }
-
-  public static void main(String[] args) {
-    log.info(isRunningInsideDocker());
-    log.info(hostPath("/source"));
-    log.info(hostPath("/destination"));
   }
 
   private DockerHelper() {}

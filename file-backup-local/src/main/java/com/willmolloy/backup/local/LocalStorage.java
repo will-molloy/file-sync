@@ -1,5 +1,7 @@
 package com.willmolloy.backup.local;
 
+import static com.willmolloy.backup.util.DockerHelper.getHostPath;
+import static com.willmolloy.backup.util.DockerHelper.isRunningInDocker;
 import static com.willmolloy.backup.util.Preconditions.require;
 import static java.util.Objects.requireNonNull;
 
@@ -58,8 +60,11 @@ public final class LocalStorage implements Location<LocalFile> {
 
   @Override
   public String toString() {
-    // TODO displaying host path when running via docker container...
-    return "%s[%s]".formatted(getClass().getSimpleName(), rootDir);
+    String display = rootDir.toString();
+    if (isRunningInDocker()) {
+      display = getHostPath(display).orElse(display);
+    }
+    return "%s[%s]".formatted(getClass().getSimpleName(), display);
   }
 
   private static final class DirectoryWalker implements FileVisitor<Path> {

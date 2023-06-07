@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
-import java.awt.*;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -137,7 +137,9 @@ public final class DiscordWebhook implements BackupObserver {
     send(body);
   }
 
+  @SuppressFBWarnings("REC_CATCH_EXCEPTION")
   private void send(Body body) {
+    // https://discord.com/developers/docs/resources/webhook#execute-webhook
     try {
       String json = gson.toJson(body);
       HttpRequest request =
@@ -151,7 +153,7 @@ public final class DiscordWebhook implements BackupObserver {
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       int status = response.statusCode();
       if (!(status >= 200 && status < 300)) {
-        log.error("Unsuccessful status sending discord webhook: {} {}", status, response.body());
+        log.error("Unsuccessful status sending discord webhook: ({} {})", status, response.body());
       }
     } catch (Exception e) {
       log.error("Error sending discord webhook", e);
