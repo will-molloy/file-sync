@@ -1,4 +1,4 @@
-package com.willmolloy.backup.statistics.discord;
+package com.willmolloy.backup.statistics.observers.discord;
 
 import com.google.gson.Gson;
 import java.io.IOException;

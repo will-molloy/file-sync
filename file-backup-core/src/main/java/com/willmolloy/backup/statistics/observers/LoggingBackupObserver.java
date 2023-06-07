@@ -1,8 +1,9 @@
-package com.willmolloy.backup.statistics;
+package com.willmolloy.backup.statistics.observers;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
+import com.willmolloy.backup.statistics.Statistics;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.Locale;
@@ -47,7 +48,7 @@ public final class LoggingBackupObserver implements BackupObserver {
         NUMBER_FORMAT.format(stats.same()),
         NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
         NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA));
-    if (!stats.allSuccess()) {
+    if (!stats.noErrors()) {
       log.warn(
           "Failed: {} creates, {} updates, {} deletes",
           NUMBER_FORMAT.format(stats.failedCreates()),

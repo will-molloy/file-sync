@@ -12,8 +12,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
+import com.willmolloy.backup.statistics.observers.LoggingBackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
 import java.util.List;

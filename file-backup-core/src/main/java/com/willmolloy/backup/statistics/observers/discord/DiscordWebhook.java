@@ -1,16 +1,16 @@
-package com.willmolloy.backup.statistics.discord;
+package com.willmolloy.backup.statistics.observers.discord;
 
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
-import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject.Field;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject.Thumbnail;
+import com.willmolloy.backup.statistics.observers.BackupObserver;
+import com.willmolloy.backup.statistics.observers.discord.DiscordApi.WebhookBody;
+import com.willmolloy.backup.statistics.observers.discord.DiscordApi.WebhookBody.EmbedObject;
+import com.willmolloy.backup.statistics.observers.discord.DiscordApi.WebhookBody.EmbedObject.Field;
+import com.willmolloy.backup.statistics.observers.discord.DiscordApi.WebhookBody.EmbedObject.Thumbnail;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.NumberFormat;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * {@link BackupObserver} which sends notifications to Discord.
+ * {@link BackupObserver} which sends notifications to Discord via webhook.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
@@ -32,6 +32,7 @@ public final class DiscordWebhook implements BackupObserver {
   private final URI webhookUrl;
   private final DiscordApi discordApi;
 
+  // TODO unit tests!
   public DiscordWebhook(String webhookUrl, DiscordApi discordApi) {
     try {
       this.webhookUrl = new URI(webhookUrl);
@@ -67,7 +68,7 @@ public final class DiscordWebhook implements BackupObserver {
   @Override
   public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
     WebhookBody body;
-    if (stats.allSuccess()) {
+    if (stats.noErrors()) {
       body =
           new WebhookBody(
               List.of(

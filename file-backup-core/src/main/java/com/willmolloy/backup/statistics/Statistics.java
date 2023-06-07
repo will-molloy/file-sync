@@ -96,7 +96,7 @@ public final class Statistics<SourceFileT extends File, DestFileT extends File> 
       long bytesAdded,
       long bytesRemoved) {
 
-    public boolean allSuccess() {
+    public boolean noErrors() {
       return IntStream.of(failedCreates, failedUpdates, failedDeletes).allMatch(i -> i == 0);
     }
   }

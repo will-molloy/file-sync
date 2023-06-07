@@ -1,8 +1,9 @@
-package com.willmolloy.backup.statistics;
+package com.willmolloy.backup.statistics.observers;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
+import com.willmolloy.backup.statistics.Statistics;
 import java.time.Duration;
 
 /**
@@ -16,7 +17,7 @@ public interface BackupObserver {
 
   void notifyScanned(Location<?> location, FileTree<?> fileTree, Duration elapsed);
 
-  void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot statistics, Duration elapsed);
+  void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed);
 
   void notifyFailed(Backup<?, ?> backup, Throwable t);
 }

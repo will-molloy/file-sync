@@ -4,7 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.FileTree;
-import com.willmolloy.backup.statistics.BackupObserver;
+import com.willmolloy.backup.statistics.observers.BackupObserver;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
