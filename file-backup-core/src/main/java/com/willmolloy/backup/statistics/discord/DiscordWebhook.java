@@ -7,6 +7,7 @@ import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
+import java.awt.Color;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.NumberFormat;
@@ -25,14 +26,14 @@ public final class DiscordWebhook implements BackupObserver {
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
-  private final URI webhookUrl;
-  private final DiscordApi discordApi;
+  private final URI webhook;
+  private final DiscordApi api;
 
   // TODO unit tests!
-  public DiscordWebhook(String webhookUrl, DiscordApi discordApi) {
+  public DiscordWebhook(String webhookUrl, DiscordApi api) {
     try {
-      this.webhookUrl = new URI(webhookUrl);
-      this.discordApi = requireNonNull(discordApi);
+      this.webhook = new URI(webhookUrl);
+      this.api = requireNonNull(api);
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e);
     }
@@ -46,7 +47,7 @@ public final class DiscordWebhook implements BackupObserver {
                 new DiscordApi.WebhookBody.EmbedObject(
                     "Backup Started",
                     null,
-                    colorCode(88, 185, 255),
+                    colorCode(new Color(88, 185, 255)),
                     List.of(
                         new DiscordApi.WebhookBody.EmbedObject.Field(
                             "Source", backup.source().toString()),
@@ -55,7 +56,7 @@ public final class DiscordWebhook implements BackupObserver {
                     // TODO loading icon
                     null,
                     Instant.now().toString())));
-    discordApi.executeWebhook(webhookUrl, body);
+    api.executeWebhook(webhook, body);
   }
 
   @Override
@@ -80,7 +81,7 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.same()),
                               NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
                               NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
-                      colorCode(0, 153, 0),
+                      colorCode(new Color(0, 153, 0)),
                       List.of(
                           new DiscordApi.WebhookBody.EmbedObject.Field(
                               "Source", backup.source().toString()),
@@ -106,7 +107,7 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.failedCreates()),
                               NUMBER_FORMAT.format(stats.failedUpdates()),
                               NUMBER_FORMAT.format(stats.failedDeletes())),
-                      colorCode(255, 140, 47),
+                      colorCode(new Color(255, 140, 47)),
                       List.of(
                           new DiscordApi.WebhookBody.EmbedObject.Field(
                               "Source", backup.source().toString()),
@@ -116,7 +117,7 @@ public final class DiscordWebhook implements BackupObserver {
                           "https://craftassets.unraid.net/uploads/discord/notify-warning.png"),
                       Instant.now().toString())));
     }
-    discordApi.executeWebhook(webhookUrl, body);
+    api.executeWebhook(webhook, body);
   }
 
   @Override
@@ -127,7 +128,7 @@ public final class DiscordWebhook implements BackupObserver {
                 new DiscordApi.WebhookBody.EmbedObject(
                     "Backup Failed",
                     t.toString(),
-                    colorCode(226, 40, 40),
+                    colorCode(new Color(226, 40, 40)),
                     List.of(
                         new DiscordApi.WebhookBody.EmbedObject.Field(
                             "Source", backup.source().toString()),
@@ -136,11 +137,11 @@ public final class DiscordWebhook implements BackupObserver {
                     new DiscordApi.WebhookBody.EmbedObject.Thumbnail(
                         "https://craftassets.unraid.net/uploads/discord/notify-alert.png"),
                     Instant.now().toString())));
-    discordApi.executeWebhook(webhookUrl, body);
+    api.executeWebhook(webhook, body);
   }
 
-  private static int colorCode(int r, int g, int b) {
-    return (r & 0xFF) << 16 | (g & 0xFF) << 8 | b & 0xFF;
+  private static int colorCode(Color color) {
+    return (color.getRed() & 0xFF) << 16 | (color.getGreen() & 0xFF) << 8 | color.getBlue() & 0xFF;
   }
 
   private static String formatDuration(Duration duration) {

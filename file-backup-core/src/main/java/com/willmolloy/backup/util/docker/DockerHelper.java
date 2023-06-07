@@ -48,6 +48,7 @@ public final class DockerHelper {
         Matcher m = p.matcher(mount.Source());
         require(m.matches(), "Doesn't match pattern: %s".formatted(p));
         String volume = m.group(1);
+        // TODO hostname from IP addr
         yield API.volumeInspect(volume).map(volumeInspect -> volumeInspect.Options().device());
       }
       default -> Optional.empty();
