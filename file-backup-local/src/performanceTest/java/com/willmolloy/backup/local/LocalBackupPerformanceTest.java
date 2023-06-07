@@ -4,7 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.github.javafaker.Faker;
-import com.willmolloy.backup.statistics.observers.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import com.willmolloy.backup.util.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;

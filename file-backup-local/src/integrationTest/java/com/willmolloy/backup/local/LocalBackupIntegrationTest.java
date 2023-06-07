@@ -5,7 +5,7 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.backup.statistics.observers.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;

@@ -3,10 +3,10 @@ package com.willmolloy.backup.local;
 import static com.willmolloy.backup.util.EnvHelper.getOptionalEnvVariable;
 import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
-import com.willmolloy.backup.statistics.observers.BackupObserver;
-import com.willmolloy.backup.statistics.observers.LoggingBackupObserver;
-import com.willmolloy.backup.statistics.observers.discord.DiscordApi;
-import com.willmolloy.backup.statistics.observers.discord.DiscordWebhook;
+import com.willmolloy.backup.statistics.BackupObserver;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.discord.DiscordApi;
+import com.willmolloy.backup.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;

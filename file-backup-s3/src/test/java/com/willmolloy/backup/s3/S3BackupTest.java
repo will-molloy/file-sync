@@ -17,7 +17,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
-import com.willmolloy.backup.statistics.observers.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;

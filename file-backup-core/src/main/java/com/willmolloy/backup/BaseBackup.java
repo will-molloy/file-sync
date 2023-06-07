@@ -3,8 +3,8 @@ package com.willmolloy.backup;
 import static com.willmolloy.backup.util.TimeHelper.elapsed;
 import static java.util.Objects.requireNonNull;
 
+import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
-import com.willmolloy.backup.statistics.observers.BackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.util.List;

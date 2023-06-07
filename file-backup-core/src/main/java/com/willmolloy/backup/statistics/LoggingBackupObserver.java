@@ -1,9 +1,8 @@
-package com.willmolloy.backup.statistics.observers;
+package com.willmolloy.backup.statistics;
 
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
-import com.willmolloy.backup.statistics.Statistics;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.Locale;

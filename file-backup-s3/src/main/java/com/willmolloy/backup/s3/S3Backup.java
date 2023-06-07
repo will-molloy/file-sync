@@ -10,7 +10,7 @@ import com.willmolloy.backup.File;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.local.LocalFile;
 import com.willmolloy.backup.local.LocalStorage;
-import com.willmolloy.backup.statistics.observers.BackupObserver;
+import com.willmolloy.backup.statistics.BackupObserver;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
