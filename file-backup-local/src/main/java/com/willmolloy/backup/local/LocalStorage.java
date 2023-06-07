@@ -1,8 +1,8 @@
 package com.willmolloy.backup.local;
 
-import static com.willmolloy.backup.util.DockerHelper.getHostPath;
-import static com.willmolloy.backup.util.DockerHelper.isRunningInDocker;
 import static com.willmolloy.backup.util.Preconditions.require;
+import static com.willmolloy.backup.util.docker.DockerHelper.getHostPath;
+import static com.willmolloy.backup.util.docker.DockerHelper.isRunningInDocker;
 import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.FileTree;
