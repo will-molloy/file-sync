@@ -1,11 +1,12 @@
 package com.willmolloy.backup.local;
 
-import static com.willmolloy.backup.util.EnvHelper.readOptionalEnvVariable;
-import static com.willmolloy.backup.util.EnvHelper.readRequiredEnvVariable;
+import static com.willmolloy.backup.util.EnvHelper.getOptionalEnvVariable;
+import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.willmolloy.backup.statistics.BackupObserver;
-import com.willmolloy.backup.statistics.DiscordWebhook;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.discord.DiscordApi;
+import com.willmolloy.backup.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
@@ -20,8 +21,8 @@ final class Main {
 
   /** Main method. */
   public static void main(String... args) {
-    String sourcePath = readRequiredEnvVariable("SOURCE_PATH");
-    String destPath = readRequiredEnvVariable("DESTINATION_PATH");
+    String sourcePath = getRequiredEnvVariable("SOURCE_PATH");
+    String destPath = getRequiredEnvVariable("DESTINATION_PATH");
 
     FileSystem fs = FileSystems.getDefault();
 
@@ -30,8 +31,8 @@ final class Main {
 
     List<BackupObserver> observers = new ArrayList<>();
     observers.add(new LoggingBackupObserver());
-    readOptionalEnvVariable("DISCORD_WEBHOOK")
-        .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
+    getOptionalEnvVariable("DISCORD_WEBHOOK")
+        .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl, new DiscordApi())));
 
     LocalBackup localBackup = new LocalBackup(source, dest, observers);
     if (!localBackup.run()) {

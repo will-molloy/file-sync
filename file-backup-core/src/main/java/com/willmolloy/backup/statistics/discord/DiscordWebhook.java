@@ -1,22 +1,23 @@
-package com.willmolloy.backup.statistics;
+package com.willmolloy.backup.statistics.discord;
 
-import com.google.gson.Gson;
+import static java.util.Objects.requireNonNull;
+
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import com.willmolloy.backup.statistics.BackupObserver;
+import com.willmolloy.backup.statistics.Statistics;
+import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
+import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
+import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject.Field;
+import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject.Thumbnail;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * {@link BackupObserver} which sends notifications to Discord.
@@ -24,21 +25,17 @@ import org.apache.logging.log4j.Logger;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public final class DiscordWebhook implements BackupObserver {
-  private static final Logger log = LogManager.getLogger();
 
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
-  private final HttpClient httpClient =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
-  private final Gson gson = new Gson();
+  private final URI webhookUrl;
+  private final DiscordApi discordApi;
 
-  private final URI webhook;
-
-  public DiscordWebhook(String webhookUrl) {
-    log.info("DiscordWebhook({})", webhookUrl);
+  public DiscordWebhook(String webhookUrl, DiscordApi discordApi) {
     try {
-      this.webhook = new URI(webhookUrl);
+      this.webhookUrl = new URI(webhookUrl);
+      this.discordApi = requireNonNull(discordApi);
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e);
     }
@@ -46,8 +43,8 @@ public final class DiscordWebhook implements BackupObserver {
 
   @Override
   public void notifyStarted(Backup<?, ?> backup) {
-    Body body =
-        new Body(
+    WebhookBody body =
+        new WebhookBody(
             List.of(
                 new EmbedObject(
                     "Backup Started",
@@ -59,7 +56,7 @@ public final class DiscordWebhook implements BackupObserver {
                     // TODO loading icon
                     null,
                     Instant.now().toString())));
-    send(body);
+    discordApi.executeWebhook(webhookUrl, body);
   }
 
   @Override
@@ -69,10 +66,10 @@ public final class DiscordWebhook implements BackupObserver {
   //  a fully fledged bot is a bit overkill
   @Override
   public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
-    Body body;
+    WebhookBody body;
     if (stats.allSuccess()) {
       body =
-          new Body(
+          new WebhookBody(
               List.of(
                   new EmbedObject(
                       "Backup Finished in: %s".formatted(formatDuration(elapsed)),
@@ -93,7 +90,7 @@ public final class DiscordWebhook implements BackupObserver {
                       Instant.now().toString())));
     } else {
       body =
-          new Body(
+          new WebhookBody(
               List.of(
                   new EmbedObject(
                       "Backup Finished in: %s".formatted(formatDuration(elapsed)),
@@ -116,13 +113,13 @@ public final class DiscordWebhook implements BackupObserver {
                           "https://craftassets.unraid.net/uploads/discord/notify-warning.png"),
                       Instant.now().toString())));
     }
-    send(body);
+    discordApi.executeWebhook(webhookUrl, body);
   }
 
   @Override
   public void notifyFailed(Backup<?, ?> backup, Throwable t) {
-    Body body =
-        new Body(
+    WebhookBody body =
+        new WebhookBody(
             List.of(
                 new EmbedObject(
                     "Backup Failed",
@@ -134,52 +131,15 @@ public final class DiscordWebhook implements BackupObserver {
                     new Thumbnail(
                         "https://craftassets.unraid.net/uploads/discord/notify-alert.png"),
                     Instant.now().toString())));
-    send(body);
+    discordApi.executeWebhook(webhookUrl, body);
   }
 
-  @SuppressFBWarnings("REC_CATCH_EXCEPTION")
-  private void send(Body body) {
-    // https://discord.com/developers/docs/resources/webhook#execute-webhook
-    try {
-      String json = gson.toJson(body);
-      HttpRequest request =
-          HttpRequest.newBuilder()
-              .uri(webhook)
-              .header("Content-Type", "application/json")
-              .POST(HttpRequest.BodyPublishers.ofString(json))
-              .build();
-      log.info("request({})", request);
-      HttpResponse<String> response =
-          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      int status = response.statusCode();
-      if (!(status >= 200 && status < 300)) {
-        log.error("Unsuccessful status sending discord webhook: ({} {})", status, response.body());
-      }
-    } catch (Exception e) {
-      log.error("Error sending discord webhook", e);
-    }
+  private static int colorCode(int r, int g, int b) {
+    return (r & 0xFF) << 16 | (g & 0xFF) << 8 | b & 0xFF;
   }
 
-  private int colorCode(int r, int g, int b) {
-    return (((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF)));
-  }
-
-  private String formatDuration(Duration duration) {
+  private static String formatDuration(Duration duration) {
     long s = duration.toSeconds();
-    return "%d:%02d:%02d".formatted(s / 3600, (s % 3600) / 60, (s % 60));
+    return "%d:%02d:%02d".formatted(s / 3600, s % 3600 / 60, s % 60);
   }
-
-  private record Body(List<EmbedObject> embeds) {}
-
-  private record EmbedObject(
-      String title,
-      String description,
-      int color,
-      List<Field> fields,
-      Thumbnail thumbnail,
-      String timestamp) {}
-
-  private record Field(String name, String value) {}
-
-  private record Thumbnail(String url) {}
 }

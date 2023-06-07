@@ -1,13 +1,14 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.EnvHelper.readOptionalEnvVariable;
-import static com.willmolloy.backup.util.EnvHelper.readRequiredEnvVariable;
+import static com.willmolloy.backup.util.EnvHelper.getOptionalEnvVariable;
+import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 import static com.willmolloy.backup.util.Preconditions.require;
 
 import com.willmolloy.backup.local.LocalStorage;
 import com.willmolloy.backup.statistics.BackupObserver;
-import com.willmolloy.backup.statistics.DiscordWebhook;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
+import com.willmolloy.backup.statistics.discord.DiscordApi;
+import com.willmolloy.backup.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Duration;
@@ -33,9 +34,9 @@ final class Main {
                 .client(s3Client)
                 .overrideConfiguration(config -> config.waitTimeout(Duration.ofHours(1)))
                 .build()) {
-      String sourcePath = readRequiredEnvVariable("SOURCE_PATH");
-      String destBucket = readRequiredEnvVariable("DESTINATION_BUCKET");
-      String destPrefix = readRequiredEnvVariable("DESTINATION_BUCKET_PREFIX");
+      String sourcePath = getRequiredEnvVariable("SOURCE_PATH");
+      String destBucket = getRequiredEnvVariable("DESTINATION_BUCKET");
+      String destPrefix = getRequiredEnvVariable("DESTINATION_BUCKET_PREFIX");
 
       FileSystem fs = FileSystems.getDefault();
 
@@ -45,8 +46,8 @@ final class Main {
 
       List<BackupObserver> observers = new ArrayList<>();
       observers.add(new LoggingBackupObserver());
-      readOptionalEnvVariable("DISCORD_WEBHOOK")
-          .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
+      getOptionalEnvVariable("DISCORD_WEBHOOK")
+          .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl, new DiscordApi())));
 
       S3Backup s3Backup = new S3Backup(s3Client, s3Waiter, source, dest, observers);
       if (!s3Backup.run()) {

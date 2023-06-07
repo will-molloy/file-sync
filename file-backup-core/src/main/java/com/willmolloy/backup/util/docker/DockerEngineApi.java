@@ -1,6 +1,6 @@
 package com.willmolloy.backup.util.docker;
 
-import static com.willmolloy.backup.util.EnvHelper.readRequiredEnvVariable;
+import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.google.gson.Gson;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -29,9 +29,17 @@ final class DockerEngineApi {
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
   private final Gson gson = new Gson();
 
+  /**
+   * Inspects the container running this app.
+   *
+   * <p>Only works if running in docker container!
+   *
+   * @see <a
+   *     href=https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect>API
+   *     doc</a>
+   */
   Optional<ContainerInspect> containerInspect() {
-    // https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect
-    String hostname = readRequiredEnvVariable("HOSTNAME");
+    String hostname = getRequiredEnvVariable("HOSTNAME");
     return getAndDeser(
         "http://host.docker.internal:2375/containers/%s/json".formatted(hostname),
         ContainerInspect.class);
@@ -56,8 +64,15 @@ final class DockerEngineApi {
     record Mount(String Type, String Source, String Destination) {}
   }
 
+  /**
+   * Inspect a volume.
+   *
+   * <p>Only works if running in docker container!
+   *
+   * @see <a href=https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect>API
+   *     doc</a>
+   */
   Optional<VolumeInspect> volumeInspect(String volume) {
-    // https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect
     return getAndDeser(
         "http://host.docker.internal:2375/volumes/%s".formatted(volume), VolumeInspect.class);
   }
@@ -87,7 +102,7 @@ final class DockerEngineApi {
       int status = response.statusCode();
       if (status != 200) {
         log.error(
-            "Unsuccessful status sending GET request: {} ({} {})", url, status, response.body());
+            "Unexpected status sending GET request: {} ({} {})", url, status, response.body());
         return Optional.empty();
       }
       return Optional.of(gson.fromJson(response.body(), classOfT));

@@ -11,11 +11,11 @@ import java.util.Optional;
  */
 public final class EnvHelper {
 
-  public static String readRequiredEnvVariable(String name) {
+  public static String getRequiredEnvVariable(String name) {
     return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
   }
 
-  public static Optional<String> readOptionalEnvVariable(String name) {
+  public static Optional<String> getOptionalEnvVariable(String name) {
     return Optional.ofNullable(System.getenv(name));
   }
 
