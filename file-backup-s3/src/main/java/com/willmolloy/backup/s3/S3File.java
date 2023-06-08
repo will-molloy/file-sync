@@ -1,7 +1,7 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.Preconditions.require;
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.BaseFile;
 import java.nio.file.FileSystem;
@@ -19,10 +19,11 @@ final class S3File extends BaseFile {
   static S3File fromS3Object(S3Bucket s3Bucket, S3Object s3Object) {
     FileSystem fs = s3Bucket.prefix().getFileSystem();
     Path path = fs.getPath(s3Object.key());
-    require(
+    checkArgument(
         path.startsWith(s3Bucket.prefix()),
-        "Requires object key [%s] to be under bucket prefix [%s]"
-            .formatted(path, s3Bucket.prefix()));
+        "Requires object key [%s] to be under bucket prefix [%s]",
+        path,
+        s3Bucket.prefix());
     return new S3File(
         s3Bucket,
         s3Bucket.prefix().relativize(path),
@@ -41,8 +42,8 @@ final class S3File extends BaseFile {
 
   private S3File(S3Bucket s3Bucket, Path relativePath, boolean isDirectory, long size) {
     super(relativePath, isDirectory, size);
-    this.s3Bucket = requireNonNull(s3Bucket);
-    this.relativePath = requireNonNull(relativePath);
+    this.s3Bucket = checkNotNull(s3Bucket);
+    this.relativePath = checkNotNull(relativePath);
     this.isDirectory = isDirectory;
   }
 
