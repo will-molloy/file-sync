@@ -47,7 +47,7 @@ public final class LoggingBackupObserver implements BackupObserver {
         NUMBER_FORMAT.format(stats.same()),
         NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
         NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA));
-    if (!stats.noErrors()) {
+    if (stats.anyErrors()) {
       log.warn(
           "Failed: {} creates, {} updates, {} deletes",
           NUMBER_FORMAT.format(stats.failedCreates()),

@@ -75,7 +75,7 @@ public final class DiscordWebhook implements BackupObserver {
   @Override
   public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
     WebhookBody body;
-    if (stats.noErrors()) {
+    if (!stats.anyErrors()) {
       body =
           new WebhookBody(
               List.of(

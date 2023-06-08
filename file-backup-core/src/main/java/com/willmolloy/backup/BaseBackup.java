@@ -80,7 +80,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       for (BackupObserver observer : observers) {
         observer.notifyFinished(this, snapshot, elapsed);
       }
-      return snapshot.noErrors();
+      return !snapshot.anyErrors();
     } catch (Throwable t) {
       for (BackupObserver observer : observers) {
         observer.notifyFailed(this, t);
