@@ -40,7 +40,7 @@ final class Main {
   }
 
   private static String readEnvVariable(String name) {
-    return checkNotNull(System.getenv(name), "Missing %s".formatted(name));
+    return checkNotNull(System.getenv(name), "Missing: %s", name);
   }
 
   private Main() {}
