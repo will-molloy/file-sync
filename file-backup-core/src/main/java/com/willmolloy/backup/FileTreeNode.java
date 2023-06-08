@@ -1,7 +1,7 @@
 package com.willmolloy.backup;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.PathHelper.nameComponents;
-import static java.util.Objects.requireNonNull;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -31,7 +31,7 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   private final Map<String, FileTreeNode<FileT>> children;
 
   private FileTreeNode(FileT file, FileTreeNode<FileT> parent) {
-    this.file = requireNonNull(file);
+    this.file = checkNotNull(file);
     this.parent = parent;
     this.children = new LinkedHashMap<>();
   }
@@ -155,7 +155,7 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
     Builder(FileT root, DirectoryFiller<FileT> directoryFiller) {
       this.root = new FileTreeNode<>(root, null);
-      this.directoryFiller = requireNonNull(directoryFiller);
+      this.directoryFiller = checkNotNull(directoryFiller);
     }
 
     @Override

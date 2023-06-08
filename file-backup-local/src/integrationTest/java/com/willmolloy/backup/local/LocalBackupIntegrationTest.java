@@ -3,6 +3,7 @@ package com.willmolloy.backup.local;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
+import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
@@ -258,10 +259,7 @@ class LocalBackupIntegrationTest {
   }
 
   private void createFile(Path path, String contents) throws IOException {
-    Path parent = path.getParent();
-    if (parent != null) {
-      Files.createDirectories(parent);
-    }
+    MoreFiles.createParentDirectories(path);
     Files.createFile(path);
     Files.writeString(path, contents);
     // set fixed value for files, otherwise tests are flaky

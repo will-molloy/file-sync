@@ -1,8 +1,8 @@
 package com.willmolloy.backup.s3;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.willmolloy.backup.util.EnvHelper.getOptionalEnvVariable;
 import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
-import static com.willmolloy.backup.util.Preconditions.require;
 
 import com.willmolloy.backup.local.LocalStorage;
 import com.willmolloy.backup.statistics.BackupObserver;
@@ -40,7 +40,8 @@ final class Main {
       FileSystem fs = FileSystems.getDefault();
 
       LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
-      require(destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
+      checkArgument(
+          destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
       S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
       List<BackupObserver> observers = new ArrayList<>();

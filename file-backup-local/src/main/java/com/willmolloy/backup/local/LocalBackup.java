@@ -1,7 +1,8 @@
 package com.willmolloy.backup.local;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.io.MoreFiles;
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.statistics.BackupObserver;
@@ -28,7 +29,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   LocalBackup(LocalStorage source, LocalStorage destination, List<BackupObserver> observers) {
     super(source, destination, observers);
-    this.destination = requireNonNull(destination);
+    this.destination = checkNotNull(destination);
   }
 
   @Override
@@ -37,10 +38,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
     Path destPath = destination.root().resolve(sourceFile.relativePath());
     try {
       log.debug("Copying: [{}] -> [{}]", sourcePath, destPath);
-      Path destParent = destPath.getParent();
-      if (destParent != null) {
-        Files.createDirectories(destParent);
-      }
+      MoreFiles.createParentDirectories(destPath);
       Files.copy(
           sourcePath,
           destPath,

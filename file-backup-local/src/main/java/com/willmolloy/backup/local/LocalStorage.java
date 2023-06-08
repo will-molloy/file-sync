@@ -1,9 +1,9 @@
 package com.willmolloy.backup.local;
 
-import static com.willmolloy.backup.util.Preconditions.require;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.docker.DockerHelper.getHostPath;
 import static com.willmolloy.backup.util.docker.DockerHelper.isRunningInDocker;
-import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
@@ -31,8 +31,8 @@ public final class LocalStorage implements Location<LocalFile> {
   private final Path rootDir;
 
   public LocalStorage(Path rootDir) {
-    this.rootDir = requireNonNull(rootDir);
-    require(Files.isDirectory(rootDir), "Requires a directory: [%s]".formatted(rootDir));
+    this.rootDir = checkNotNull(rootDir);
+    checkArgument(Files.isDirectory(rootDir), "Requires a directory: [%s]", rootDir);
   }
 
   @Override
@@ -71,7 +71,7 @@ public final class LocalStorage implements Location<LocalFile> {
     private final BiConsumer<Path, BasicFileAttributes> consumer;
 
     private DirectoryWalker(BiConsumer<Path, BasicFileAttributes> consumer) {
-      this.consumer = requireNonNull(consumer);
+      this.consumer = checkNotNull(consumer);
     }
 
     @Override

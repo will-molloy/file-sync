@@ -1,6 +1,6 @@
 package com.willmolloy.backup.util.docker;
 
-import static com.willmolloy.backup.util.Preconditions.require;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
 import java.nio.file.Files;
@@ -46,7 +46,7 @@ public final class DockerHelper {
       case "volume" -> {
         Pattern p = Pattern.compile("^/var/lib/docker/volumes/(.*)/_data$");
         Matcher m = p.matcher(mount.Source());
-        require(m.matches(), "Doesn't match pattern: %s".formatted(p));
+        checkArgument(m.matches(), "Doesn't match pattern: %s", p);
         String volume = m.group(1);
         // TODO hostname from IP addr
         yield API.volumeInspect(volume).map(volumeInspect -> volumeInspect.Options().device());

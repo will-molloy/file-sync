@@ -1,8 +1,9 @@
 package com.willmolloy.backup;
 
-import static com.willmolloy.backup.util.TimeHelper.elapsed;
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Stopwatch;
+import com.google.errorprone.annotations.ForOverride;
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -42,8 +43,8 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       Location<SourceFileT> source,
       Location<DestFileT> destination,
       List<BackupObserver> observers) {
-    this.source = requireNonNull(source);
-    this.destination = requireNonNull(destination);
+    this.source = checkNotNull(source);
+    this.destination = checkNotNull(destination);
     this.observers = List.copyOf(observers);
   }
 
@@ -60,7 +61,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   /** Runs the backup. */
   public final boolean run() {
     try {
-      long startNanos = System.nanoTime();
+      Stopwatch stopwatch = Stopwatch.createStarted();
       Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
       for (BackupObserver observer : observers) {
         observer.notifyStarted(this);
@@ -75,7 +76,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       executePuts(sourceFileTree, destFileTree, statistics);
 
       Statistics.Snapshot snapshot = statistics.snapshot();
-      Duration elapsed = elapsed(startNanos);
+      Duration elapsed = stopwatch.elapsed();
       for (BackupObserver observer : observers) {
         observer.notifyFinished(this, snapshot, elapsed);
       }
@@ -89,10 +90,10 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   }
 
   private <T extends File> FileTree<T> scan(Location<T> location) {
-    long startNanos = System.nanoTime();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     log.info("Scanning: {}", location);
     FileTree<T> fileTree = location.scan();
-    Duration elapsed = elapsed(startNanos);
+    Duration elapsed = stopwatch.elapsed();
     for (BackupObserver observer : observers) {
       observer.notifyScanned(location, fileTree, elapsed);
     }
@@ -186,6 +187,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
    * @return {@code true} if create/update was successful
    * @implSpec Creates parent directories as necessary
    */
+  @ForOverride
   protected abstract boolean put(SourceFileT sourceFile);
 
   /**
@@ -194,14 +196,17 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
    * @return {@code true} if delete was successful
    * @implSpec Deletes all child directories/files
    */
+  @ForOverride
   protected abstract boolean delete(FileTree<DestFileT> destSubtree);
 
   /** {@code true} if create (via {@link #put}) is necessary. */
+  @ForOverride
   protected boolean needCreate(SourceFileT sourceFile, Optional<DestFileT> optionalDestFile) {
     return optionalDestFile.isEmpty();
   }
 
   /** {@code true} if update (via {@link #put}) is necessary. */
+  @ForOverride
   protected boolean needUpdate(SourceFileT sourceFile, DestFileT destFile) {
     // for s3; considered last-modified, but it's really object-creation time.
     // also considered e-tag, but it's calculated differently for large (> 16MB) files.
@@ -211,6 +216,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   }
 
   /** {@code true} if {@link #delete} is necessary. */
+  @ForOverride
   protected boolean needDelete(Optional<SourceFileT> optionalSourceFile, DestFileT destFile) {
     return optionalSourceFile.isEmpty();
   }

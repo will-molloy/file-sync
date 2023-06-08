@@ -1,9 +1,9 @@
 package com.willmolloy.backup.s3;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.Md5Helper.md5Base64;
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
 import static com.willmolloy.backup.util.StreamHelper.chunk;
-import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.File;
@@ -50,9 +50,9 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
       S3Bucket destination,
       List<BackupObserver> observers) {
     super(source, destination, observers);
-    this.s3Client = requireNonNull(s3Client);
-    this.s3Waiter = requireNonNull(s3Waiter);
-    this.destination = requireNonNull(destination);
+    this.s3Client = checkNotNull(s3Client);
+    this.s3Waiter = checkNotNull(s3Waiter);
+    this.destination = checkNotNull(destination);
   }
 
   @Override

@@ -1,7 +1,8 @@
 package com.willmolloy.backup.statistics.discord;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
@@ -33,11 +34,12 @@ public final class DiscordWebhook implements BackupObserver {
   private final DiscordApi api;
   private final Clock clock;
 
+  @VisibleForTesting
   DiscordWebhook(String webhookUrl, DiscordApi api, Clock clock) {
     try {
       this.webhook = new URI(webhookUrl);
-      this.api = requireNonNull(api);
-      this.clock = requireNonNull(clock);
+      this.api = checkNotNull(api);
+      this.clock = checkNotNull(clock);
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e);
     }

@@ -1,6 +1,6 @@
 package com.willmolloy.backup.util;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Optional;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 public final class EnvHelper {
 
   public static String getRequiredEnvVariable(String name) {
-    return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
+    return checkNotNull(System.getenv(name), "Missing: %s", name);
   }
 
   public static Optional<String> getOptionalEnvVariable(String name) {
