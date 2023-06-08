@@ -7,10 +7,13 @@ import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
+import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
+import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
 import java.awt.Color;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.NumberFormat;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -28,34 +31,37 @@ public final class DiscordWebhook implements BackupObserver {
 
   private final URI webhook;
   private final DiscordApi api;
+  private final Clock clock;
 
-  // TODO unit tests!
-  public DiscordWebhook(String webhookUrl, DiscordApi api) {
+  DiscordWebhook(String webhookUrl, DiscordApi api, Clock clock) {
     try {
       this.webhook = new URI(webhookUrl);
       this.api = requireNonNull(api);
+      this.clock = requireNonNull(clock);
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e);
     }
   }
 
+  public DiscordWebhook(String webhookUrl) {
+    this(webhookUrl, new DiscordApi(), Clock.systemDefaultZone());
+  }
+
   @Override
   public void notifyStarted(Backup<?, ?> backup) {
-    DiscordApi.WebhookBody body =
-        new DiscordApi.WebhookBody(
+    WebhookBody body =
+        new WebhookBody(
             List.of(
-                new DiscordApi.WebhookBody.EmbedObject(
+                new EmbedObject(
                     "Backup Started",
                     null,
                     colorCode(new Color(88, 185, 255)),
                     List.of(
-                        new DiscordApi.WebhookBody.EmbedObject.Field(
-                            "Source", backup.source().toString()),
-                        new DiscordApi.WebhookBody.EmbedObject.Field(
-                            "Destination", backup.destination().toString())),
+                        new EmbedObject.Field("Source", backup.source().toString()),
+                        new EmbedObject.Field("Destination", backup.destination().toString())),
                     // TODO loading icon
                     null,
-                    Instant.now().toString())));
+                    Instant.now(clock).toString())));
     api.executeWebhook(webhook, body);
   }
 
@@ -66,12 +72,12 @@ public final class DiscordWebhook implements BackupObserver {
   //  a fully fledged bot is a bit overkill
   @Override
   public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
-    DiscordApi.WebhookBody body;
+    WebhookBody body;
     if (stats.noErrors()) {
       body =
-          new DiscordApi.WebhookBody(
+          new WebhookBody(
               List.of(
-                  new DiscordApi.WebhookBody.EmbedObject(
+                  new EmbedObject(
                       "Backup Finished in: %s".formatted(formatDuration(elapsed)),
                       "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed."
                           .formatted(
@@ -83,18 +89,16 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
                       colorCode(new Color(0, 153, 0)),
                       List.of(
-                          new DiscordApi.WebhookBody.EmbedObject.Field(
-                              "Source", backup.source().toString()),
-                          new DiscordApi.WebhookBody.EmbedObject.Field(
-                              "Destination", backup.destination().toString())),
-                      new DiscordApi.WebhookBody.EmbedObject.Thumbnail(
+                          new EmbedObject.Field("Source", backup.source().toString()),
+                          new EmbedObject.Field("Destination", backup.destination().toString())),
+                      new EmbedObject.Thumbnail(
                           "https://craftassets.unraid.net/uploads/discord/notify-normal.png"),
-                      Instant.now().toString())));
+                      Instant.now(clock).toString())));
     } else {
       body =
-          new DiscordApi.WebhookBody(
+          new WebhookBody(
               List.of(
-                  new DiscordApi.WebhookBody.EmbedObject(
+                  new EmbedObject(
                       "Backup Finished in: %s".formatted(formatDuration(elapsed)),
                       "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed.\n\nFailed: %s creates, %s updates, %s deletes."
                           .formatted(
@@ -109,34 +113,30 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.failedDeletes())),
                       colorCode(new Color(255, 140, 47)),
                       List.of(
-                          new DiscordApi.WebhookBody.EmbedObject.Field(
-                              "Source", backup.source().toString()),
-                          new DiscordApi.WebhookBody.EmbedObject.Field(
-                              "Destination", backup.destination().toString())),
-                      new DiscordApi.WebhookBody.EmbedObject.Thumbnail(
+                          new EmbedObject.Field("Source", backup.source().toString()),
+                          new EmbedObject.Field("Destination", backup.destination().toString())),
+                      new EmbedObject.Thumbnail(
                           "https://craftassets.unraid.net/uploads/discord/notify-warning.png"),
-                      Instant.now().toString())));
+                      Instant.now(clock).toString())));
     }
     api.executeWebhook(webhook, body);
   }
 
   @Override
   public void notifyFailed(Backup<?, ?> backup, Throwable t) {
-    DiscordApi.WebhookBody body =
-        new DiscordApi.WebhookBody(
+    WebhookBody body =
+        new WebhookBody(
             List.of(
-                new DiscordApi.WebhookBody.EmbedObject(
+                new EmbedObject(
                     "Backup Failed",
                     t.toString(),
                     colorCode(new Color(226, 40, 40)),
                     List.of(
-                        new DiscordApi.WebhookBody.EmbedObject.Field(
-                            "Source", backup.source().toString()),
-                        new DiscordApi.WebhookBody.EmbedObject.Field(
-                            "Destination", backup.destination().toString())),
-                    new DiscordApi.WebhookBody.EmbedObject.Thumbnail(
+                        new EmbedObject.Field("Source", backup.source().toString()),
+                        new EmbedObject.Field("Destination", backup.destination().toString())),
+                    new EmbedObject.Thumbnail(
                         "https://craftassets.unraid.net/uploads/discord/notify-alert.png"),
-                    Instant.now().toString())));
+                    Instant.now(clock).toString())));
     api.executeWebhook(webhook, body);
   }
 

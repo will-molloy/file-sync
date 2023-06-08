@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class DiscordApi {
+final class DiscordApi {
 
   private static final Logger log = LogManager.getLogger();
 

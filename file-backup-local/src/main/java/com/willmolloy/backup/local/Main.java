@@ -5,7 +5,6 @@ import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
-import com.willmolloy.backup.statistics.discord.DiscordApi;
 import com.willmolloy.backup.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -32,7 +31,7 @@ final class Main {
     List<BackupObserver> observers = new ArrayList<>();
     observers.add(new LoggingBackupObserver());
     getOptionalEnvVariable("DISCORD_WEBHOOK")
-        .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl, new DiscordApi())));
+        .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
 
     LocalBackup localBackup = new LocalBackup(source, dest, observers);
     if (!localBackup.run()) {

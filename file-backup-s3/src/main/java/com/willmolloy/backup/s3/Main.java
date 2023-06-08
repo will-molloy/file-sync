@@ -7,7 +7,6 @@ import static com.willmolloy.backup.util.Preconditions.require;
 import com.willmolloy.backup.local.LocalStorage;
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
-import com.willmolloy.backup.statistics.discord.DiscordApi;
 import com.willmolloy.backup.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -47,7 +46,7 @@ final class Main {
       List<BackupObserver> observers = new ArrayList<>();
       observers.add(new LoggingBackupObserver());
       getOptionalEnvVariable("DISCORD_WEBHOOK")
-          .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl, new DiscordApi())));
+          .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
 
       S3Backup s3Backup = new S3Backup(s3Client, s3Waiter, source, dest, observers);
       if (!s3Backup.run()) {
