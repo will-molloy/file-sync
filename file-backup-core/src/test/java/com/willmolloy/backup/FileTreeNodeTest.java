@@ -5,8 +5,6 @@ import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
-import java.util.Objects;
-
 import org.junit.jupiter.api.Test;
 
 /**
@@ -231,18 +229,5 @@ class FileTreeNodeTest {
   }
 
   private record TestFile(String uri, Path relativePath, long size, boolean isDirectory)
-      implements File {
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      return o instanceof File file && Objects.equals(uri(), file.uri());
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(uri());
-    }
-  }
+      implements File {}
 }
