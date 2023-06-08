@@ -1,6 +1,7 @@
 package com.willmolloy.backup.util.docker;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
 import java.nio.file.Files;
@@ -28,10 +29,14 @@ public final class DockerHelper {
     return Files.exists(Path.of("/.dockerenv"));
   }
 
+  public static String hostname() {
+    return getRequiredEnvVariable("HOSTNAME");
+  }
+
   /** Gets the corresponding host path for the mount/volume. */
   public static Optional<String> getHostPath(String containerPath) {
     log.debug("getHostPath({})", containerPath);
-    return API.containerInspect()
+    return API.containerInspect(hostname())
         .flatMap(
             containerInspect ->
                 containerInspect.Mounts().stream()

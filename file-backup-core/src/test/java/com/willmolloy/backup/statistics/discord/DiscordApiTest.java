@@ -3,6 +3,7 @@ package com.willmolloy.backup.statistics.discord;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.google.gson.Gson;
 import com.pgssoft.httpclient.HttpClientMock;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
@@ -42,9 +43,7 @@ class DiscordApiTest {
         .verify()
         .post(webhookUrl)
         .withHeader("Content-Type", "application/json")
-        .withBody(
-            equalTo(
-                "{\"embeds\":[{\"title\":\"Title\",\"description\":\"Desc\",\"color\":255,\"fields\":[]}]}"))
+        .withBody(equalTo(new Gson().toJson(testBody())))
         .called();
   }
 

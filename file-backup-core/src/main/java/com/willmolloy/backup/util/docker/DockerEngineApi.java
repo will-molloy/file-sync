@@ -1,7 +1,8 @@
 package com.willmolloy.backup.util.docker;
 
-import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
@@ -25,21 +26,29 @@ final class DockerEngineApi {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final HttpClient httpClient =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
-  private final Gson gson = new Gson();
+  private final HttpClient httpClient;
+  private final Gson gson;
+
+  @VisibleForTesting
+  DockerEngineApi(HttpClient httpClient) {
+    this.httpClient = checkNotNull(httpClient);
+    this.gson = new Gson();
+  }
+
+  DockerEngineApi() {
+    this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build());
+  }
 
   /**
-   * Inspects the container running this app.
+   * Inspects a container.
    *
-   * <p>Only works if running in docker container!
-   *
+   * @param hostname container host name
+   * @apiNote Only works if running in docker container!
    * @see <a
    *     href=https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect>API
    *     doc</a>
    */
-  Optional<ContainerInspect> containerInspect() {
-    String hostname = getRequiredEnvVariable("HOSTNAME");
+  Optional<ContainerInspect> containerInspect(String hostname) {
     return getAndDeser(
         "http://host.docker.internal:2375/containers/%s/json".formatted(hostname),
         ContainerInspect.class);
@@ -67,8 +76,8 @@ final class DockerEngineApi {
   /**
    * Inspect a volume.
    *
-   * <p>Only works if running in docker container!
-   *
+   * @param volume volume name
+   * @apiNote Only works if running in docker container!
    * @see <a href=https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect>API
    *     doc</a>
    */
