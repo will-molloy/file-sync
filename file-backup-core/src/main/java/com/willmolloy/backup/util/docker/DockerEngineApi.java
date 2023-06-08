@@ -26,6 +26,7 @@ final class DockerEngineApi {
 
   private static final Logger log = LogManager.getLogger();
 
+  // TODO wrapper class for HttpClient?
   private final HttpClient httpClient;
   private final Gson gson;
 

@@ -1,8 +1,9 @@
 package com.willmolloy.backup.util.docker;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,47 +19,60 @@ import org.apache.logging.log4j.Logger;
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 public final class DockerHelper {
-  // TODO unit tests!
-
   private static final Logger log = LogManager.getLogger();
 
-  private static final DockerEngineApi API = new DockerEngineApi();
+  private final Optional<String> hostName;
+  private final DockerEngineApi api;
+
+  @VisibleForTesting
+  DockerHelper(Optional<String> hostName, DockerEngineApi api) {
+    this.hostName = checkNotNull(hostName);
+    this.api = checkNotNull(api);
+  }
+
+  public DockerHelper() {
+    this(
+        isRunningInDocker() ? Optional.of(getRequiredEnvVariable("HOSTNAME")) : Optional.empty(),
+        new DockerEngineApi());
+  }
 
   /** {@code true} if running in docker container. */
   public static boolean isRunningInDocker() {
     return Files.exists(Path.of("/.dockerenv"));
   }
 
-  public static String hostname() {
-    return getRequiredEnvVariable("HOSTNAME");
-  }
-
   /** Gets the corresponding host path for the mount/volume. */
-  public static Optional<String> getHostPath(String containerPath) {
+  public Optional<String> getHostPath(String containerPath) {
     log.debug("getHostPath({})", containerPath);
-    return API.containerInspect(hostname())
+    return hostName
+        .flatMap(api::containerInspect)
         .flatMap(
             containerInspect ->
                 containerInspect.Mounts().stream()
                     .filter(mount -> mount.Destination().equals(containerPath))
                     .findFirst())
-        .flatMap(mount -> extractHostPath(mount));
+        .flatMap(this::extractHostPath);
   }
 
-  private static Optional<String> extractHostPath(Mount mount) {
+  private Optional<String> extractHostPath(Mount mount) {
     return switch (mount.Type()) {
       case "bind" -> Optional.of(mount.Source());
       case "volume" -> {
         Pattern p = Pattern.compile("^/var/lib/docker/volumes/(.*)/_data$");
         Matcher m = p.matcher(mount.Source());
-        checkArgument(m.matches(), "Doesn't match pattern: %s", p);
-        String volume = m.group(1);
-        // TODO hostname from IP addr
-        yield API.volumeInspect(volume).map(volumeInspect -> volumeInspect.Options().device());
+        if (m.matches()) {
+          String volume = m.group(1);
+          // TODO hostname from IP addr
+          yield api.volumeInspect(volume).map(volumeInspect -> volumeInspect.Options().device());
+        } else {
+          log.error("Volume [{}] doesn't match pattern: {}", mount.Source(), p);
+          yield Optional.empty();
+        }
       }
-      default -> Optional.empty();
+      default -> {
+        log.error("Unknown mount type: {}", mount.Type());
+        yield Optional.empty();
+      }
     };
   }
-
-  private DockerHelper() {}
 }

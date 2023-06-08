@@ -2,11 +2,10 @@ package com.willmolloy.backup.local;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.willmolloy.backup.util.docker.DockerHelper.getHostPath;
-import static com.willmolloy.backup.util.docker.DockerHelper.isRunningInDocker;
 
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
+import com.willmolloy.backup.util.docker.DockerHelper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -27,6 +26,8 @@ import org.apache.logging.log4j.Logger;
 public final class LocalStorage implements Location<LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
+
+  private final DockerHelper docker = new DockerHelper();
 
   private final Path rootDir;
 
@@ -60,10 +61,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
   @Override
   public String toString() {
-    String display = rootDir.toString();
-    if (isRunningInDocker()) {
-      display = getHostPath(display).orElse(display);
-    }
+    String display = docker.getHostPath(rootDir.toString()).orElse(rootDir.toString());
     return "%s[%s]".formatted(getClass().getSimpleName(), display);
   }
 
