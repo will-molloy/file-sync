@@ -1,7 +1,7 @@
 package com.willmolloy.backup.s3;
 
-import static com.willmolloy.backup.util.Preconditions.require;
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.local.LocalStorage;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
@@ -40,7 +40,8 @@ final class Main {
       FileSystem fs = FileSystems.getDefault();
 
       LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
-      require(destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
+      checkArgument(
+          destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
       S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
       S3Backup s3Backup =
@@ -55,7 +56,7 @@ final class Main {
   }
 
   private static String readEnvVariable(String name) {
-    return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
+    return checkNotNull(System.getenv(name), "Missing %s".formatted(name));
   }
 
   private Main() {}

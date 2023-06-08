@@ -1,6 +1,6 @@
 package com.willmolloy.backup.local;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.BaseBackup;
 import com.willmolloy.backup.FileTree;
@@ -28,7 +28,7 @@ final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
 
   LocalBackup(LocalStorage source, LocalStorage destination, List<BackupObserver> observers) {
     super(source, destination, observers);
-    this.destination = requireNonNull(destination);
+    this.destination = checkNotNull(destination);
   }
 
   @Override

@@ -1,7 +1,7 @@
 package com.willmolloy.backup;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.TimeHelper.elapsed;
-import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
@@ -41,8 +41,8 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
       Location<SourceFileT> source,
       Location<DestFileT> destination,
       List<BackupObserver> observers) {
-    this.source = requireNonNull(source);
-    this.destination = requireNonNull(destination);
+    this.source = checkNotNull(source);
+    this.destination = checkNotNull(destination);
     this.observers = List.copyOf(observers);
   }
 

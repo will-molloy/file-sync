@@ -1,6 +1,6 @@
 package com.willmolloy.backup.util;
 
-import static com.willmolloy.backup.util.Preconditions.require;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Iterator;
@@ -18,7 +18,7 @@ public final class StreamHelper {
 
   /** Splits the given {@code stream} into chunks of size at most {@code size}. */
   public static <T> Stream<List<T>> chunk(Stream<T> stream, int size) {
-    require(size >= 0);
+    checkArgument(size >= 0);
     Iterator<T> input = stream.iterator();
     Iterable<List<T>> result =
         () ->

@@ -1,6 +1,6 @@
 package com.willmolloy.backup.local;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import java.nio.file.FileSystem;
@@ -40,7 +40,7 @@ final class Main {
   }
 
   private static String readEnvVariable(String name) {
-    return requireNonNull(System.getenv(name), "Missing %s".formatted(name));
+    return checkNotNull(System.getenv(name), "Missing %s".formatted(name));
   }
 
   private Main() {}

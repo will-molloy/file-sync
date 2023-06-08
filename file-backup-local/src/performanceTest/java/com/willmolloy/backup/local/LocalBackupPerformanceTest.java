@@ -1,11 +1,11 @@
 package com.willmolloy.backup.local;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.github.javafaker.Faker;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
-import com.willmolloy.backup.util.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -108,8 +108,8 @@ class LocalBackupPerformanceTest {
   }
 
   private List<String> generateRandomFiles(int count, int sizeInMB) throws IOException {
-    Preconditions.require(count * sizeInMB <= 10_000, "GitHub Actions disk space limit");
-    Preconditions.require(count > 0 && count % 2 == 0, "Can't create files evenly on source/dest");
+    checkArgument(count * sizeInMB <= 10_000, "GitHub Actions disk space limit");
+    checkArgument(count > 0 && count % 2 == 0, "Can't create files evenly on source/dest");
     log.info("Generating {} random {}MB file(s)...", count, sizeInMB);
 
     List<String> fileNames = new ArrayList<>();
