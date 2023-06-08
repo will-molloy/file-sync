@@ -4,6 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
@@ -359,10 +360,7 @@ class LocalBackupTest {
   private static LocalFile createFile(LocalStorage localStorage, Path relativePath, String contents)
       throws IOException {
     Path path = localStorage.root().resolve(relativePath);
-    Path parent = path.getParent();
-    if (parent != null) {
-      Files.createDirectories(parent);
-    }
+    MoreFiles.createParentDirectories(path);
     Files.createFile(path);
     Files.writeString(path, contents);
     // set fixed value, removing this variable from the unit tests here.

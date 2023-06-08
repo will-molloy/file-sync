@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
+import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.backup.local.LocalFile;
@@ -280,10 +281,7 @@ class S3BackupTest {
 
   private LocalFile createLocalFile(Path relativePath) throws IOException {
     Path path = source.root().resolve(relativePath);
-    Path parent = path.getParent();
-    if (parent != null) {
-      Files.createDirectories(parent);
-    }
+    MoreFiles.createParentDirectories(path);
     Files.createFile(path);
     return LocalFile.fromPath(source, path);
   }
