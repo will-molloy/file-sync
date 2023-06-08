@@ -2,10 +2,10 @@ package com.willmolloy.backup.util;
 
 import static java.util.function.Predicate.not;
 
+import com.google.common.collect.Streams;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.StreamSupport;
 
 /**
  * Helper methods for {@link Path}.
@@ -25,10 +25,7 @@ public final class PathHelper {
 
   /** {@link Path#iterator} as {@code List<String>}. */
   public static List<String> nameComponents(Path path) {
-    return StreamSupport.stream(path.spliterator(), false)
-        .map(Path::toString)
-        .filter(not(String::isEmpty))
-        .toList();
+    return Streams.stream(path).map(Path::toString).filter(not(String::isEmpty)).toList();
   }
 
   private PathHelper() {}
