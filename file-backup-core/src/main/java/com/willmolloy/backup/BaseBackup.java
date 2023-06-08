@@ -1,8 +1,8 @@
 package com.willmolloy.backup;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.willmolloy.backup.util.TimeHelper.elapsed;
 
+import com.google.common.base.Stopwatch;
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -48,7 +48,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   /** Runs the backup. */
   public final boolean run() {
-    long startNanos = System.nanoTime();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
     for (BackupObserver observer : observers) {
       observer.notifyStarted(this);
@@ -63,7 +63,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     executePuts(sourceFileTree, destFileTree, statistics);
 
     Statistics.Snapshot snapshot = statistics.snapshot();
-    Duration elapsed = elapsed(startNanos);
+    Duration elapsed = stopwatch.elapsed();
     for (BackupObserver observer : observers) {
       observer.notifyFinished(this, snapshot, elapsed);
     }
@@ -71,10 +71,10 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
   }
 
   private <T extends File> FileTree<T> scan(Location<T> location) {
-    long startNanos = System.nanoTime();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     log.info("Scanning: {}", location);
     FileTree<T> fileTree = location.scan();
-    Duration elapsed = elapsed(startNanos);
+    Duration elapsed = stopwatch.elapsed();
     for (BackupObserver observer : observers) {
       observer.notifyScanned(location, fileTree, elapsed);
     }
