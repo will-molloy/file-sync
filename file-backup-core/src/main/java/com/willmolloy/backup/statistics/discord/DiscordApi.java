@@ -1,5 +1,8 @@
 package com.willmolloy.backup.statistics.discord;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.net.URI;
@@ -20,9 +23,18 @@ final class DiscordApi {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final HttpClient httpClient =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
-  private final Gson gson = new Gson();
+  private final HttpClient httpClient;
+  private final Gson gson;
+
+  @VisibleForTesting
+  DiscordApi(HttpClient httpClient) {
+    this.httpClient = checkNotNull(httpClient);
+    this.gson = new Gson();
+  }
+
+  DiscordApi() {
+    this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build());
+  }
 
   /**
    * Execute Webhook.
