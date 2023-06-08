@@ -5,6 +5,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.github.javafaker.Faker;
+import com.google.common.io.MoreFiles;
 import com.willmolloy.backup.statistics.LoggingBackupObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
@@ -132,10 +133,7 @@ class LocalBackupPerformanceTest {
   }
 
   private void createFileWithRandomContents(Path file, int sizeInMB) throws IOException {
-    Path parent = file.getParent();
-    if (parent != null) {
-      Files.createDirectories(parent);
-    }
+    MoreFiles.createParentDirectories(file);
     Files.createFile(file);
 
     try (OutputStream outputStream = Files.newOutputStream(file)) {
