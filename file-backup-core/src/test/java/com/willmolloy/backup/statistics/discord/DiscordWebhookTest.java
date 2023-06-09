@@ -61,11 +61,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Started",
                         null,
-                        5814783,
+                        3447003,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        null,
+                        new EmbedObject.Thumbnail(
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-48.png"),
                         fixedInstant.toString()))));
   }
 
@@ -98,12 +99,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Finished in: 34:17:36",
                         "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
-                        39168,
+                        3066993,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://craftassets.unraid.net/uploads/discord/notify-normal.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/check-48.png"),
                         fixedInstant.toString()))));
   }
 
@@ -127,12 +128,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Finished in: 181:45:21",
                         "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
-                        16747567,
+                        15844367,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://craftassets.unraid.net/uploads/discord/notify-warning.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warning-48.png"),
                         fixedInstant.toString()))));
   }
 
@@ -154,14 +155,18 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Failed",
                         "java.lang.OutOfMemoryError: OOM!",
-                        14821416,
+                        15158332,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://craftassets.unraid.net/uploads/discord/notify-alert.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/error-48.png"),
                         fixedInstant.toString()))));
   }
+
+  // TODO
+  @Test
+  void thumbnailLinksValid() {}
 
   private record TestBackup(TestLocation source, TestLocation destination)
       implements Backup<File, File> {

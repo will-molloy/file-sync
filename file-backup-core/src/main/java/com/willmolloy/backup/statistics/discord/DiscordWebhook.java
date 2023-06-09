@@ -59,11 +59,12 @@ public final class DiscordWebhook implements BackupObserver {
                 new EmbedObject(
                     "Backup Started",
                     null,
-                    colorCode(new Color(88, 185, 255)),
+                    colorCode(new Color(52, 152, 219)),
                     List.of(
                         new EmbedObject.Field("Source", backup.source().toString()),
                         new EmbedObject.Field("Destination", backup.destination().toString())),
                     new EmbedObject.Thumbnail(
+                        // TODO needs to be main branch!
                         "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-48.png"),
                     Instant.now(clock).toString())));
     api.executeWebhook(webhookUrl, body);
@@ -75,6 +76,7 @@ public final class DiscordWebhook implements BackupObserver {
   // TODO post as reply or (even better) start a thread - not possible via webhook atm?
   //  https://github.com/discord/discord-api-docs/discussions/3282
   //  a fully fledged bot is a bit overkill
+  //  If it was possible, then implement notifyScanned with info icon.
   @Override
   public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
     WebhookBody body;
@@ -92,7 +94,7 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.same()),
                               NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
                               NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
-                      colorCode(new Color(0, 153, 0)),
+                      colorCode(new Color(46, 204, 113)),
                       List.of(
                           new EmbedObject.Field("Source", backup.source().toString()),
                           new EmbedObject.Field("Destination", backup.destination().toString())),
@@ -116,7 +118,7 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.failedCreates()),
                               NUMBER_FORMAT.format(stats.failedUpdates()),
                               NUMBER_FORMAT.format(stats.failedDeletes())),
-                      colorCode(new Color(255, 140, 47)),
+                      colorCode(new Color(241, 196, 15)),
                       List.of(
                           new EmbedObject.Field("Source", backup.source().toString()),
                           new EmbedObject.Field("Destination", backup.destination().toString())),
@@ -135,7 +137,7 @@ public final class DiscordWebhook implements BackupObserver {
                 new EmbedObject(
                     "Backup Failed",
                     t.toString(),
-                    colorCode(new Color(226, 40, 40)),
+                    colorCode(new Color(231, 76, 60)),
                     List.of(
                         new EmbedObject.Field("Source", backup.source().toString()),
                         new EmbedObject.Field("Destination", backup.destination().toString())),
