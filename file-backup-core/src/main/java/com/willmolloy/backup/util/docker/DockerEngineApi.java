@@ -15,6 +15,8 @@ import java.util.Optional;
  */
 final class DockerEngineApi {
 
+  private static final String BASE_URL = "http://host.docker.internal:2375";
+
   private final HttpClientWrapper httpClientWrapper;
 
   DockerEngineApi(HttpClientWrapper httpClientWrapper) {
@@ -24,15 +26,14 @@ final class DockerEngineApi {
   /**
    * Inspects a container.
    *
-   * @param hostname container host name
-   * @apiNote Only works if running in docker container!
+   * @param containerHostName container host name
    * @see <a
    *     href=https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect>API
    *     doc</a>
    */
-  Optional<ContainerInspect> containerInspect(String hostname) {
+  Optional<ContainerInspect> containerInspect(String containerHostName) {
     return httpClientWrapper.getJson(
-        URI.create("http://host.docker.internal:2375/containers/%s/json".formatted(hostname)),
+        URI.create("%s/containers/%s/json".formatted(BASE_URL, containerHostName)),
         ContainerInspect.class);
   }
 
@@ -58,15 +59,13 @@ final class DockerEngineApi {
   /**
    * Inspect a volume.
    *
-   * @param volume volume name
-   * @apiNote Only works if running in docker container!
+   * @param volumeName volume name
    * @see <a href=https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect>API
    *     doc</a>
    */
-  Optional<VolumeInspect> volumeInspect(String volume) {
+  Optional<VolumeInspect> volumeInspect(String volumeName) {
     return httpClientWrapper.getJson(
-        URI.create("http://host.docker.internal:2375/volumes/%s".formatted(volume)),
-        VolumeInspect.class);
+        URI.create("%s/volumes/%s".formatted(BASE_URL, volumeName)), VolumeInspect.class);
   }
 
   /**
