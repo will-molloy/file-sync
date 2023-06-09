@@ -4,9 +4,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.willmolloy.backup.util.HttpClientWrapper;
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,7 +36,9 @@ public final class DockerHelper {
   public DockerHelper() {
     this(
         isRunningInDocker() ? Optional.of(getRequiredEnvVariable("HOSTNAME")) : Optional.empty(),
-        new DockerEngineApi());
+        new DockerEngineApi(
+            new HttpClientWrapper(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build())));
   }
 
   /** {@code true} if running in docker container. */

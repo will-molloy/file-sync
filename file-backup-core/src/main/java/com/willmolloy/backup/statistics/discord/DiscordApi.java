@@ -2,17 +2,9 @@ package com.willmolloy.backup.statistics.discord;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.Gson;
-import java.io.IOException;
+import com.willmolloy.backup.util.HttpClientWrapper;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Discord API.
@@ -21,19 +13,10 @@ import org.apache.logging.log4j.Logger;
  */
 final class DiscordApi {
 
-  private static final Logger log = LogManager.getLogger();
+  private final HttpClientWrapper httpClientWrapper;
 
-  private final HttpClient httpClient;
-  private final Gson gson;
-
-  @VisibleForTesting
-  DiscordApi(HttpClient httpClient) {
-    this.httpClient = checkNotNull(httpClient);
-    this.gson = new Gson();
-  }
-
-  DiscordApi() {
-    this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build());
+  DiscordApi(HttpClientWrapper httpClientWrapper) {
+    this.httpClientWrapper = checkNotNull(httpClientWrapper);
   }
 
   /**
@@ -41,24 +24,8 @@ final class DiscordApi {
    *
    * @see <a href=https://discord.com/developers/docs/resources/webhook#execute-webhook>API doc</a>
    */
-  void executeWebhook(URI webhookUri, WebhookBody body) {
-    try {
-      String jsonBody = gson.toJson(body);
-      HttpRequest request =
-          HttpRequest.newBuilder()
-              .uri(webhookUri)
-              .header("Content-Type", "application/json")
-              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-              .build();
-      HttpResponse<String> response =
-          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      int status = response.statusCode();
-      if (status != 204) {
-        log.error("Unexpected status executing discord webhook: ({} {})", status, response.body());
-      }
-    } catch (RuntimeException | IOException | InterruptedException e) {
-      log.error("Error executing discord webhook", e);
-    }
+  void executeWebhook(URI webhookUrl, WebhookBody body) {
+    httpClientWrapper.postJson(webhookUrl, body);
   }
 
   /**

@@ -11,7 +11,6 @@ import com.willmolloy.backup.statistics.Statistics;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -46,7 +45,7 @@ class DiscordWebhookTest {
   }
 
   @Test
-  void notifyStarted_executesWebhook() throws URISyntaxException {
+  void notifyStarted_executesWebhook() {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
 
@@ -56,7 +55,7 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            new URI(webhookUrl),
+            URI.create(webhookUrl),
             new WebhookBody(
                 List.of(
                     new EmbedObject(
@@ -80,7 +79,7 @@ class DiscordWebhookTest {
   }
 
   @Test
-  void notifyFinished_executesWebhook() throws URISyntaxException {
+  void notifyFinished_executesWebhook() {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
 
@@ -93,7 +92,7 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            new URI(webhookUrl),
+            URI.create(webhookUrl),
             new WebhookBody(
                 List.of(
                     new EmbedObject(
@@ -109,7 +108,7 @@ class DiscordWebhookTest {
   }
 
   @Test
-  void notifyFinished_whenErrors_executesWebhook_withWarning() throws URISyntaxException {
+  void notifyFinished_whenErrors_executesWebhook_withWarning() {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
 
@@ -122,7 +121,7 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            new URI(webhookUrl),
+            URI.create(webhookUrl),
             new WebhookBody(
                 List.of(
                     new EmbedObject(
@@ -138,7 +137,7 @@ class DiscordWebhookTest {
   }
 
   @Test
-  void notifyFailed_executesWebhook() throws URISyntaxException {
+  void notifyFailed_executesWebhook() {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
     Throwable t = new OutOfMemoryError("OOM!");
@@ -149,7 +148,7 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            new URI(webhookUrl),
+            URI.create(webhookUrl),
             new WebhookBody(
                 List.of(
                     new EmbedObject(

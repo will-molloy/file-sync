@@ -1,18 +1,20 @@
 package com.willmolloy.backup.util.docker;
 
 import static com.google.common.truth.Truth8.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.google.gson.Gson;
-import com.pgssoft.httpclient.HttpClientMock;
+import com.willmolloy.backup.util.HttpClientWrapper;
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect;
 import com.willmolloy.backup.util.docker.DockerEngineApi.VolumeInspect;
-import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Spy;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -23,108 +25,39 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DockerEngineApiTest {
 
-  @Spy private HttpClientMock httpClientMock = new HttpClientMock();
+  @Mock private HttpClientWrapper mockHttpClientWrapper;
   @InjectMocks private DockerEngineApi sut;
 
   @Test
-  void containerInspect_sendsGet_andDeserResult() {
+  void containerInspect_sendsGet() {
     // Given
-    httpClientMock.onGet().doReturn(200, new Gson().toJson(testContainerInspect()));
+    when(mockHttpClientWrapper.getJson(any(), any()))
+        .thenReturn(Optional.of(testContainerInspect()));
 
     // When
     Optional<ContainerInspect> result = sut.containerInspect("my_container");
 
     // Then
     assertThat(result).hasValue(testContainerInspect());
-    httpClientMock
-        .verify()
-        .get("http://host.docker.internal:2375/containers/my_container/json")
-        .called();
+    verify(mockHttpClientWrapper)
+        .getJson(
+            URI.create("http://host.docker.internal:2375/containers/my_container/json"),
+            ContainerInspect.class);
   }
 
   @Test
-  void containerInspect_whenGarbageResult_failsGracefully() {
+  void volumeInspect_sendsGet() {
     // Given
-    httpClientMock.onGet().doReturn(200, "garbage");
-
-    // When
-    Optional<ContainerInspect> result = sut.containerInspect("my_container");
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void containerInspect_whenUnexpectedStatusCode_failsGracefully() {
-    // Given
-    httpClientMock.onGet().doReturnStatus(500);
-
-    // When
-    Optional<ContainerInspect> result = sut.containerInspect("my_container");
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void containerInspect_whenExceptionThrown_failsGracefully() {
-    // Given
-    httpClientMock.onGet().doThrowException(new IOException());
-
-    // When
-    Optional<ContainerInspect> result = sut.containerInspect("my_container");
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void volumeInspect_sendsGet_andDeserResult() {
-    // Given
-    httpClientMock.onGet().doReturn(200, new Gson().toJson(testVolumeInspect()));
+    when(mockHttpClientWrapper.getJson(any(), any())).thenReturn(Optional.of(testVolumeInspect()));
 
     // When
     Optional<VolumeInspect> result = sut.volumeInspect("my_volume");
 
     // Then
     assertThat(result).hasValue(testVolumeInspect());
-    httpClientMock.verify().get("http://host.docker.internal:2375/volumes/my_volume").called();
-  }
-
-  @Test
-  void volumeInspect_whenGarbageResult_failsGracefully() {
-    // Given
-    httpClientMock.onGet().doReturn(200, "garbage");
-
-    // When
-    Optional<VolumeInspect> result = sut.volumeInspect("my_volume");
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void volumeInspect_whenUnexpectedStatusCode_failsGracefully() {
-    // Given
-    httpClientMock.onGet().doReturnStatus(500);
-
-    // When
-    Optional<VolumeInspect> result = sut.volumeInspect("my_volume");
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void volumeInspect_whenExceptionThrown_failsGracefully() {
-    // Given
-    httpClientMock.onGet().doThrowException(new IOException());
-
-    // When
-    Optional<VolumeInspect> result = sut.volumeInspect("my_volume");
-
-    // Then
-    assertThat(result).isEmpty();
+    verify(mockHttpClientWrapper)
+        .getJson(
+            URI.create("http://host.docker.internal:2375/volumes/my_volume"), VolumeInspect.class);
   }
 
   private ContainerInspect testContainerInspect() {

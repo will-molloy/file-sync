@@ -10,9 +10,10 @@ import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
+import com.willmolloy.backup.util.HttpClientWrapper;
 import java.awt.Color;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.http.HttpClient;
 import java.text.NumberFormat;
 import java.time.Clock;
 import java.time.Duration;
@@ -30,23 +31,24 @@ public final class DiscordWebhook implements BackupObserver {
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
-  private final URI webhook;
+  private final URI webhookUrl;
   private final DiscordApi api;
   private final Clock clock;
 
   @VisibleForTesting
   DiscordWebhook(String webhookUrl, DiscordApi api, Clock clock) {
-    try {
-      this.webhook = new URI(webhookUrl);
-      this.api = checkNotNull(api);
-      this.clock = checkNotNull(clock);
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(e);
-    }
+    this.webhookUrl = URI.create(webhookUrl);
+    this.api = checkNotNull(api);
+    this.clock = checkNotNull(clock);
   }
 
   public DiscordWebhook(String webhookUrl) {
-    this(webhookUrl, new DiscordApi(), Clock.systemDefaultZone());
+    this(
+        webhookUrl,
+        new DiscordApi(
+            new HttpClientWrapper(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build())),
+        Clock.systemDefaultZone());
   }
 
   @Override
@@ -64,7 +66,7 @@ public final class DiscordWebhook implements BackupObserver {
                     // TODO loading icon
                     null,
                     Instant.now(clock).toString())));
-    api.executeWebhook(webhook, body);
+    api.executeWebhook(webhookUrl, body);
   }
 
   @Override
@@ -121,7 +123,7 @@ public final class DiscordWebhook implements BackupObserver {
                           "https://craftassets.unraid.net/uploads/discord/notify-warning.png"),
                       Instant.now(clock).toString())));
     }
-    api.executeWebhook(webhook, body);
+    api.executeWebhook(webhookUrl, body);
   }
 
   @Override
@@ -139,7 +141,7 @@ public final class DiscordWebhook implements BackupObserver {
                     new EmbedObject.Thumbnail(
                         "https://craftassets.unraid.net/uploads/discord/notify-alert.png"),
                     Instant.now(clock).toString())));
-    api.executeWebhook(webhook, body);
+    api.executeWebhook(webhookUrl, body);
   }
 
   private static int colorCode(Color color) {

@@ -2,20 +2,11 @@ package com.willmolloy.backup.util.docker;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.Gson;
+import com.willmolloy.backup.util.HttpClientWrapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Docker Engine API.
@@ -24,20 +15,10 @@ import org.apache.logging.log4j.Logger;
  */
 final class DockerEngineApi {
 
-  private static final Logger log = LogManager.getLogger();
+  private final HttpClientWrapper httpClientWrapper;
 
-  // TODO wrapper class for HttpClient?
-  private final HttpClient httpClient;
-  private final Gson gson;
-
-  @VisibleForTesting
-  DockerEngineApi(HttpClient httpClient) {
-    this.httpClient = checkNotNull(httpClient);
-    this.gson = new Gson();
-  }
-
-  DockerEngineApi() {
-    this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build());
+  DockerEngineApi(HttpClientWrapper httpClientWrapper) {
+    this.httpClientWrapper = checkNotNull(httpClientWrapper);
   }
 
   /**
@@ -50,8 +31,8 @@ final class DockerEngineApi {
    *     doc</a>
    */
   Optional<ContainerInspect> containerInspect(String hostname) {
-    return getAndDeser(
-        "http://host.docker.internal:2375/containers/%s/json".formatted(hostname),
+    return httpClientWrapper.getJson(
+        URI.create("http://host.docker.internal:2375/containers/%s/json".formatted(hostname)),
         ContainerInspect.class);
   }
 
@@ -83,8 +64,9 @@ final class DockerEngineApi {
    *     doc</a>
    */
   Optional<VolumeInspect> volumeInspect(String volume) {
-    return getAndDeser(
-        "http://host.docker.internal:2375/volumes/%s".formatted(volume), VolumeInspect.class);
+    return httpClientWrapper.getJson(
+        URI.create("http://host.docker.internal:2375/volumes/%s".formatted(volume)),
+        VolumeInspect.class);
   }
 
   /**
@@ -102,23 +84,5 @@ final class DockerEngineApi {
      * @param device host path
      */
     record Options(String device) {}
-  }
-
-  private <T> Optional<T> getAndDeser(String url, Class<T> classOfT) {
-    try {
-      HttpRequest request = HttpRequest.newBuilder().uri(new URI(url)).GET().build();
-      HttpResponse<String> response =
-          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      int status = response.statusCode();
-      if (status != 200) {
-        log.error(
-            "Unexpected status sending GET request: {} ({} {})", url, status, response.body());
-        return Optional.empty();
-      }
-      return Optional.of(gson.fromJson(response.body(), classOfT));
-    } catch (RuntimeException | IOException | InterruptedException | URISyntaxException e) {
-      log.error("Error sending GET request: {}", url, e);
-      return Optional.empty();
-    }
   }
 }
