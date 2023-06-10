@@ -191,19 +191,24 @@ class DiscordWebhookTest {
 
   private ArgumentMatcher<WebhookBody> iconUrlValid() {
     HttpClient httpClient = HttpClient.newHttpClient();
-    return actual -> {
-      try {
-        String url = actual.embeds().get(0).thumbnail().url();
-        HttpResponse<Void> response =
-            httpClient.send(
-                HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
-                HttpResponse.BodyHandlers.discarding());
-        assertWithMessage("icon url invalid").that(response.statusCode()).isEqualTo(200);
-        return true;
-      } catch (IOException | InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    };
+    return actual ->
+        actual.embeds().stream()
+            .allMatch(
+                embed -> {
+                  String url = embed.thumbnail().url();
+                  try {
+                    HttpResponse<Void> response =
+                        httpClient.send(
+                            HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
+                            HttpResponse.BodyHandlers.discarding());
+                    assertWithMessage("icon url invalid")
+                        .that(response.statusCode())
+                        .isEqualTo(200);
+                    return true;
+                  } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
   }
 
   private record TestBackup(TestLocation source, TestLocation destination)
