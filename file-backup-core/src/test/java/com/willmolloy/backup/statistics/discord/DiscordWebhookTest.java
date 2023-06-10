@@ -61,12 +61,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Started",
                         null,
-                        3447003,
+                        4286945,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-48.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/info-48.png"),
                         fixedInstant.toString()))));
   }
 
@@ -99,12 +99,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Finished in: 34:17:36",
                         "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
-                        3066993,
+                        1346068,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/check-48.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/ok-48.png"),
                         fixedInstant.toString()))));
   }
 
@@ -128,7 +128,7 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Finished in: 181:45:21",
                         "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
-                        15844367,
+                        16753920,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
@@ -155,7 +155,7 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Failed",
                         "java.lang.OutOfMemoryError: OOM!",
-                        15158332,
+                        14696454,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
