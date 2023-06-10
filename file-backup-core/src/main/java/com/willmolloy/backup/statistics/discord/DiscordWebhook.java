@@ -59,13 +59,13 @@ public final class DiscordWebhook implements BackupObserver {
                 new EmbedObject(
                     "Backup Started",
                     null,
-                    colorCode(Color.decode("#4169E1")),
+                    colorCode(Color.decode("#316CFF")),
                     List.of(
                         new EmbedObject.Field("Source", backup.source().toString()),
                         new EmbedObject.Field("Destination", backup.destination().toString())),
                     new EmbedObject.Thumbnail(
                         // TODO needs to be main branch!
-                        "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/info-48.png"),
+                        "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-44.png"),
                     Instant.now(clock).toString())));
     api.executeWebhook(webhookUrl, body);
   }
@@ -94,7 +94,7 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.same()),
                               NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
                               NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
-                      colorCode(Color.decode("#148A14")),
+                      colorCode(Color.decode("#009900")),
                       List.of(
                           new EmbedObject.Field("Source", backup.source().toString()),
                           new EmbedObject.Field("Destination", backup.destination().toString())),
@@ -118,12 +118,12 @@ public final class DiscordWebhook implements BackupObserver {
                               NUMBER_FORMAT.format(stats.failedCreates()),
                               NUMBER_FORMAT.format(stats.failedUpdates()),
                               NUMBER_FORMAT.format(stats.failedDeletes())),
-                      colorCode(Color.decode("#FFA500")),
+                      colorCode(Color.decode("#FF8C2F")),
                       List.of(
                           new EmbedObject.Field("Source", backup.source().toString()),
                           new EmbedObject.Field("Destination", backup.destination().toString())),
                       new EmbedObject.Thumbnail(
-                          "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warning-48.png"),
+                          "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warn-48.png"),
                       Instant.now(clock).toString())));
     }
     api.executeWebhook(webhookUrl, body);
@@ -137,7 +137,7 @@ public final class DiscordWebhook implements BackupObserver {
                 new EmbedObject(
                     "Backup Failed",
                     t.toString(),
-                    colorCode(Color.decode("#E04006")),
+                    colorCode(Color.decode("#E22828")),
                     List.of(
                         new EmbedObject.Field("Source", backup.source().toString()),
                         new EmbedObject.Field("Destination", backup.destination().toString())),

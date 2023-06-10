@@ -1,5 +1,11 @@
 package com.willmolloy.backup.statistics.discord;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.AdditionalMatchers.and;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -10,7 +16,12 @@ import com.willmolloy.backup.Location;
 import com.willmolloy.backup.statistics.Statistics;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
+
+import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +30,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.AdditionalMatchers;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -61,12 +75,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Started",
                         null,
-                        4286945,
+                        3239167,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/info-48.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-44.png"),
                         fixedInstant.toString()))));
   }
 
@@ -99,7 +113,7 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Finished in: 34:17:36",
                         "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
-                        1346068,
+                        39168,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
@@ -128,12 +142,12 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Finished in: 181:45:21",
                         "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
-                        16753920,
+                        16747567,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
                         new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warning-48.png"),
+                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warn-48.png"),
                         fixedInstant.toString()))));
   }
 
@@ -155,7 +169,7 @@ class DiscordWebhookTest {
                     new EmbedObject(
                         "Backup Failed",
                         "java.lang.OutOfMemoryError: OOM!",
-                        14696454,
+                        14821416,
                         List.of(
                             new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                             new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
