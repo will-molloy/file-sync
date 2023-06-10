@@ -65,7 +65,7 @@ public final class DiscordWebhook implements BackupObserver {
                         new EmbedObject.Field("Destination", backup.destination().toString())),
                     new EmbedObject.Thumbnail(
                         // TODO needs to be main branch!
-                        "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-44.png"),
+                        "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/sync-44.png"),
                     Instant.now(clock).toString())));
     api.executeWebhook(webhookUrl, body);
   }
@@ -99,7 +99,7 @@ public final class DiscordWebhook implements BackupObserver {
                           new EmbedObject.Field("Source", backup.source().toString()),
                           new EmbedObject.Field("Destination", backup.destination().toString())),
                       new EmbedObject.Thumbnail(
-                          "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/ok-48.png"),
+                          "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/ok-48.png"),
                       Instant.now(clock).toString())));
     } else {
       body =
@@ -123,7 +123,7 @@ public final class DiscordWebhook implements BackupObserver {
                           new EmbedObject.Field("Source", backup.source().toString()),
                           new EmbedObject.Field("Destination", backup.destination().toString())),
                       new EmbedObject.Thumbnail(
-                          "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warn-48.png"),
+                          "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/warn-48.png"),
                       Instant.now(clock).toString())));
     }
     api.executeWebhook(webhookUrl, body);
@@ -142,7 +142,7 @@ public final class DiscordWebhook implements BackupObserver {
                         new EmbedObject.Field("Source", backup.source().toString()),
                         new EmbedObject.Field("Destination", backup.destination().toString())),
                     new EmbedObject.Thumbnail(
-                        "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/error-48.png"),
+                        "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/error-48.png"),
                     Instant.now(clock).toString())));
     api.executeWebhook(webhookUrl, body);
   }

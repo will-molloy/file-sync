@@ -78,7 +78,7 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
                                 new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-44.png"),
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/sync-44.png"),
                                 fixedInstant.toString())))),
                 argThat(iconUrlValid())));
   }
@@ -120,7 +120,7 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
                                 new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/ok-48.png"),
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/ok-48.png"),
                                 fixedInstant.toString())))),
                 argThat(iconUrlValid())));
   }
@@ -153,7 +153,7 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
                                 new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warn-48.png"),
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/warn-48.png"),
                                 fixedInstant.toString())))),
                 argThat(iconUrlValid())));
   }
@@ -184,7 +184,7 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
                                 new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/error-48.png"),
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/icons/error-48.png"),
                                 fixedInstant.toString())))),
                 argThat(iconUrlValid())));
   }
