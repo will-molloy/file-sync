@@ -1,11 +1,9 @@
 package com.willmolloy.backup.statistics.discord;
 
-import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.mockito.AdditionalMatchers.and;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -16,7 +14,6 @@ import com.willmolloy.backup.Location;
 import com.willmolloy.backup.statistics.Statistics;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -30,9 +27,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.AdditionalMatchers;
 import org.mockito.ArgumentMatcher;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -69,19 +64,23 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            URI.create(webhookUrl),
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Started",
-                        null,
-                        3239167,
+            eq(URI.create(webhookUrl)),
+            and(
+                eq(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-44.png"),
-                        fixedInstant.toString()))));
+                            new EmbedObject(
+                                "Backup Started",
+                                null,
+                                3239167,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail(
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/sync-44.png"),
+                                fixedInstant.toString())))),
+                argThat(iconUrlValid())));
   }
 
   @Test
@@ -107,19 +106,23 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            URI.create(webhookUrl),
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Finished in: 34:17:36",
-                        "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
-                        39168,
+            eq(URI.create(webhookUrl)),
+            and(
+                eq(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/ok-48.png"),
-                        fixedInstant.toString()))));
+                            new EmbedObject(
+                                "Backup Finished in: 34:17:36",
+                                "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
+                                39168,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail(
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/ok-48.png"),
+                                fixedInstant.toString())))),
+                argThat(iconUrlValid())));
   }
 
   @Test
@@ -136,19 +139,23 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            URI.create(webhookUrl),
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Finished in: 181:45:21",
-                        "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
-                        16747567,
+            eq(URI.create(webhookUrl)),
+            and(
+                eq(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warn-48.png"),
-                        fixedInstant.toString()))));
+                            new EmbedObject(
+                                "Backup Finished in: 181:45:21",
+                                "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
+                                16747567,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail(
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/warn-48.png"),
+                                fixedInstant.toString())))),
+                argThat(iconUrlValid())));
   }
 
   @Test
@@ -163,24 +170,41 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            URI.create(webhookUrl),
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Failed",
-                        "java.lang.OutOfMemoryError: OOM!",
-                        14821416,
+            eq(URI.create(webhookUrl)),
+            and(
+                eq(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail(
-                            "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/error-48.png"),
-                        fixedInstant.toString()))));
+                            new EmbedObject(
+                                "Backup Failed",
+                                "java.lang.OutOfMemoryError: OOM!",
+                                14821416,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail(
+                                    "https://raw.githubusercontent.com/will-molloy/file-backup/discord-webhook/file-backup-core/src/main/resources/discord_notification_icons/error-48.png"),
+                                fixedInstant.toString())))),
+                argThat(iconUrlValid())));
   }
 
-  // TODO
-  @Test
-  void thumbnailLinksValid() {}
+  private ArgumentMatcher<WebhookBody> iconUrlValid() {
+    HttpClient httpClient = HttpClient.newHttpClient();
+    return actual -> {
+      try {
+        String url = actual.embeds().get(0).thumbnail().url();
+        HttpResponse<Void> response =
+            httpClient.send(
+                HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
+                HttpResponse.BodyHandlers.discarding());
+        assertWithMessage("icon url invalid").that(response.statusCode()).isEqualTo(200);
+        return true;
+      } catch (IOException | InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    };
+  }
 
   private record TestBackup(TestLocation source, TestLocation destination)
       implements Backup<File, File> {
