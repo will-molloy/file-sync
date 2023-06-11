@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import com.willmolloy.backup.util.HttpClientWrapper;
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect;
 import com.willmolloy.backup.util.docker.DockerEngineApi.VolumeInspect;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ class DockerEngineApiTest {
     assertThat(result).hasValue(testContainerInspect());
     verify(mockHttpClientWrapper)
         .getJson(
-            URI.create("http://host.docker.internal:2375/containers/my_container/json"),
+            "http://host.docker.internal:2375/containers/my_container/json",
             ContainerInspect.class);
   }
 
@@ -56,8 +55,7 @@ class DockerEngineApiTest {
     // Then
     assertThat(result).hasValue(testVolumeInspect());
     verify(mockHttpClientWrapper)
-        .getJson(
-            URI.create("http://host.docker.internal:2375/volumes/my_volume"), VolumeInspect.class);
+        .getJson("http://host.docker.internal:2375/volumes/my_volume", VolumeInspect.class);
   }
 
   private ContainerInspect testContainerInspect() {

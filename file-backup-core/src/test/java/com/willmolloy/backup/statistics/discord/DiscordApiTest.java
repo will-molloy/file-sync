@@ -6,7 +6,6 @@ import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
 import com.willmolloy.backup.util.HttpClientWrapper;
 import java.awt.Color;
-import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,11 +27,12 @@ class DiscordApiTest {
   @Test
   void executeWebhook_sendsPost() {
     // When
-    sut.executeWebhook(URI.create("https://discord.com/api/webhooks/test"), testBody());
+    sut.executeWebhook("https://discord.com/api/webhooks/test", testBody(), "", null);
 
     // Then
     verify(mockHttpClientWrapper)
-        .postJson(URI.create("https://discord.com/api/webhooks/test"), testBody());
+        .postJsonAndFile(
+            "https://discord.com/api/webhooks/test", "payload_json", testBody(), "", null);
   }
 
   private WebhookBody testBody() {

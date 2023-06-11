@@ -8,10 +8,8 @@ import com.willmolloy.backup.util.HttpClientWrapper;
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,9 +41,7 @@ public final class DockerHelper {
   public DockerHelper() {
     this(
         isRunningInDocker() ? Optional.of(getRequiredEnvVariable("HOSTNAME")) : Optional.empty(),
-        new DockerEngineApi(
-            new HttpClientWrapper(
-                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build())));
+        new DockerEngineApi(new HttpClientWrapper()));
   }
 
   /** Gets the corresponding host path for the mount/volume. */
@@ -99,7 +95,7 @@ public final class DockerHelper {
       try {
         InetAddress inetAddress = InetAddress.getByName(ipAddr);
         String host = inetAddress.getHostName();
-        log.info("inetAddress={}", inetAddress);
+        log.debug("inetAddress={}", inetAddress);
         return "//%s/%s".formatted(host, path);
       } catch (UnknownHostException e) {
         log.warn("Unknown host: {}", ipAddr, e);

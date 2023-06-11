@@ -3,6 +3,7 @@ package com.willmolloy.backup.statistics.discord;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Resources;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
@@ -11,15 +12,16 @@ import com.willmolloy.backup.statistics.Statistics;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
 import com.willmolloy.backup.util.HttpClientWrapper;
-import java.awt.Color;
-import java.net.URI;
-import java.net.http.HttpClient;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.text.NumberFormat;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * {@link BackupObserver} which sends notifications to Discord via webhook.
@@ -28,45 +30,29 @@ import java.util.Locale;
  */
 public final class DiscordWebhook implements BackupObserver {
 
+  private static final Logger log = LogManager.getLogger();
+
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
-  private final URI webhookUrl;
+  private final String webhookUrl;
   private final DiscordApi api;
   private final Clock clock;
 
   @VisibleForTesting
   DiscordWebhook(String webhookUrl, DiscordApi api, Clock clock) {
-    this.webhookUrl = URI.create(webhookUrl);
+    this.webhookUrl = checkNotNull(webhookUrl);
     this.api = checkNotNull(api);
     this.clock = checkNotNull(clock);
   }
 
   public DiscordWebhook(String webhookUrl) {
-    this(
-        webhookUrl,
-        new DiscordApi(
-            new HttpClientWrapper(
-                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build())),
-        Clock.systemDefaultZone());
+    this(webhookUrl, new DiscordApi(new HttpClientWrapper()), Clock.systemDefaultZone());
   }
 
   @Override
   public void notifyStarted(Backup<?, ?> backup) {
-    WebhookBody body =
-        new WebhookBody(
-            List.of(
-                new EmbedObject(
-                    "Backup Started",
-                    null,
-                    colorCode(Color.decode("#316CFF")),
-                    List.of(
-                        new EmbedObject.Field("Source", backup.source().toString()),
-                        new EmbedObject.Field("Destination", backup.destination().toString())),
-                    new EmbedObject.Thumbnail(
-                        "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/sync-44.png"),
-                    Instant.now(clock).toString())));
-    api.executeWebhook(webhookUrl, body);
+    webhook(backup, "Backup Started", null, "#316CFF", "sync-44.png");
   }
 
   @Override
@@ -76,76 +62,70 @@ public final class DiscordWebhook implements BackupObserver {
   //  https://github.com/discord/discord-api-docs/discussions/3282
   @Override
   public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
-    WebhookBody body;
     if (!stats.anyErrors()) {
-      body =
-          new WebhookBody(
-              List.of(
-                  new EmbedObject(
-                      "Backup Finished in: %s".formatted(formatDuration(elapsed)),
-                      "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed."
-                          .formatted(
-                              NUMBER_FORMAT.format(stats.creates()),
-                              NUMBER_FORMAT.format(stats.updates()),
-                              NUMBER_FORMAT.format(stats.deletes()),
-                              NUMBER_FORMAT.format(stats.same()),
-                              NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
-                              NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
-                      colorCode(Color.decode("#009900")),
-                      List.of(
-                          new EmbedObject.Field("Source", backup.source().toString()),
-                          new EmbedObject.Field("Destination", backup.destination().toString())),
-                      new EmbedObject.Thumbnail(
-                          "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/ok-48.png"),
-                      Instant.now(clock).toString())));
+      webhook(
+          backup,
+          "Backup Finished in: %s".formatted(formatDuration(elapsed)),
+          "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed."
+              .formatted(
+                  NUMBER_FORMAT.format(stats.creates()),
+                  NUMBER_FORMAT.format(stats.updates()),
+                  NUMBER_FORMAT.format(stats.deletes()),
+                  NUMBER_FORMAT.format(stats.same()),
+                  NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
+                  NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
+          "#009900",
+          "ok-48.png");
     } else {
-      body =
-          new WebhookBody(
-              List.of(
-                  new EmbedObject(
-                      "Backup Finished in: %s".formatted(formatDuration(elapsed)),
-                      "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed.\n\nFailed: %s creates, %s updates, %s deletes."
-                          .formatted(
-                              NUMBER_FORMAT.format(stats.creates()),
-                              NUMBER_FORMAT.format(stats.updates()),
-                              NUMBER_FORMAT.format(stats.deletes()),
-                              NUMBER_FORMAT.format(stats.same()),
-                              NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
-                              NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA),
-                              NUMBER_FORMAT.format(stats.failedCreates()),
-                              NUMBER_FORMAT.format(stats.failedUpdates()),
-                              NUMBER_FORMAT.format(stats.failedDeletes())),
-                      colorCode(Color.decode("#FF8C2F")),
-                      List.of(
-                          new EmbedObject.Field("Source", backup.source().toString()),
-                          new EmbedObject.Field("Destination", backup.destination().toString())),
-                      new EmbedObject.Thumbnail(
-                          "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/warn-48.png"),
-                      Instant.now(clock).toString())));
+      webhook(
+          backup,
+          "Backup Finished in: %s".formatted(formatDuration(elapsed)),
+          "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed.\n\nFailed: %s creates, %s updates, %s deletes."
+              .formatted(
+                  NUMBER_FORMAT.format(stats.creates()),
+                  NUMBER_FORMAT.format(stats.updates()),
+                  NUMBER_FORMAT.format(stats.deletes()),
+                  NUMBER_FORMAT.format(stats.same()),
+                  NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
+                  NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA),
+                  NUMBER_FORMAT.format(stats.failedCreates()),
+                  NUMBER_FORMAT.format(stats.failedUpdates()),
+                  NUMBER_FORMAT.format(stats.failedDeletes())),
+          "#FF8C2F",
+          "warn-48.png");
     }
-    api.executeWebhook(webhookUrl, body);
   }
 
   @Override
   public void notifyFailed(Backup<?, ?> backup, Throwable t) {
-    WebhookBody body =
-        new WebhookBody(
-            List.of(
-                new EmbedObject(
-                    "Backup Failed",
-                    t.toString(),
-                    colorCode(Color.decode("#E22828")),
-                    List.of(
-                        new EmbedObject.Field("Source", backup.source().toString()),
-                        new EmbedObject.Field("Destination", backup.destination().toString())),
-                    new EmbedObject.Thumbnail(
-                        "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/error-48.png"),
-                    Instant.now(clock).toString())));
-    api.executeWebhook(webhookUrl, body);
+    webhook(backup, "Backup Failed", t.toString(), "#E22828", "error-48.png");
   }
 
-  private static int colorCode(Color color) {
-    return (color.getRed() & 0xFF) << 16 | (color.getGreen() & 0xFF) << 8 | color.getBlue() & 0xFF;
+  private void webhook(
+      Backup<?, ?> backup, String title, String description, String color, String iconName) {
+    try {
+      WebhookBody webhookBody =
+          new WebhookBody(
+              List.of(
+                  new EmbedObject(
+                      title,
+                      description,
+                      Integer.decode(color),
+                      List.of(
+                          new EmbedObject.Field("Source", backup.source().toString()),
+                          new EmbedObject.Field("Destination", backup.destination().toString())),
+                      new EmbedObject.Thumbnail("attachment://" + iconName),
+                      Instant.now(clock).toString())));
+      api.executeWebhook(
+          webhookUrl,
+          webhookBody,
+          iconName,
+          // read directly to byte[], can't deal with File within jar
+          // https://stackoverflow.com/a/20389418/6122976
+          Resources.toByteArray(Resources.getResource("icons/" + iconName)));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private static String formatDuration(Duration duration) {

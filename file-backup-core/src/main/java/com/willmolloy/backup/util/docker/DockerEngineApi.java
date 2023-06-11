@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.util.HttpClientWrapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,8 +32,7 @@ final class DockerEngineApi {
    */
   Optional<ContainerInspect> containerInspect(String containerHostName) {
     return httpClientWrapper.getJson(
-        URI.create("%s/containers/%s/json".formatted(BASE_URL, containerHostName)),
-        ContainerInspect.class);
+        "%s/containers/%s/json".formatted(BASE_URL, containerHostName), ContainerInspect.class);
   }
 
   /**
@@ -65,7 +63,7 @@ final class DockerEngineApi {
    */
   Optional<VolumeInspect> volumeInspect(String volumeName) {
     return httpClientWrapper.getJson(
-        URI.create("%s/volumes/%s".formatted(BASE_URL, volumeName)), VolumeInspect.class);
+        "%s/volumes/%s".formatted(BASE_URL, volumeName), VolumeInspect.class);
   }
 
   /**

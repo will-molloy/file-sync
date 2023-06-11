@@ -3,7 +3,6 @@ package com.willmolloy.backup.statistics.discord;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.util.HttpClientWrapper;
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -23,9 +22,11 @@ final class DiscordApi {
    * Execute Webhook.
    *
    * @see <a href=https://discord.com/developers/docs/resources/webhook#execute-webhook>API doc</a>
+   * @see <a href=https://birdie0.github.io/discord-webhooks-guide/structure/file.html>Discord
+   *     Webhooks Guide - files</a>
    */
-  void executeWebhook(URI webhookUrl, WebhookBody body) {
-    httpClientWrapper.postJson(webhookUrl, body);
+  void executeWebhook(String webhookUrl, WebhookBody body, String fileName, byte[] fileBytes) {
+    httpClientWrapper.postJsonAndFile(webhookUrl, "payload_json", body, fileName, fileBytes);
   }
 
   /**

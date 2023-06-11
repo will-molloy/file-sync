@@ -1,12 +1,9 @@
 package com.willmolloy.backup.statistics.discord;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-import static org.mockito.AdditionalMatchers.and;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.common.io.Resources;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.File;
 import com.willmolloy.backup.FileTree;
@@ -15,10 +12,6 @@ import com.willmolloy.backup.statistics.Statistics;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
 import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,7 +20,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -54,7 +46,7 @@ class DiscordWebhookTest {
   }
 
   @Test
-  void notifyStarted_executesWebhook() {
+  void notifyStarted_executesWebhook() throws IOException {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
 
@@ -64,23 +56,20 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            eq(URI.create(webhookUrl)),
-            and(
-                eq(
-                    new WebhookBody(
+            webhookUrl,
+            new WebhookBody(
+                List.of(
+                    new EmbedObject(
+                        "Backup Started",
+                        null,
+                        3239167,
                         List.of(
-                            new EmbedObject(
-                                "Backup Started",
-                                null,
-                                3239167,
-                                List.of(
-                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                                    new EmbedObject.Field(
-                                        "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/sync-44.png"),
-                                fixedInstant.toString())))),
-                argThat(thumbnailUrlsValid())));
+                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
+                        new EmbedObject.Thumbnail("attachment://sync-44.png"),
+                        fixedInstant.toString()))),
+            "sync-44.png",
+            Resources.toByteArray(Resources.getResource("icons/sync-44.png")));
   }
 
   @Test
@@ -93,7 +82,7 @@ class DiscordWebhookTest {
   }
 
   @Test
-  void notifyFinished_executesWebhook() {
+  void notifyFinished_executesWebhook() throws IOException {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
 
@@ -106,27 +95,24 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            eq(URI.create(webhookUrl)),
-            and(
-                eq(
-                    new WebhookBody(
+            webhookUrl,
+            new WebhookBody(
+                List.of(
+                    new EmbedObject(
+                        "Backup Finished in: 34:17:36",
+                        "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
+                        39168,
                         List.of(
-                            new EmbedObject(
-                                "Backup Finished in: 34:17:36",
-                                "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
-                                39168,
-                                List.of(
-                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                                    new EmbedObject.Field(
-                                        "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/ok-48.png"),
-                                fixedInstant.toString())))),
-                argThat(thumbnailUrlsValid())));
+                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
+                        new EmbedObject.Thumbnail("attachment://ok-48.png"),
+                        fixedInstant.toString()))),
+            "ok-48.png",
+            Resources.toByteArray(Resources.getResource("icons/ok-48.png")));
   }
 
   @Test
-  void notifyFinished_whenErrors_executesWebhook_withWarning() {
+  void notifyFinished_whenErrors_executesWebhook_withWarning() throws IOException {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
 
@@ -139,27 +125,24 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            eq(URI.create(webhookUrl)),
-            and(
-                eq(
-                    new WebhookBody(
+            webhookUrl,
+            new WebhookBody(
+                List.of(
+                    new EmbedObject(
+                        "Backup Finished in: 181:45:21",
+                        "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
+                        16747567,
                         List.of(
-                            new EmbedObject(
-                                "Backup Finished in: 181:45:21",
-                                "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
-                                16747567,
-                                List.of(
-                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                                    new EmbedObject.Field(
-                                        "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/warn-48.png"),
-                                fixedInstant.toString())))),
-                argThat(thumbnailUrlsValid())));
+                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
+                        new EmbedObject.Thumbnail("attachment://warn-48.png"),
+                        fixedInstant.toString()))),
+            "warn-48.png",
+            Resources.toByteArray(Resources.getResource("icons/warn-48.png")));
   }
 
   @Test
-  void notifyFailed_executesWebhook() {
+  void notifyFailed_executesWebhook() throws IOException {
     // Given
     TestBackup backup = new TestBackup(new TestLocation("/source"), new TestLocation("/dest"));
     Throwable t = new OutOfMemoryError("OOM!");
@@ -170,45 +153,20 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            eq(URI.create(webhookUrl)),
-            and(
-                eq(
-                    new WebhookBody(
+            webhookUrl,
+            new WebhookBody(
+                List.of(
+                    new EmbedObject(
+                        "Backup Failed",
+                        "java.lang.OutOfMemoryError: OOM!",
+                        14821416,
                         List.of(
-                            new EmbedObject(
-                                "Backup Failed",
-                                "java.lang.OutOfMemoryError: OOM!",
-                                14821416,
-                                List.of(
-                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                                    new EmbedObject.Field(
-                                        "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail(
-                                    "https://raw.githubusercontent.com/will-molloy/file-backup/main/file-backup-core/src/main/resources/icons/error-48.png"),
-                                fixedInstant.toString())))),
-                argThat(thumbnailUrlsValid())));
-  }
-
-  private ArgumentMatcher<WebhookBody> thumbnailUrlsValid() {
-    HttpClient httpClient = HttpClient.newHttpClient();
-    return actual ->
-        actual.embeds().stream()
-            .allMatch(
-                embed -> {
-                  String url = embed.thumbnail().url();
-                  try {
-                    HttpResponse<Void> response =
-                        httpClient.send(
-                            HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
-                            HttpResponse.BodyHandlers.discarding());
-                    assertWithMessage("icon url invalid")
-                        .that(response.statusCode())
-                        .isEqualTo(200);
-                    return true;
-                  } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                  }
-                });
+                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
+                        new EmbedObject.Thumbnail("attachment://error-48.png"),
+                        fixedInstant.toString()))),
+            "error-48.png",
+            Resources.toByteArray(Resources.getResource("icons/error-48.png")));
   }
 
   private record TestBackup(TestLocation source, TestLocation destination)
