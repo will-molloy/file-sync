@@ -1,25 +1,29 @@
 package com.willmolloy.backup.util.docker;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.willmolloy.backup.util.HttpClientWrapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.http.GET;
+import retrofit2.http.Path;
+
+import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Docker Engine API.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class DockerEngineApi {
+interface DockerEngineApi {
 
-  private static final String BASE_URL = "http://host.docker.internal:2375";
-
-  private final HttpClientWrapper httpClientWrapper;
-
-  DockerEngineApi(HttpClientWrapper httpClientWrapper) {
-    this.httpClientWrapper = checkNotNull(httpClientWrapper);
+  static DockerEngineApi create(){
+    Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl("http://host.docker.internal:2375")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build();
+    return retrofit.create(DockerEngineApi.class);
   }
 
   /**
@@ -30,10 +34,8 @@ final class DockerEngineApi {
    *     href=https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect>API
    *     doc</a>
    */
-  Optional<ContainerInspect> containerInspect(String containerHostName) {
-    return httpClientWrapper.getJson(
-        "%s/containers/%s/json".formatted(BASE_URL, containerHostName), ContainerInspect.class);
-  }
+  @GET("containers/{containerHostName}/json")
+  Call<ContainerInspect> inspectContainer(@Path("containerHostName") String containerHostName);
 
   /**
    * Container inspect result.
@@ -61,10 +63,8 @@ final class DockerEngineApi {
    * @see <a href=https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect>API
    *     doc</a>
    */
-  Optional<VolumeInspect> volumeInspect(String volumeName) {
-    return httpClientWrapper.getJson(
-        "%s/volumes/%s".formatted(BASE_URL, volumeName), VolumeInspect.class);
-  }
+  @GET("volumes/{volumeName}")
+  VolumeInspect inspectVolume(@Path("volumeName") String volumeName);
 
   /**
    * Volume inspect result.

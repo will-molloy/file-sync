@@ -1,11 +1,13 @@
 package com.willmolloy.backup.util.docker;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Verify.verifyNotNull;
 import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.willmolloy.backup.util.HttpClientWrapper;
 import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -15,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import retrofit2.Response;
 
 /**
  * Helper methods (hacks) for when running via Docker container.
@@ -29,26 +32,38 @@ public final class DockerHelper {
     return Files.exists(Path.of("/.dockerenv"));
   }
 
-  private final Optional<String> containerHostName;
+  private final Optional<String> optionalHostName;
   private final DockerEngineApi api;
 
   @VisibleForTesting
-  DockerHelper(Optional<String> containerHostName, DockerEngineApi api) {
-    this.containerHostName = checkNotNull(containerHostName);
+  DockerHelper(Optional<String> optionalHostName, DockerEngineApi api) {
+    this.optionalHostName = checkNotNull(optionalHostName);
     this.api = checkNotNull(api);
   }
 
   public DockerHelper() {
     this(
         isRunningInDocker() ? Optional.of(getRequiredEnvVariable("HOSTNAME")) : Optional.empty(),
-        new DockerEngineApi(new HttpClientWrapper()));
+        DockerEngineApi.create());
   }
 
   /** Gets the corresponding host path for the mount/volume. */
   public Optional<String> getHostPath(String containerPath) {
     log.debug("getHostPath({})", containerPath);
-    return containerHostName
-        .flatMap(api::containerInspect)
+    return optionalHostName
+        .flatMap(hostName -> {
+          try {
+            Response<DockerEngineApi.ContainerInspect> response = api.inspectContainer(hostName).execute();
+            if (response.isSuccessful()){
+              return Optional.of(verifyNotNull(response.body()));
+            } else {
+              log.error("Unsuccessful response inspecting container: ");
+            }
+          } catch (IOException e) {
+            log.error("Error inspecting container", e);
+          }
+          return Optional.empty();
+        })
         .flatMap(
             containerInspect ->
                 containerInspect.Mounts().stream()
