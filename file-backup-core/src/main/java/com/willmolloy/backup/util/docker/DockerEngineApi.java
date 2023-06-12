@@ -1,15 +1,13 @@
 package com.willmolloy.backup.util.docker;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.http.GET;
-import retrofit2.http.Path;
-
-import java.io.IOException;
+import feign.Feign;
+import feign.Param;
+import feign.RequestLine;
+import feign.gson.GsonDecoder;
+import feign.optionals.OptionalDecoder;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Docker Engine API.
@@ -18,12 +16,11 @@ import java.util.List;
  */
 interface DockerEngineApi {
 
-  static DockerEngineApi create(){
-    Retrofit retrofit = new Retrofit.Builder()
-        .baseUrl("http://host.docker.internal:2375")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build();
-    return retrofit.create(DockerEngineApi.class);
+  static DockerEngineApi create() {
+    return Feign.builder()
+        .decoder(new OptionalDecoder(new GsonDecoder()))
+        .dismiss404()
+        .target(DockerEngineApi.class, "http://host.docker.internal:2375");
   }
 
   /**
@@ -34,8 +31,8 @@ interface DockerEngineApi {
    *     href=https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect>API
    *     doc</a>
    */
-  @GET("containers/{containerHostName}/json")
-  Call<ContainerInspect> inspectContainer(@Path("containerHostName") String containerHostName);
+  @RequestLine("GET /containers/{containerHostName}/json")
+  Optional<Container> inspectContainer(@Param("containerHostName") String containerHostName);
 
   /**
    * Container inspect result.
@@ -45,7 +42,7 @@ interface DockerEngineApi {
   @SuppressFBWarnings(
       value = "NM_METHOD_NAMING_CONVENTION",
       justification = "Docker API uses uppercase...")
-  record ContainerInspect(List<Mount> Mounts) {
+  record Container(List<Mount> Mounts) {
     /**
      * Container mounts.
      *
@@ -63,8 +60,8 @@ interface DockerEngineApi {
    * @see <a href=https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect>API
    *     doc</a>
    */
-  @GET("volumes/{volumeName}")
-  VolumeInspect inspectVolume(@Path("volumeName") String volumeName);
+  @RequestLine("GET /volumes/{volumeName}")
+  Optional<Volume> inspectVolume(@Param("volumeName") String volumeName);
 
   /**
    * Volume inspect result.
@@ -74,7 +71,7 @@ interface DockerEngineApi {
   @SuppressFBWarnings(
       value = "NM_METHOD_NAMING_CONVENTION",
       justification = "Docker API uses uppercase...")
-  record VolumeInspect(Options Options) {
+  record Volume(Options Options) {
     /**
      * Volume options.
      *

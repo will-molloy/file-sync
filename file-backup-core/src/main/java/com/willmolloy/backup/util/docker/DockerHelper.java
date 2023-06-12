@@ -1,13 +1,10 @@
 package com.willmolloy.backup.util.docker;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Verify.verifyNotNull;
 import static com.willmolloy.backup.util.EnvHelper.getRequiredEnvVariable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect.Mount;
-
-import java.io.IOException;
+import com.willmolloy.backup.util.docker.DockerEngineApi.Container.Mount;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -17,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import retrofit2.Response;
 
 /**
  * Helper methods (hacks) for when running via Docker container.
@@ -51,22 +47,10 @@ public final class DockerHelper {
   public Optional<String> getHostPath(String containerPath) {
     log.debug("getHostPath({})", containerPath);
     return optionalHostName
-        .flatMap(hostName -> {
-          try {
-            Response<DockerEngineApi.ContainerInspect> response = api.inspectContainer(hostName).execute();
-            if (response.isSuccessful()){
-              return Optional.of(verifyNotNull(response.body()));
-            } else {
-              log.error("Unsuccessful response inspecting container: ");
-            }
-          } catch (IOException e) {
-            log.error("Error inspecting container", e);
-          }
-          return Optional.empty();
-        })
+        .flatMap(api::inspectContainer)
         .flatMap(
-            containerInspect ->
-                containerInspect.Mounts().stream()
+            container ->
+                container.Mounts().stream()
                     .filter(mount -> mount.Destination().equals(containerPath))
                     .findFirst())
         .flatMap(this::extractHostPathFromMount);
@@ -88,7 +72,7 @@ public final class DockerHelper {
     Matcher m = p.matcher(volume);
     if (m.matches()) {
       String volumeName = m.group(1);
-      return api.volumeInspect(volumeName)
+      return api.inspectVolume(volumeName)
           .map(volumeInspect -> volumeInspect.Options().device())
           .map(this::tryMapIpAddress);
     } else {

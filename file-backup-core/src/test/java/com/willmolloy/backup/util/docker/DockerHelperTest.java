@@ -4,9 +4,9 @@ import static com.google.common.truth.Truth8.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.willmolloy.backup.util.docker.DockerEngineApi.ContainerInspect;
-import com.willmolloy.backup.util.docker.DockerEngineApi.VolumeInspect;
-import com.willmolloy.backup.util.docker.DockerEngineApi.VolumeInspect.Options;
+import com.willmolloy.backup.util.docker.DockerEngineApi.Container;
+import com.willmolloy.backup.util.docker.DockerEngineApi.Volume;
+import com.willmolloy.backup.util.docker.DockerEngineApi.Volume.Options;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,12 +44,11 @@ class DockerHelperTest {
   @Test
   void getHostPath_whenBind_getsHostPath() {
     // Given
-    when(mockApi.containerInspect("my_container"))
+    when(mockApi.inspectContainer("my_container"))
         .thenReturn(
             Optional.of(
-                new ContainerInspect(
-                    List.of(
-                        new ContainerInspect.Mount("bind", "host/path/1", "container/path/1")))));
+                new Container(
+                    List.of(new Container.Mount("bind", "host/path/1", "container/path/1")))));
 
     // When
     Optional<String> result = sut.getHostPath("container/path/1");
@@ -61,18 +60,18 @@ class DockerHelperTest {
   @Test
   void getHostPath_whenVolume_getsHostPathViaVolume() {
     // Given
-    when(mockApi.containerInspect("my_container"))
+    when(mockApi.inspectContainer("my_container"))
         .thenReturn(
             Optional.of(
-                new ContainerInspect(
+                new Container(
                     List.of(
-                        new ContainerInspect.Mount("bind", "host/path/1", "container/path/1"),
-                        new ContainerInspect.Mount(
+                        new Container.Mount("bind", "host/path/1", "container/path/1"),
+                        new Container.Mount(
                             "volume",
                             "/var/lib/docker/volumes/my_volume/_data",
                             "container/path/2")))));
-    when(mockApi.volumeInspect("my_volume"))
-        .thenReturn(Optional.of(new VolumeInspect(new Options("host/path/2"))));
+    when(mockApi.inspectVolume("my_volume"))
+        .thenReturn(Optional.of(new Volume(new Options("host/path/2"))));
 
     // When
     Optional<String> result = sut.getHostPath("container/path/2");
@@ -84,12 +83,11 @@ class DockerHelperTest {
   @Test
   void getHostPath_whenVolume_doesntMatchPattern_failsGracefully() {
     // Given
-    when(mockApi.containerInspect("my_container"))
+    when(mockApi.inspectContainer("my_container"))
         .thenReturn(
             Optional.of(
-                new ContainerInspect(
-                    List.of(
-                        new ContainerInspect.Mount("volume", "my_volume", "container/path/2")))));
+                new Container(
+                    List.of(new Container.Mount("volume", "my_volume", "container/path/2")))));
 
     // When
     Optional<String> result = sut.getHostPath("container/path/2");
@@ -101,12 +99,11 @@ class DockerHelperTest {
   @Test
   void getHostPath_whenUnknownMount_failsGracefully() {
     // Given
-    when(mockApi.containerInspect("my_container"))
+    when(mockApi.inspectContainer("my_container"))
         .thenReturn(
             Optional.of(
-                new ContainerInspect(
-                    List.of(
-                        new ContainerInspect.Mount("???", "host/path/1", "container/path/1")))));
+                new Container(
+                    List.of(new Container.Mount("???", "host/path/1", "container/path/1")))));
 
     // When
     Optional<String> result = sut.getHostPath("container/path/1");

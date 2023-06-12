@@ -147,8 +147,8 @@ subprojects {
     implementation group: 'com.google.guava', name: 'guava', version: "$guavaVersion"
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.11.0'
-    implementation group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.9.0'
-    implementation group: 'com.squareup.retrofit2', name: 'converter-gson', version: '2.9.0'
+    implementation group: 'io.github.openfeign', name: 'feign-core', version: '12.3'
+    implementation group: 'io.github.openfeign', name: 'feign-gson', version: '12.3'
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "$junitVersion"
     testImplementation group: 'com.google.truth', name: 'truth', version: "$truthVersion"
