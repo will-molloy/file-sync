@@ -26,22 +26,20 @@ interface DockerEngineApi {
   /**
    * Inspects a container.
    *
-   * @param containerHostName container host name
+   * @param container container host name
    * @see <a
    *     href=https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect>API
    *     doc</a>
    */
-  @RequestLine("GET /containers/{containerHostName}/json")
-  Optional<Container> inspectContainer(@Param("containerHostName") String containerHostName);
+  @RequestLine("GET /containers/{container}/json")
+  Optional<Container> inspectContainer(@Param("container") String container);
 
   /**
    * Container inspect result.
    *
    * @param Mounts container mounts
    */
-  @SuppressFBWarnings(
-      value = "NM_METHOD_NAMING_CONVENTION",
-      justification = "Docker API uses uppercase...")
+  @SuppressFBWarnings(value = {"EI_EXPOSE_REP", "NM_METHOD_NAMING_CONVENTION"})
   record Container(List<Mount> Mounts) {
     /**
      * Container mounts.
@@ -56,21 +54,19 @@ interface DockerEngineApi {
   /**
    * Inspect a volume.
    *
-   * @param volumeName volume name
+   * @param volume volume name
    * @see <a href=https://docs.docker.com/engine/api/v1.43/#tag/Volume/operation/VolumeInspect>API
    *     doc</a>
    */
-  @RequestLine("GET /volumes/{volumeName}")
-  Optional<Volume> inspectVolume(@Param("volumeName") String volumeName);
+  @RequestLine("GET /volumes/{volume}")
+  Optional<Volume> inspectVolume(@Param("volume") String volume);
 
   /**
    * Volume inspect result.
    *
    * @param Options volume options
    */
-  @SuppressFBWarnings(
-      value = "NM_METHOD_NAMING_CONVENTION",
-      justification = "Docker API uses uppercase...")
+  @SuppressFBWarnings("NM_METHOD_NAMING_CONVENTION")
   record Volume(Options Options) {
     /**
      * Volume options.

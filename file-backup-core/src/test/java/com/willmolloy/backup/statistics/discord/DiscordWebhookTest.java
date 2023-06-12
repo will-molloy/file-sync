@@ -4,13 +4,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.File;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import com.willmolloy.backup.statistics.Statistics;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
+import com.willmolloy.backup.statistics.discord.DiscordWebhookApi.WebhookBody;
+import com.willmolloy.backup.statistics.discord.DiscordWebhookApi.WebhookBody.EmbedObject;
+import feign.form.FormData;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -31,18 +33,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DiscordWebhookTest {
 
-  private String webhookUrl;
-  @Mock private DiscordApi mockApi;
+  @Mock private DiscordWebhookApi mockApi;
   private Instant fixedInstant;
 
   private DiscordWebhook sut;
 
   @BeforeEach
   void setUp() {
-    webhookUrl = "https://discord.com/api/webhooks/test";
     fixedInstant = Instant.now();
-    sut =
-        new DiscordWebhook(webhookUrl, mockApi, Clock.fixed(fixedInstant, ZoneId.systemDefault()));
+    sut = new DiscordWebhook(mockApi, Clock.fixed(fixedInstant, ZoneId.systemDefault()));
   }
 
   @Test
@@ -56,20 +55,24 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            webhookUrl,
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Started",
-                        null,
-                        3239167,
+            new Gson()
+                .toJson(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail("attachment://sync-44.png"),
-                        fixedInstant.toString()))),
-            "sync-44.png",
-            Resources.toByteArray(Resources.getResource("icons/sync-44.png")));
+                            new EmbedObject(
+                                "Backup Started",
+                                null,
+                                3239167,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail("attachment://sync-44.png"),
+                                fixedInstant.toString())))),
+            new FormData(
+                "image/png",
+                "sync-44.png",
+                Resources.toByteArray(Resources.getResource("icons/sync-44.png"))));
   }
 
   @Test
@@ -95,20 +98,24 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            webhookUrl,
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Finished in: 34:17:36",
-                        "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
-                        39168,
+            new Gson()
+                .toJson(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail("attachment://ok-48.png"),
-                        fixedInstant.toString()))),
-            "ok-48.png",
-            Resources.toByteArray(Resources.getResource("icons/ok-48.png")));
+                            new EmbedObject(
+                                "Backup Finished in: 34:17:36",
+                                "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.",
+                                39168,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail("attachment://ok-48.png"),
+                                fixedInstant.toString())))),
+            new FormData(
+                "image/png",
+                "ok-48.png",
+                Resources.toByteArray(Resources.getResource("icons/ok-48.png"))));
   }
 
   @Test
@@ -125,20 +132,24 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            webhookUrl,
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Finished in: 181:45:21",
-                        "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
-                        16747567,
+            new Gson()
+                .toJson(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail("attachment://warn-48.png"),
-                        fixedInstant.toString()))),
-            "warn-48.png",
-            Resources.toByteArray(Resources.getResource("icons/warn-48.png")));
+                            new EmbedObject(
+                                "Backup Finished in: 181:45:21",
+                                "1,000 files created, 2,000 files updated, 3,000 files deleted,\n10,000 files same.\n\n10MB added, 20MB removed.\n\nFailed: 4,000 creates, 5,000 updates, 6,000 deletes.",
+                                16747567,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail("attachment://warn-48.png"),
+                                fixedInstant.toString())))),
+            new FormData(
+                "image/png",
+                "warn-48.png",
+                Resources.toByteArray(Resources.getResource("icons/warn-48.png"))));
   }
 
   @Test
@@ -153,20 +164,24 @@ class DiscordWebhookTest {
     // Then
     verify(mockApi)
         .executeWebhook(
-            webhookUrl,
-            new WebhookBody(
-                List.of(
-                    new EmbedObject(
-                        "Backup Failed",
-                        "java.lang.OutOfMemoryError: OOM!",
-                        14821416,
+            new Gson()
+                .toJson(
+                    new WebhookBody(
                         List.of(
-                            new EmbedObject.Field("Source", "TestLocation[name=/source]"),
-                            new EmbedObject.Field("Destination", "TestLocation[name=/dest]")),
-                        new EmbedObject.Thumbnail("attachment://error-48.png"),
-                        fixedInstant.toString()))),
-            "error-48.png",
-            Resources.toByteArray(Resources.getResource("icons/error-48.png")));
+                            new EmbedObject(
+                                "Backup Failed",
+                                "java.lang.OutOfMemoryError: OOM!",
+                                14821416,
+                                List.of(
+                                    new EmbedObject.Field("Source", "TestLocation[name=/source]"),
+                                    new EmbedObject.Field(
+                                        "Destination", "TestLocation[name=/dest]")),
+                                new EmbedObject.Thumbnail("attachment://error-48.png"),
+                                fixedInstant.toString())))),
+            new FormData(
+                "image/png",
+                "error-48.png",
+                Resources.toByteArray(Resources.getResource("icons/error-48.png"))));
   }
 
   private record TestBackup(TestLocation source, TestLocation destination)

@@ -4,16 +4,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
 import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import com.willmolloy.backup.statistics.BackupObserver;
 import com.willmolloy.backup.statistics.Statistics;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody;
-import com.willmolloy.backup.statistics.discord.DiscordApi.WebhookBody.EmbedObject;
-import com.willmolloy.backup.util.HttpClientWrapper;
+import com.willmolloy.backup.statistics.discord.DiscordWebhookApi.WebhookBody;
+import com.willmolloy.backup.statistics.discord.DiscordWebhookApi.WebhookBody.EmbedObject;
+import feign.form.FormData;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.text.NumberFormat;
 import java.time.Clock;
 import java.time.Duration;
@@ -35,19 +35,17 @@ public final class DiscordWebhook implements BackupObserver {
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
-  private final String webhookUrl;
-  private final DiscordApi api;
+  private final DiscordWebhookApi api;
   private final Clock clock;
 
   @VisibleForTesting
-  DiscordWebhook(String webhookUrl, DiscordApi api, Clock clock) {
-    this.webhookUrl = checkNotNull(webhookUrl);
+  DiscordWebhook(DiscordWebhookApi api, Clock clock) {
     this.api = checkNotNull(api);
     this.clock = checkNotNull(clock);
   }
 
   public DiscordWebhook(String webhookUrl) {
-    this(webhookUrl, new DiscordApi(new HttpClientWrapper()), Clock.systemDefaultZone());
+    this(DiscordWebhookApi.create(webhookUrl), Clock.systemDefaultZone());
   }
 
   @Override
@@ -103,28 +101,29 @@ public final class DiscordWebhook implements BackupObserver {
 
   private void webhook(
       Backup<?, ?> backup, String title, String description, String color, String iconName) {
+    WebhookBody webhookBody =
+        new WebhookBody(
+            List.of(
+                new EmbedObject(
+                    title,
+                    description,
+                    Integer.decode(color),
+                    List.of(
+                        new EmbedObject.Field("Source", backup.source().toString()),
+                        new EmbedObject.Field("Destination", backup.destination().toString())),
+                    new EmbedObject.Thumbnail("attachment://" + iconName),
+                    Instant.now(clock).toString())));
+    api.executeWebhook(new Gson().toJson(webhookBody), iconFile(iconName));
+  }
+
+  private FormData iconFile(String iconName) {
     try {
-      WebhookBody webhookBody =
-          new WebhookBody(
-              List.of(
-                  new EmbedObject(
-                      title,
-                      description,
-                      Integer.decode(color),
-                      List.of(
-                          new EmbedObject.Field("Source", backup.source().toString()),
-                          new EmbedObject.Field("Destination", backup.destination().toString())),
-                      new EmbedObject.Thumbnail("attachment://" + iconName),
-                      Instant.now(clock).toString())));
-      api.executeWebhook(
-          webhookUrl,
-          webhookBody,
-          iconName,
-          // read directly to byte[], can't deal with File within jar
-          // https://stackoverflow.com/a/20389418/6122976
-          Resources.toByteArray(Resources.getResource("icons/" + iconName)));
+      // read directly to byte[], can't deal with File within jar
+      // https://stackoverflow.com/a/20389418/6122976
+      byte[] bytes = Resources.toByteArray(Resources.getResource("icons/" + iconName));
+      return new FormData("image/png", iconName, bytes);
     } catch (IOException e) {
-      throw new UncheckedIOException(e);
+      throw new RuntimeException(e);
     }
   }
 

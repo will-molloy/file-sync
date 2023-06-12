@@ -1,39 +1,46 @@
 package com.willmolloy.backup.statistics.discord;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.willmolloy.backup.util.HttpClientWrapper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import feign.Feign;
+import feign.Headers;
+import feign.Param;
+import feign.RequestLine;
+import feign.form.FormData;
+import feign.form.FormEncoder;
+import feign.gson.GsonEncoder;
 import java.util.List;
 
 /**
- * Discord API.
+ * Discord Webhook API.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class DiscordApi {
+interface DiscordWebhookApi {
 
-  private final HttpClientWrapper httpClientWrapper;
-
-  DiscordApi(HttpClientWrapper httpClientWrapper) {
-    this.httpClientWrapper = checkNotNull(httpClientWrapper);
+  static DiscordWebhookApi create(String webhookUrl) {
+    return Feign.builder()
+        .encoder(new FormEncoder(new GsonEncoder()))
+        .target(DiscordWebhookApi.class, webhookUrl);
   }
 
   /**
    * Execute Webhook.
    *
    * @see <a href=https://discord.com/developers/docs/resources/webhook#execute-webhook>API doc</a>
-   * @see <a href=https://birdie0.github.io/discord-webhooks-guide/structure/file.html>Discord
-   *     Webhooks Guide - files</a>
+   * @see <a href=https://birdie0.github.io/discord-webhooks-guide/index.html>Discord Webhooks
+   *     Guide</a>
    */
-  void executeWebhook(String webhookUrl, WebhookBody body, String fileName, byte[] fileBytes) {
-    httpClientWrapper.postJsonAndFile(webhookUrl, "payload_json", body, fileName, fileBytes);
-  }
+  @RequestLine("POST")
+  @Headers("Content-Type: multipart/form-data")
+  // TODO accept POJO... not sure why the JSON ser doesn't work
+  void executeWebhook(@Param("payload_json") String jsonBody, @Param("file") FormData file);
 
   /**
    * Webhook body.
    *
    * @param embeds embedded rich content
    */
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   record WebhookBody(List<EmbedObject> embeds) {
 
     /**
