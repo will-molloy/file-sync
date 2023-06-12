@@ -67,12 +67,12 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail("attachment://sync-44.png"),
+                                new EmbedObject.Thumbnail("attachment://sync.png"),
                                 fixedInstant.toString())))),
             new FormData(
                 "image/png",
-                "sync-44.png",
-                Resources.toByteArray(Resources.getResource("icons/sync-44.png"))));
+                "sync.png",
+                Resources.toByteArray(Resources.getResource("icons/sync.png"))));
   }
 
   @Test
@@ -110,12 +110,12 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail("attachment://ok-48.png"),
+                                new EmbedObject.Thumbnail("attachment://ok.png"),
                                 fixedInstant.toString())))),
             new FormData(
                 "image/png",
-                "ok-48.png",
-                Resources.toByteArray(Resources.getResource("icons/ok-48.png"))));
+                "ok.png",
+                Resources.toByteArray(Resources.getResource("icons/ok.png"))));
   }
 
   @Test
@@ -144,12 +144,12 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail("attachment://warn-48.png"),
+                                new EmbedObject.Thumbnail("attachment://warn.png"),
                                 fixedInstant.toString())))),
             new FormData(
                 "image/png",
-                "warn-48.png",
-                Resources.toByteArray(Resources.getResource("icons/warn-48.png"))));
+                "warn.png",
+                Resources.toByteArray(Resources.getResource("icons/warn.png"))));
   }
 
   @Test
@@ -176,12 +176,12 @@ class DiscordWebhookTest {
                                     new EmbedObject.Field("Source", "TestLocation[name=/source]"),
                                     new EmbedObject.Field(
                                         "Destination", "TestLocation[name=/dest]")),
-                                new EmbedObject.Thumbnail("attachment://error-48.png"),
+                                new EmbedObject.Thumbnail("attachment://error.png"),
                                 fixedInstant.toString())))),
             new FormData(
                 "image/png",
-                "error-48.png",
-                Resources.toByteArray(Resources.getResource("icons/error-48.png"))));
+                "error.png",
+                Resources.toByteArray(Resources.getResource("icons/error.png"))));
   }
 
   private record TestBackup(TestLocation source, TestLocation destination)

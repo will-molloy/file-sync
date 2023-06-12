@@ -50,7 +50,7 @@ public final class DiscordWebhook implements BackupObserver {
 
   @Override
   public void notifyStarted(Backup<?, ?> backup) {
-    webhook(backup, "Backup Started", null, "#316CFF", "sync-44.png");
+    webhook(backup, "Backup Started", null, "#316CFF", "sync.png");
   }
 
   @Override
@@ -73,7 +73,7 @@ public final class DiscordWebhook implements BackupObserver {
                   NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
                   NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA)),
           "#009900",
-          "ok-48.png");
+          "ok.png");
     } else {
       webhook(
           backup,
@@ -90,13 +90,13 @@ public final class DiscordWebhook implements BackupObserver {
                   NUMBER_FORMAT.format(stats.failedUpdates()),
                   NUMBER_FORMAT.format(stats.failedDeletes())),
           "#FF8C2F",
-          "warn-48.png");
+          "warn.png");
     }
   }
 
   @Override
   public void notifyFailed(Backup<?, ?> backup, Throwable t) {
-    webhook(backup, "Backup Failed", t.toString(), "#E22828", "error-48.png");
+    webhook(backup, "Backup Failed", t.toString(), "#E22828", "error.png");
   }
 
   private void webhook(
