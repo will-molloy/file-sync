@@ -33,6 +33,7 @@ interface DiscordWebhookApi {
   @RequestLine("POST")
   @Headers("Content-Type: multipart/form-data")
   // TODO accept POJO... not sure why the JSON ser doesn't work
+  //  https://github.com/OpenFeign/feign-form/issues/118
   void executeWebhook(@Param("payload_json") String jsonBody, @Param("file") FormData file);
 
   /**
