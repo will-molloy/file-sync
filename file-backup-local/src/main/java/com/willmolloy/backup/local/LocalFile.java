@@ -1,7 +1,7 @@
 package com.willmolloy.backup.local;
 
-import static com.willmolloy.backup.util.Preconditions.require;
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.BaseFile;
 import java.io.IOException;
@@ -18,12 +18,15 @@ public final class LocalFile extends BaseFile {
 
   static LocalFile fromAttributes(
       LocalStorage localStorage, Path path, BasicFileAttributes attributes) {
-    require(
+    checkArgument(
         path.startsWith(localStorage.root()),
-        "Requires path [%s] to be under root [%s]".formatted(path, localStorage.root()));
-    require(
+        "Requires path [%s] to be under root [%s]",
+        path,
+        localStorage.root());
+    checkArgument(
         attributes.isRegularFile() || attributes.isDirectory(),
-        "Requires a file or directory: [%s]".formatted(path));
+        "Requires a file or directory: [%s]",
+        path);
     return new LocalFile(
         localStorage,
         localStorage.root().relativize(path),
@@ -48,8 +51,8 @@ public final class LocalFile extends BaseFile {
       long size,
       long lastModified) {
     super(relativePath, isDirectory, size);
-    this.localStorage = requireNonNull(localStorage);
-    this.relativePath = requireNonNull(relativePath);
+    this.localStorage = checkNotNull(localStorage);
+    this.relativePath = checkNotNull(relativePath);
     this.lastModified = lastModified;
   }
 

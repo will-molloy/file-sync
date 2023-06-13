@@ -1,7 +1,7 @@
 package com.willmolloy.backup.s3;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.backup.util.PathHelper.ensureUnixSeparator;
-import static java.util.Objects.requireNonNull;
 
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
@@ -31,9 +31,9 @@ final class S3Bucket implements Location<S3File> {
   private final Path prefix;
 
   S3Bucket(S3Client s3Client, String bucketName, Path prefix) {
-    this.s3Client = requireNonNull(s3Client);
-    this.bucketName = requireNonNull(bucketName);
-    this.prefix = requireNonNull(prefix);
+    this.s3Client = checkNotNull(s3Client);
+    this.bucketName = checkNotNull(bucketName);
+    this.prefix = checkNotNull(prefix);
   }
 
   @Override
