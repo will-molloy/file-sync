@@ -25,7 +25,7 @@ jobs:
           java-version: 19
       
       - name: Login to Docker
-        run: docker login -u $DOCKER_USERNAME -p $DOCKER_HUB
+        run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
       - name: Get Commit Time
         run: echo "COMMIT_TIME=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_ENV`s
