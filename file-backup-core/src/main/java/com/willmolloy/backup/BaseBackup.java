@@ -26,7 +26,8 @@ import org.apache.logging.log4j.Logger;
 @SuppressFBWarnings(
     value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
     justification = "Relying on default ExecutorService.close to wait for futures")
-public abstract class BaseBackup<SourceFileT extends File, DestFileT extends File> {
+public abstract class BaseBackup<SourceFileT extends File, DestFileT extends File>
+    implements Backup<SourceFileT, DestFileT> {
   private static final Logger log = LogManager.getLogger();
 
   private static ExecutorService threadPool(String name) {
@@ -47,28 +48,45 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     this.observers = List.copyOf(observers);
   }
 
+  @Override
+  public final Location<SourceFileT> source() {
+    return source;
+  }
+
+  @Override
+  public final Location<DestFileT> destination() {
+    return destination;
+  }
+
   /** Runs the backup. */
   public final boolean run() {
-    Stopwatch stopwatch = Stopwatch.createStarted();
-    Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
-    for (BackupObserver observer : observers) {
-      observer.notifyStarted(this);
+    try {
+      Stopwatch stopwatch = Stopwatch.createStarted();
+      Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
+      for (BackupObserver observer : observers) {
+        observer.notifyStarted(this);
+      }
+
+      FileTree<SourceFileT> sourceFileTree = scan(source);
+      FileTree<DestFileT> destFileTree = scan(destination);
+
+      // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
+      // overwriting a file
+      executeDeletes(sourceFileTree, destFileTree, statistics);
+      executePuts(sourceFileTree, destFileTree, statistics);
+
+      Statistics.Snapshot snapshot = statistics.snapshot();
+      Duration elapsed = stopwatch.elapsed();
+      for (BackupObserver observer : observers) {
+        observer.notifyFinished(this, snapshot, elapsed);
+      }
+      return !snapshot.anyErrors();
+    } catch (Throwable t) {
+      for (BackupObserver observer : observers) {
+        observer.notifyFailed(this, t);
+      }
+      return false;
     }
-
-    FileTree<SourceFileT> sourceFileTree = scan(source);
-    FileTree<DestFileT> destFileTree = scan(destination);
-
-    // Doing deletes first; otherwise there are scenarios where put can fail, e.g. non-empty dir
-    // overwriting a file
-    executeDeletes(sourceFileTree, destFileTree, statistics);
-    executePuts(sourceFileTree, destFileTree, statistics);
-
-    Statistics.Snapshot snapshot = statistics.snapshot();
-    Duration elapsed = stopwatch.elapsed();
-    for (BackupObserver observer : observers) {
-      observer.notifyFinished(this, snapshot, elapsed);
-    }
-    return snapshot.allSuccess();
   }
 
   private <T extends File> FileTree<T> scan(Location<T> location) {

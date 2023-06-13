@@ -145,6 +145,9 @@ subprojects {
     implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j2-impl', version: "$log4jVersion"
     implementation group: 'com.github.spotbugs', name: 'spotbugs-annotations', version: '4.7.3'
     implementation group: 'com.google.guava', name: 'guava', version: "$guavaVersion"
+    implementation group: 'io.github.openfeign', name: 'feign-core', version: '12.3'
+    implementation group: 'io.github.openfeign', name: 'feign-gson', version: '12.3'
+    implementation group: 'io.github.openfeign.form', name: 'feign-form', version: '3.8.0'
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "$junitVersion"
     testImplementation group: 'com.google.truth', name: 'truth', version: "$truthVersion"

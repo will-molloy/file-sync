@@ -1,6 +1,6 @@
 package com.willmolloy.backup.statistics;
 
-import com.willmolloy.backup.BaseBackup;
+import com.willmolloy.backup.Backup;
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
 import java.text.NumberFormat;
@@ -21,7 +21,7 @@ public final class LoggingBackupObserver implements BackupObserver {
   private static final int MEGA = 1_000_000;
 
   @Override
-  public void notifyStarted(BaseBackup<?, ?> backup) {
+  public void notifyStarted(Backup<?, ?> backup) {
     log.info("Started: {}", backup);
   }
 
@@ -36,7 +36,7 @@ public final class LoggingBackupObserver implements BackupObserver {
   }
 
   @Override
-  public void notifyFinished(BaseBackup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
+  public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
     log.info(
         "Finished: {} in: {}. {} files created, {} files updated, {} files deleted, {} files same. {}MB added, {}MB removed",
         backup,
@@ -47,12 +47,17 @@ public final class LoggingBackupObserver implements BackupObserver {
         NUMBER_FORMAT.format(stats.same()),
         NUMBER_FORMAT.format(stats.bytesAdded() / MEGA),
         NUMBER_FORMAT.format(stats.bytesRemoved() / MEGA));
-    if (!stats.allSuccess()) {
+    if (stats.anyErrors()) {
       log.warn(
           "Failed: {} creates, {} updates, {} deletes",
           NUMBER_FORMAT.format(stats.failedCreates()),
           NUMBER_FORMAT.format(stats.failedUpdates()),
           NUMBER_FORMAT.format(stats.failedDeletes()));
     }
+  }
+
+  @Override
+  public void notifyFailed(Backup<?, ?> backup, Throwable t) {
+    log.fatal("Fatal error", t);
   }
 }

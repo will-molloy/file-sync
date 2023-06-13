@@ -57,6 +57,15 @@ Backup to AWS S3 bucket (Glacier Deep Archive).
 
 Write a script wrapping the `docker run` command and use e.g. Windows Task Scheduler.
 
+## Notifications
+
+### Discord
+
+Enable discord notifications via webhook:
+```bash
+-e DISCORD_WEBHOOK=<full_webhook_url>
+```
+
 ## Project layout
 
 | Module                                   | Description                         |
