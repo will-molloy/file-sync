@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.backup.FileTree;
 import com.willmolloy.backup.Location;
+import com.willmolloy.backup.util.docker.DockerHelper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -27,10 +28,13 @@ public final class LocalStorage implements Location<LocalFile> {
   private static final Logger log = LogManager.getLogger();
 
   private final Path rootDir;
+  private final String displayRootDir;
 
   public LocalStorage(Path rootDir) {
     this.rootDir = checkNotNull(rootDir);
     checkArgument(Files.isDirectory(rootDir), "Requires a directory: [%s]", rootDir);
+    DockerHelper docker = new DockerHelper();
+    displayRootDir = docker.getHostPath(rootDir.toString()).orElse(rootDir.toString());
   }
 
   @Override
@@ -58,7 +62,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
   @Override
   public String toString() {
-    return "%s[%s]".formatted(getClass().getSimpleName(), rootDir);
+    return "%s[%s]".formatted(getClass().getSimpleName(), displayRootDir);
   }
 
   private static final class DirectoryWalker implements FileVisitor<Path> {

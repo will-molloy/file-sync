@@ -67,8 +67,6 @@ class BaseBackupTest {
     verifyNoMoreInteractions(mockSource);
     verifyNoMoreInteractions(mockDest);
     verify(observer).notifyStarted(same(sut));
-    verify(observer).notifyScanned(same(mockSource), any(), any());
-    verify(observer).notifyScanned(same(mockDest), any(), any());
     verifyNoMoreInteractions(observer);
     verify(sut).run();
     verifyNoMoreInteractions(sut);
@@ -85,6 +83,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 0, 0, 0, 0, 0, 1, 0)), any());
     verify(sut).needCreate(file("A"), Optional.empty());
@@ -102,6 +102,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 1, 0, 0, 0, 0, 0, 1, 2)), any());
     verify(sut, times(2)).needDelete(Optional.of(file("A")), differentFile("A"));
@@ -121,6 +123,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 1, 0, 0, 0, 0, 0)), any());
     verify(sut, times(2)).needDelete(Optional.of(file("A")), file("A"));
@@ -139,6 +143,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A"));
@@ -156,6 +162,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 1, 0, 0, 0, 0, 0)), any());
     verify(sut, times(2)).needDelete(Optional.of(file("A")), file("A"));
@@ -175,6 +183,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 0, 1, 0, 0, 0, 0)), any());
     verify(sut).needCreate(file("A"), Optional.empty());
@@ -193,6 +203,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 0, 0, 1, 0, 0, 0)), any());
     verify(sut, times(2)).needDelete(Optional.of(file("A")), differentFile("A"));
@@ -213,6 +225,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isFalse();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 0, 0, 0, 0, 1, 0, 0)), any());
     verify(sut).needDelete(Optional.empty(), file("A"));
@@ -231,6 +245,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 0, 0, 0, 0, 0, 1, 0)), any());
     verify(sut).needCreate(file("A/B"), Optional.empty());
@@ -254,6 +270,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 0, 0, 0, 0, 0, 1, 0)), any());
     verify(sut).needCreate(file("A/B/C"), Optional.empty());
@@ -272,6 +290,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B"));
@@ -296,6 +316,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 0, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B/C"));
@@ -316,6 +338,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 1, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B"));
@@ -343,6 +367,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(0, 0, 1, 1, 0, 0, 0, 0, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("A/B/C"));
@@ -364,6 +390,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 1, 0, 0, 0, 0, 1, 1)), any());
     verify(sut).needDelete(Optional.empty(), file("B"));
@@ -385,6 +413,8 @@ class BaseBackupTest {
 
     // Then
     assertThat(result).isTrue();
+    verify(observer).notifyScanned(same(mockSource), any(), any());
+    verify(observer).notifyScanned(same(mockDest), any(), any());
     verify(observer)
         .notifyFinished(same(sut), eq(new Statistics.Snapshot(1, 0, 1, 0, 0, 0, 0, 1, 2)), any());
     verify(sut, times(2)).needDelete(Optional.of(file("B")), differentFile("B"));
@@ -392,6 +422,20 @@ class BaseBackupTest {
     InOrder inOrder = inOrder(sut);
     inOrder.verify(sut).delete(argThat(rootedAt(differentFile("B"))));
     inOrder.verify(sut).put(file("B"));
+  }
+
+  @Test
+  void notifiesFailure() {
+    // Given
+    OutOfMemoryError t = new OutOfMemoryError();
+    when(mockSource.scan()).thenThrow(t);
+
+    // When
+    boolean result = sut.run();
+
+    // Then
+    assertThat(result).isFalse();
+    verify(observer).notifyFailed(sut, t);
   }
 
   private static FileTree.Builder<File> fileTreeBuilder() {
