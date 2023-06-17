@@ -1,6 +1,7 @@
 name: docker
 
 on:
+  pull_request:
   push:
     branches: [ main ]
 
@@ -24,14 +25,8 @@ jobs:
           distribution: corretto
           java-version: 19
       
-      - name: Login to Docker
+      - name: Login to Docker Hub
         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
-      - name: Get Commit Time
-        run: echo "COMMIT_TIME=$(git show -s --format=%ci ${{ github.sha }})" >> $GITHUB_ENV`s
-
-      - name: Build and push Docker image for file-backup-local
-        run: gradle jib --image="$DOCKER_USERNAME/file-backup-local:${{ env.COMMIT_TIME }}"
-
-      - name: Build and push Docker image for file-backup-s3
-        run: gradle jib --image="$DOCKER_USERNAME/file-backup-s3:${{ env.COMMIT_TIME }}"
+      - name: Build and push Docker images
+        run: ./gradlew jib
