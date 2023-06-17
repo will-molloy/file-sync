@@ -22,9 +22,6 @@ Requires JDK 19.
 
 ## Usage
 
-Pull and run the docker container.
-Args depend on the backup type.
-
 ### Local Backup
 
 Backup to locally mounted storage. E.g. another disk or NAS.
