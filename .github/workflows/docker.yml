@@ -40,7 +40,7 @@ jobs:
         run: ./gradlew jib -Djib.to.tags=${{ steps.version.outputs.version }}
 
       - name: GitHub Tag and Release
-        uses: softprops/action-gh-release@v0.1.7
+        uses: softprops/action-gh-release@v0.1.15
         with:
           tag_name: ${{ steps.version.outputs.version_tag }}
           generate_release_notes: true
