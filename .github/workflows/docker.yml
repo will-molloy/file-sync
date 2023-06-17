@@ -36,9 +36,7 @@ jobs:
       - name: Build and push Docker images
         run: ./gradlew jib -Djib.to.tags=${{ steps.version.outputs.version }}
 
-      - name: Push git tag
-        run: |
-          git tag ${{ steps.version.outputs.version_tag }}
-          git push origin ${{ steps.version.outputs.version_tag }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: GitHub Tag and Release
+        uses: softprops/action-gh-release@v0.1.7
+        with:
+          tag_name: ${{ steps.version.outputs.version_tag }}
