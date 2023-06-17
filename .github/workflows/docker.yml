@@ -35,10 +35,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build and push Docker images
+      - name: Build and push docker images
         run: ./gradlew jib -Djib.to.tags=${{ steps.version.outputs.version }}
 
-      - name: GitHub Tag and Release
+      - name: Create GitHub tag and release
         uses: softprops/action-gh-release@v0.1.15
         with:
           tag_name: ${{ steps.version.outputs.version_tag }}
