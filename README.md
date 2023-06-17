@@ -29,14 +29,14 @@ Args depend on the backup type.
 
 Backup to locally mounted storage. E.g. another disk or NAS.
 ```bash
-docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination wilmol/file-backup-local:latest
+docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination wilmol/file-backup-local
 ```
 
 ### S3 Backup
 
 Backup to AWS S3 bucket (Glacier Deep Archive).
 ```bash
-docker run --rm -v <source_path>:/source:ro -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> wilmol/file-backup-s3:latest
+docker run --rm -v <source_path>:/source:ro -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> wilmol/file-backup-s3
 ```
 
 ## Schedules
