@@ -7,7 +7,7 @@ jib {
     image = "amazoncorretto:19"
   }
   to {
-    image = "file-backup-s3:latest"
+    image = "wilmol/file-backup-s3:latest"
   }
   container {
     mainClass = 'com.willmolloy.backup.s3.Main'
