@@ -37,6 +37,6 @@ jobs:
         run: ./gradlew jib -Djib.to.tags=${{ steps.version.outputs.version }}
 
       - name: Push git tag
-        uses: actions-ecosystem/action-push-tag@v1
-        with:
-          tag: ${{ steps.version.outputs.version_tag }}
+        run: |
+          git tag ${{ steps.version.outputs.version_tag }}
+          git push origin ${{ steps.version.outputs.version_tag }}
