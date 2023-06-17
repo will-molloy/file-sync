@@ -1,4 +1,4 @@
-name: docker
+name: release
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  docker:
+  release:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
