@@ -1,7 +1,6 @@
 name: release
 
 on:
-  pull_request:
   push:
     branches: [ main ]
 
@@ -41,8 +40,8 @@ jobs:
       - name: Build and push docker images
         run: ./gradlew jib -Djib.to.tags=${{ steps.version.outputs.version }}
 
-#      - name: Create GitHub tag and release
-#        uses: softprops/action-gh-release@v0.1.15
-#        with:
-#          tag_name: ${{ steps.version.outputs.version_tag }}
-#          generate_release_notes: true
+      - name: Create GitHub tag and release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          tag_name: ${{ steps.version.outputs.version_tag }}
+          generate_release_notes: true

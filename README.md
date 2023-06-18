@@ -22,29 +22,37 @@ Requires JDK 19.
 
 ## Usage
 
+Pull and run the docker container.
+Args depend on the backup type.
+
 ### Local Backup
 
 Backup to locally mounted storage. E.g. another disk or NAS.
+
 ```bash
-docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination wilmol/file-backup-local
+docker pull ghcr.io/will-molloy/file-backup-local:latest
+docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination ghcr.io/will-molloy/file-backup-local
 ```
 
 ### S3 Backup
 
 Backup to AWS S3 bucket (Glacier Deep Archive).
+
 ```bash
-docker run --rm -v <source_path>:/source:ro -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> wilmol/file-backup-s3
+docker pull ghcr.io/will-molloy/file-backup-s3:latest
+docker run --rm -v <source_path>:/source:ro -e DESTINATION_BUCKET=<bucket_name> -e DESTINATION_BUCKET_PREFIX=<bucket_prefix> ghcr.io/will-molloy/file-backup-s3
 ```
 
 ## Schedules
 
-Write a script wrapping the `docker run` command and use e.g. Windows Task Scheduler.
+Write a script wrapping the `docker` commands and use e.g. Windows Task Scheduler.
 
 ## Notifications
 
 ### Discord
 
 Enable discord notifications via webhook:
+
 ```bash
 -e DISCORD_WEBHOOK=<full_webhook_url>
 ```
