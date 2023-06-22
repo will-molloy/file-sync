@@ -17,7 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * For sync to locally mounted storage. Either local disk, or mounted NAS, etc.
+ * For sync to/from locally mounted storage. Either local disk, or mounted NAS, etc.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */

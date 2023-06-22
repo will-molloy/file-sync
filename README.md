@@ -27,7 +27,7 @@ Requires JDK 19.
 Pull and run the docker container.
 Args depend on the sync type.
 
-### Local Sync
+### `LocalSync`
 
 Sync to locally mounted storage. E.g. another disk or NAS.
 
@@ -36,7 +36,7 @@ docker pull ghcr.io/will-molloy/file-sync-local:latest
 docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination ghcr.io/will-molloy/file-sync-local
 ```
 
-### S3 Sync
+### `S3Sync`
 
 Sync to AWS S3 bucket (Glacier Deep Archive).
 
