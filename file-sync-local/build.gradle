@@ -10,7 +10,7 @@ jib {
     image = "ghcr.io/will-molloy/file-sync-local"
   }
   container {
-    mainClass = 'com.willmolloy.backup.local.Main'
+    mainClass = 'com.willmolloy.sync.local.Main'
     environment(Map.of("SOURCE_PATH", "/source", "DESTINATION_PATH", "/destination"))
     creationTime = getGitCommitTime()
     jvmFlags = ['--enable-preview']

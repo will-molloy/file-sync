@@ -10,7 +10,7 @@ jib {
     image = "ghcr.io/will-molloy/file-sync-s3"
   }
   container {
-    mainClass = 'com.willmolloy.backup.s3.Main'
+    mainClass = 'com.willmolloy.sync.s3.Main'
     environment(Map.of("SOURCE_PATH", "/source", "DESTINATION_BUCKET", "", "DESTINATION_BUCKET_PREFIX", "/"))
     creationTime = getGitCommitTime()
     jvmFlags = ['--enable-preview']
