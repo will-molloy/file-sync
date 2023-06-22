@@ -6,7 +6,7 @@ import static com.google.common.truth.Truth8.assertThat;
 
 import com.github.javafaker.Faker;
 import com.google.common.io.MoreFiles;
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,12 +27,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * LocalBackupPerformanceTest.
+ * LocalSyncPerformanceTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
-class LocalBackupPerformanceTest {
+class LocalSyncPerformanceTest {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -82,12 +82,12 @@ class LocalBackupPerformanceTest {
 
     // When
     long start = System.nanoTime();
-    LocalBackup localBackup =
-        new LocalBackup(
+    LocalSync localSync =
+        new LocalSync(
             new LocalStorage(sourceRoot),
             new LocalStorage(destRoot),
-            List.of(new LoggingBackupObserver()));
-    boolean result = localBackup.run();
+            List.of(new LoggingSyncObserver()));
+    boolean result = localSync.run();
     Duration duration = Duration.ofNanos(System.nanoTime() - start);
 
     // Then

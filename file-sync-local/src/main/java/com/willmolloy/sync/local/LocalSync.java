@@ -3,9 +3,9 @@ package com.willmolloy.sync.local;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.io.MoreFiles;
-import com.willmolloy.sync.BaseBackup;
+import com.willmolloy.sync.BaseSync;
 import com.willmolloy.sync.FileTree;
-import com.willmolloy.sync.statistics.BackupObserver;
+import com.willmolloy.sync.statistics.SyncObserver;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -17,17 +17,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * For backups to/from locally mounted storage. Either local disk, or mounted NAS, etc.
+ * For sync to locally mounted storage. Either local disk, or mounted NAS, etc.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class LocalBackup extends BaseBackup<LocalFile, LocalFile> {
+final class LocalSync extends BaseSync<LocalFile, LocalFile> {
 
   private static final Logger log = LogManager.getLogger();
 
   private final LocalStorage destination;
 
-  LocalBackup(LocalStorage source, LocalStorage destination, List<BackupObserver> observers) {
+  LocalSync(LocalStorage source, LocalStorage destination, List<SyncObserver> observers) {
     super(source, destination, observers);
     this.destination = checkNotNull(destination);
   }

@@ -6,7 +6,7 @@
 [![release](https://github.com/will-molloy/file-sync/workflows/release/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-sync/actions?query=workflow%3Arelease)
 [![codecov](https://codecov.io/gh/will-molloy/file-sync/branch/main/graph/badge.svg)](https://codecov.io/gh/will-molloy/file-sync)
 
-## Rules
+## Sync = Mirror
 
 - if file only on source, creates file on destination
 - if file on source AND destination, updates file on destination
@@ -25,20 +25,20 @@ Requires JDK 19.
 ## Usage
 
 Pull and run the docker container.
-Args depend on the backup type.
+Args depend on the sync type.
 
-### Local Backup
+### Local Sync
 
-Backup to locally mounted storage. E.g. another disk or NAS.
+Sync to locally mounted storage. E.g. another disk or NAS.
 
 ```bash
 docker pull ghcr.io/will-molloy/file-sync-local:latest
 docker run --rm -v <source_path>:/source:ro -v <destination_path>:/destination ghcr.io/will-molloy/file-sync-local
 ```
 
-### S3 Backup
+### S3 Sync
 
-Backup to AWS S3 bucket (Glacier Deep Archive).
+Sync to AWS S3 bucket (Glacier Deep Archive).
 
 ```bash
 docker pull ghcr.io/will-molloy/file-sync-s3:latest
@@ -61,8 +61,8 @@ Enable discord notifications via webhook:
 
 ## Project layout
 
-| Module                                   | Description                         |
-|------------------------------------------|-------------------------------------|
-| [file-sync-core](./file-sync-core)   | Core backup interface and algorithm |
-| [file-sync-local](./file-sync-local) | Local backup implementation         |
-| [file-sync-s3](./file-sync-s3)       | S3 backup implementation            |
+| Module                               | Description                       |
+|--------------------------------------|-----------------------------------|
+| [file-sync-core](./file-sync-core)   | Core sync interface and algorithm |
+| [file-sync-local](./file-sync-local) | Local sync implementation         |
+| [file-sync-s3](./file-sync-s3)       | S3 sync implementation            |

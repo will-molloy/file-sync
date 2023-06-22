@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 /**
- * Backup statistics.
+ * Sync statistics.
  *
  * @param <SourceFileT> source file type
  * @param <DestFileT> destination file type
@@ -58,7 +58,7 @@ public final class Statistics<SourceFileT extends File, DestFileT extends File> 
     same.incrementAndGet();
   }
 
-  /** Get snapshot of current backup statistics. */
+  /** Get snapshot of current sync statistics. */
   public Snapshot snapshot() {
     return new Snapshot(
         creates.get(),
@@ -73,7 +73,7 @@ public final class Statistics<SourceFileT extends File, DestFileT extends File> 
   }
 
   /**
-   * Snapshot of current backup statistics.
+   * Snapshot of current sync statistics.
    *
    * @param creates count of files created
    * @param updates count of files updated

@@ -3,8 +3,8 @@ package com.willmolloy.sync.local;
 import static com.willmolloy.sync.util.EnvHelper.getOptionalEnvVariable;
 import static com.willmolloy.sync.util.EnvHelper.getRequiredEnvVariable;
 
-import com.willmolloy.sync.statistics.BackupObserver;
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
+import com.willmolloy.sync.statistics.SyncObserver;
 import com.willmolloy.sync.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -28,13 +28,13 @@ final class Main {
     LocalStorage source = new LocalStorage(fs.getPath(sourcePath));
     LocalStorage dest = new LocalStorage(fs.getPath(destPath));
 
-    List<BackupObserver> observers = new ArrayList<>();
-    observers.add(new LoggingBackupObserver());
+    List<SyncObserver> observers = new ArrayList<>();
+    observers.add(new LoggingSyncObserver());
     getOptionalEnvVariable("DISCORD_WEBHOOK")
         .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
 
-    LocalBackup localBackup = new LocalBackup(source, dest, observers);
-    if (!localBackup.run()) {
+    LocalSync localSync = new LocalSync(source, dest, observers);
+    if (!localSync.run()) {
       System.exit(1);
     }
   }

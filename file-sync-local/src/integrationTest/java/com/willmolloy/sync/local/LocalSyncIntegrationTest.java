@@ -6,7 +6,7 @@ import static com.google.common.truth.Truth8.assertThat;
 import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -18,29 +18,29 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * LocalBackupIntegrationTest.
+ * LocalSyncIntegrationTest.
  *
  * <p>Quite simple as most logic is covered by unit tests.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-class LocalBackupIntegrationTest {
+class LocalSyncIntegrationTest {
 
   private FileSystem fs;
   private Path sourceRoot;
   private Path destRoot;
-  private LocalBackup sut;
+  private LocalSync sut;
 
   @BeforeEach
   void setUp() throws IOException {
     fs = Jimfs.newFileSystem(Configuration.forCurrentPlatform());
-    sourceRoot = createDirectory(fs.getPath("Documents"));
-    destRoot = createDirectory(fs.getPath("Backup"));
+    sourceRoot = createDirectory(fs.getPath("Source"));
+    destRoot = createDirectory(fs.getPath("Destination"));
     sut =
-        new LocalBackup(
+        new LocalSync(
             new LocalStorage(sourceRoot),
             new LocalStorage(destRoot),
-            List.of(new LoggingBackupObserver()));
+            List.of(new LoggingSyncObserver()));
   }
 
   @AfterEach

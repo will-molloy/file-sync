@@ -1,14 +1,14 @@
 package com.willmolloy.sync;
 
 /**
- * Backup type.
+ * Sync type.
  *
- * @see BaseBackup
+ * @see BaseSync
  * @param <SourceFileT> source file type
  * @param <DestFileT> destination file type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public interface Backup<SourceFileT extends File, DestFileT extends File> {
+public interface Sync<SourceFileT extends File, DestFileT extends File> {
 
   Location<SourceFileT> source();
 

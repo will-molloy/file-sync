@@ -18,7 +18,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.willmolloy.sync.local.LocalFile;
 import com.willmolloy.sync.local.LocalStorage;
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -50,19 +50,19 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
- * S3BackupTest.
+ * S3SyncTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings("UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 @ExtendWith(MockitoExtension.class)
-class S3BackupTest {
+class S3SyncTest {
 
   @Mock private S3Client mockS3Client;
   @Mock private S3Waiter mockS3Waiter;
   private LocalStorage source;
   private S3Bucket destination;
-  private S3Backup sut;
+  private S3Sync sut;
   private FileSystem fs;
 
   @BeforeEach
@@ -72,10 +72,10 @@ class S3BackupTest {
     Path sourceRoot = fs.getPath("root");
     Files.createDirectory(sourceRoot);
     source = new LocalStorage(sourceRoot);
-    destination = new S3Bucket(mockS3Client, "my-bucket", fs.getPath("my/bucket/prefix/backups/"));
+    destination = new S3Bucket(mockS3Client, "my-bucket", fs.getPath("my/bucket/prefix/"));
     sut =
-        new S3Backup(
-            mockS3Client, mockS3Waiter, source, destination, List.of(new LoggingBackupObserver()));
+        new S3Sync(
+            mockS3Client, mockS3Waiter, source, destination, List.of(new LoggingSyncObserver()));
   }
 
   @AfterEach
@@ -99,17 +99,14 @@ class S3BackupTest {
         .putObject(
             PutObjectRequest.builder()
                 .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/A/B/C")
+                .key("my/bucket/prefix/A/B/C")
                 .contentMD5(md5Base64(sourceFile.fullPath()))
                 .storageClass(StorageClass.DEEP_ARCHIVE)
                 .build(),
             sourceFile.fullPath());
     verify(mockS3Waiter)
         .waitUntilObjectExists(
-            HeadObjectRequest.builder()
-                .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/A/B/C")
-                .build());
+            HeadObjectRequest.builder().bucket("my-bucket").key("my/bucket/prefix/A/B/C").build());
   }
 
   @Test
@@ -127,16 +124,13 @@ class S3BackupTest {
             eq(
                 PutObjectRequest.builder()
                     .bucket("my-bucket")
-                    .key("my/bucket/prefix/backups/A/B/C/")
+                    .key("my/bucket/prefix/A/B/C/")
                     .storageClass(StorageClass.DEEP_ARCHIVE)
                     .build()),
             argThat(emptyRequestBody()));
     verify(mockS3Waiter)
         .waitUntilObjectExists(
-            HeadObjectRequest.builder()
-                .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/A/B/C/")
-                .build());
+            HeadObjectRequest.builder().bucket("my-bucket").key("my/bucket/prefix/A/B/C/").build());
   }
 
   @Test
@@ -180,14 +174,11 @@ class S3BackupTest {
         .deleteObject(
             DeleteObjectRequest.builder()
                 .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/X/Y/Z")
+                .key("my/bucket/prefix/X/Y/Z")
                 .build());
     verify(mockS3Waiter)
         .waitUntilObjectNotExists(
-            HeadObjectRequest.builder()
-                .bucket("my-bucket")
-                .key("my/bucket/prefix/backups/X/Y/Z")
-                .build());
+            HeadObjectRequest.builder().bucket("my-bucket").key("my/bucket/prefix/X/Y/Z").build());
   }
 
   @Test
@@ -207,21 +198,11 @@ class S3BackupTest {
                 .delete(
                     Delete.builder()
                         .objects(
-                            ObjectIdentifier.builder()
-                                .key("my/bucket/prefix/backups/folder/A")
-                                .build(),
-                            ObjectIdentifier.builder()
-                                .key("my/bucket/prefix/backups/folder/B")
-                                .build(),
-                            ObjectIdentifier.builder()
-                                .key("my/bucket/prefix/backups/folder/C")
-                                .build(),
-                            ObjectIdentifier.builder()
-                                .key("my/bucket/prefix/backups/folder/D/E")
-                                .build(),
-                            ObjectIdentifier.builder()
-                                .key("my/bucket/prefix/backups/folder/D/F/G")
-                                .build())
+                            ObjectIdentifier.builder().key("my/bucket/prefix/folder/A").build(),
+                            ObjectIdentifier.builder().key("my/bucket/prefix/folder/B").build(),
+                            ObjectIdentifier.builder().key("my/bucket/prefix/folder/C").build(),
+                            ObjectIdentifier.builder().key("my/bucket/prefix/folder/D/E").build(),
+                            ObjectIdentifier.builder().key("my/bucket/prefix/folder/D/F/G").build())
                         .build())
                 .build());
   }
@@ -250,7 +231,7 @@ class S3BackupTest {
                                   .mapToObj(
                                       i ->
                                           ObjectIdentifier.builder()
-                                              .key("my/bucket/prefix/backups/folder/" + i)
+                                              .key("my/bucket/prefix/folder/" + i)
                                               .build())
                                   .toList())
                           .build())
@@ -276,7 +257,7 @@ class S3BackupTest {
   void toString_includesSourceAndDest() {
     assertThat(sut.toString())
         .isEqualTo(
-            "S3Backup[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=my/bucket/prefix/backups/]]");
+            "S3Sync[source=LocalStorage[root], destination=S3Bucket[https://s3.console.aws.amazon.com/s3/buckets/my-bucket?prefix=my/bucket/prefix/]]");
   }
 
   private LocalFile createLocalFile(Path relativePath) throws IOException {
@@ -317,10 +298,7 @@ class S3BackupTest {
     ListObjectsV2Iterable response = mock(ListObjectsV2Iterable.class);
     when(response.iterator()).thenReturn(List.of(page).iterator());
     when(mockS3Client.listObjectsV2Paginator(
-            ListObjectsV2Request.builder()
-                .bucket("my-bucket")
-                .prefix("my/bucket/prefix/backups/")
-                .build()))
+            ListObjectsV2Request.builder().bucket("my-bucket").prefix("my/bucket/prefix/").build()))
         .thenReturn(response);
   }
 

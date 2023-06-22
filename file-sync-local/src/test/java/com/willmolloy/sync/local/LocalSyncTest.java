@@ -8,7 +8,7 @@ import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.truth.StreamSubject;
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -27,19 +27,19 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * LocalBackupTest.
+ * LocalSyncTest.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
 @SuppressFBWarnings({"UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", "DLS_DEAD_LOCAL_STORE"})
-class LocalBackupTest {
+class LocalSyncTest {
 
   private FileSystem fs;
   private LocalStorage source;
   private Path sourceRoot;
   private LocalStorage destination;
   private Path destRoot;
-  private LocalBackup sut;
+  private LocalSync sut;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -49,7 +49,7 @@ class LocalBackupTest {
     source = new LocalStorage(sourceRoot);
     destRoot = Files.createDirectory(fs.getPath("dest"));
     destination = new LocalStorage(destRoot);
-    sut = new LocalBackup(source, destination, List.of(new LoggingBackupObserver()));
+    sut = new LocalSync(source, destination, List.of(new LoggingSyncObserver()));
   }
 
   @AfterEach
@@ -335,13 +335,13 @@ class LocalBackupTest {
   @Test
   void toString_includesSourceAndDest() {
     assertThat(sut.toString())
-        .isEqualTo("LocalBackup[source=LocalStorage[source], destination=LocalStorage[dest]]");
+        .isEqualTo("LocalSync[source=LocalStorage[source], destination=LocalStorage[dest]]");
   }
 
   private StreamSubject assertThatFileSystem() throws IOException {
     try (Stream<Path> sourceFiles = Files.walk(sourceRoot).skip(1)) {
       try (Stream<Path> destFiles = Files.walk(destRoot).skip(1)) {
-        return assertThat(Stream.concat(sourceFiles, destFiles).filter(LocalBackupTest::isLeaf));
+        return assertThat(Stream.concat(sourceFiles, destFiles).filter(LocalSyncTest::isLeaf));
       }
     }
   }

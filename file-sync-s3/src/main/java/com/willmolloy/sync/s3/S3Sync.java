@@ -5,12 +5,12 @@ import static com.willmolloy.sync.util.Md5Helper.md5Base64;
 import static com.willmolloy.sync.util.PathHelper.ensureUnixSeparator;
 import static com.willmolloy.sync.util.StreamHelper.chunk;
 
-import com.willmolloy.sync.BaseBackup;
+import com.willmolloy.sync.BaseSync;
 import com.willmolloy.sync.File;
 import com.willmolloy.sync.FileTree;
 import com.willmolloy.sync.local.LocalFile;
 import com.willmolloy.sync.local.LocalStorage;
-import com.willmolloy.sync.statistics.BackupObserver;
+import com.willmolloy.sync.statistics.SyncObserver;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,11 +31,11 @@ import software.amazon.awssdk.services.s3.model.StorageClass;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 /**
- * For backups to AWS S3.
+ * For sync to AWS S3.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-final class S3Backup extends BaseBackup<LocalFile, S3File> {
+final class S3Sync extends BaseSync<LocalFile, S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -43,12 +43,12 @@ final class S3Backup extends BaseBackup<LocalFile, S3File> {
   private final S3Waiter s3Waiter;
   private final S3Bucket destination;
 
-  S3Backup(
+  S3Sync(
       S3Client s3Client,
       S3Waiter s3Waiter,
       LocalStorage source,
       S3Bucket destination,
-      List<BackupObserver> observers) {
+      List<SyncObserver> observers) {
     super(source, destination, observers);
     this.s3Client = checkNotNull(s3Client);
     this.s3Waiter = checkNotNull(s3Waiter);

@@ -1,8 +1,8 @@
 package com.willmolloy.sync.statistics;
 
-import com.willmolloy.sync.Backup;
 import com.willmolloy.sync.FileTree;
 import com.willmolloy.sync.Location;
+import com.willmolloy.sync.Sync;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.util.Locale;
@@ -10,19 +10,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * {@link BackupObserver} which simply logs.
+ * {@link SyncObserver} which simply logs.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class LoggingBackupObserver implements BackupObserver {
+public final class LoggingSyncObserver implements SyncObserver {
   private static final Logger log = LogManager.getLogger();
 
   private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.ENGLISH);
   private static final int MEGA = 1_000_000;
 
   @Override
-  public void notifyStarted(Backup<?, ?> backup) {
-    log.info("Started: {}", backup);
+  public void notifyStarted(Sync<?, ?> sync) {
+    log.info("Started: {}", sync);
   }
 
   @Override
@@ -36,10 +36,10 @@ public final class LoggingBackupObserver implements BackupObserver {
   }
 
   @Override
-  public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
+  public void notifyFinished(Sync<?, ?> sync, Statistics.Snapshot stats, Duration elapsed) {
     log.info(
         "Finished: {} in: {}. {} files created, {} files updated, {} files deleted, {} files same. {}MB added, {}MB removed",
-        backup,
+        sync,
         elapsed,
         NUMBER_FORMAT.format(stats.creates()),
         NUMBER_FORMAT.format(stats.updates()),
@@ -57,7 +57,7 @@ public final class LoggingBackupObserver implements BackupObserver {
   }
 
   @Override
-  public void notifyFailed(Backup<?, ?> backup, Throwable t) {
+  public void notifyFailed(Sync<?, ?> sync, Throwable t) {
     log.fatal("Fatal error", t);
   }
 }

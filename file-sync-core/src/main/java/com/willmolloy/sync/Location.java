@@ -1,7 +1,7 @@
 package com.willmolloy.sync;
 
 /**
- * Backup location (source or destination).
+ * Sync location (source or destination).
  *
  * @param <FileT> type of file stored in this location
  * @author <a href=https://willmolloy.com>Will Molloy</a>

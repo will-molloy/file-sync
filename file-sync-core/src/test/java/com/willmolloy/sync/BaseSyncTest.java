@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
 import com.willmolloy.sync.statistics.Statistics;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
@@ -29,7 +29,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * {@link BaseBackup} unit test.
+ * {@link BaseSync} unit test.
  *
  * <p>Verifies the exact minimal operations occur.
  *
@@ -37,19 +37,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
 @ExtendWith(MockitoExtension.class)
-class BaseBackupTest {
+class BaseSyncTest {
 
   @Mock private Location<File> mockSource;
   @Mock private Location<File> mockDest;
-  @Spy private LoggingBackupObserver observer;
-  private BaseBackup<File, File> sut;
+  @Spy private LoggingSyncObserver observer;
+  private BaseSync<File, File> sut;
 
   @BeforeEach
   void setUp() {
     // kinda strange testing an abstract class like this... but I can't think of a better design atm
     sut =
         spy(
-            new BaseBackup<>(mockSource, mockDest, List.of(observer)) {
+            new BaseSync<>(mockSource, mockDest, List.of(observer)) {
               @Override
               protected boolean put(File sourceFile) {
                 return true;

@@ -5,11 +5,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
-import com.willmolloy.sync.Backup;
 import com.willmolloy.sync.FileTree;
 import com.willmolloy.sync.Location;
-import com.willmolloy.sync.statistics.BackupObserver;
+import com.willmolloy.sync.Sync;
 import com.willmolloy.sync.statistics.Statistics;
+import com.willmolloy.sync.statistics.SyncObserver;
 import com.willmolloy.sync.statistics.discord.DiscordWebhookApi.WebhookBody;
 import com.willmolloy.sync.statistics.discord.DiscordWebhookApi.WebhookBody.EmbedObject;
 import feign.form.FormData;
@@ -24,11 +24,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * {@link BackupObserver} which sends notifications to Discord via webhook.
+ * {@link SyncObserver} which sends notifications to Discord via webhook.
  *
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
-public final class DiscordWebhook implements BackupObserver {
+public final class DiscordWebhook implements SyncObserver {
 
   private static final Logger log = LogManager.getLogger();
 
@@ -49,8 +49,8 @@ public final class DiscordWebhook implements BackupObserver {
   }
 
   @Override
-  public void notifyStarted(Backup<?, ?> backup) {
-    webhook(backup, "Backup Started", null, "#316CFF", "sync.png");
+  public void notifyStarted(Sync<?, ?> sync) {
+    webhook(sync, "Sync Started", null, "#316CFF", "sync.png");
   }
 
   @Override
@@ -59,11 +59,11 @@ public final class DiscordWebhook implements BackupObserver {
   // TODO post as reply or (even better) start a thread - not possible via webhook atm?
   //  https://github.com/discord/discord-api-docs/discussions/3282
   @Override
-  public void notifyFinished(Backup<?, ?> backup, Statistics.Snapshot stats, Duration elapsed) {
+  public void notifyFinished(Sync<?, ?> sync, Statistics.Snapshot stats, Duration elapsed) {
     if (!stats.anyErrors()) {
       webhook(
-          backup,
-          "Backup Finished in: %s".formatted(formatDuration(elapsed)),
+          sync,
+          "Sync Finished in: %s".formatted(formatDuration(elapsed)),
           "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed."
               .formatted(
                   NUMBER_FORMAT.format(stats.creates()),
@@ -76,8 +76,8 @@ public final class DiscordWebhook implements BackupObserver {
           "ok.png");
     } else {
       webhook(
-          backup,
-          "Backup Finished in: %s".formatted(formatDuration(elapsed)),
+          sync,
+          "Sync Finished in: %s".formatted(formatDuration(elapsed)),
           "%s files created, %s files updated, %s files deleted,\n%s files same.\n\n%sMB added, %sMB removed.\n\nFailed: %s creates, %s updates, %s deletes."
               .formatted(
                   NUMBER_FORMAT.format(stats.creates()),
@@ -95,12 +95,12 @@ public final class DiscordWebhook implements BackupObserver {
   }
 
   @Override
-  public void notifyFailed(Backup<?, ?> backup, Throwable t) {
-    webhook(backup, "Backup Failed", t.toString(), "#E22828", "error.png");
+  public void notifyFailed(Sync<?, ?> sync, Throwable t) {
+    webhook(sync, "Sync Failed", t.toString(), "#E22828", "error.png");
   }
 
   private void webhook(
-      Backup<?, ?> backup, String title, String description, String color, String iconName) {
+      Sync<?, ?> sync, String title, String description, String color, String iconName) {
     WebhookBody webhookBody =
         new WebhookBody(
             List.of(
@@ -109,8 +109,8 @@ public final class DiscordWebhook implements BackupObserver {
                     description,
                     Integer.decode(color),
                     List.of(
-                        new EmbedObject.Field("Source", backup.source().toString()),
-                        new EmbedObject.Field("Destination", backup.destination().toString())),
+                        new EmbedObject.Field("Source", sync.source().toString()),
+                        new EmbedObject.Field("Destination", sync.destination().toString())),
                     new EmbedObject.Thumbnail("attachment://" + iconName),
                     Instant.now(clock).toString())));
     api.executeWebhook(new Gson().toJson(webhookBody), iconFile(iconName));

@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Stopwatch;
 import com.google.errorprone.annotations.ForOverride;
-import com.willmolloy.sync.statistics.BackupObserver;
 import com.willmolloy.sync.statistics.Statistics;
+import com.willmolloy.sync.statistics.SyncObserver;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.util.List;
@@ -17,7 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Contains the base algorithm for running a backup.
+ * Contains the base algorithm for running a sync.
  *
  * @param <SourceFileT> source file type
  * @param <DestFileT> destination file type
@@ -26,8 +26,8 @@ import org.apache.logging.log4j.Logger;
 @SuppressFBWarnings(
     value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
     justification = "Relying on default ExecutorService.close to wait for futures")
-public abstract class BaseBackup<SourceFileT extends File, DestFileT extends File>
-    implements Backup<SourceFileT, DestFileT> {
+public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
+    implements Sync<SourceFileT, DestFileT> {
   private static final Logger log = LogManager.getLogger();
 
   private static ExecutorService threadPool(String name) {
@@ -37,12 +37,10 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
   private final Location<SourceFileT> source;
   private final Location<DestFileT> destination;
-  private final List<BackupObserver> observers;
+  private final List<SyncObserver> observers;
 
-  protected BaseBackup(
-      Location<SourceFileT> source,
-      Location<DestFileT> destination,
-      List<BackupObserver> observers) {
+  protected BaseSync(
+      Location<SourceFileT> source, Location<DestFileT> destination, List<SyncObserver> observers) {
     this.source = checkNotNull(source);
     this.destination = checkNotNull(destination);
     this.observers = List.copyOf(observers);
@@ -58,12 +56,13 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     return destination;
   }
 
-  /** Runs the backup. */
+  /** Runs the sync. */
+  @Override
   public final boolean run() {
     try {
       Stopwatch stopwatch = Stopwatch.createStarted();
       Statistics<SourceFileT, DestFileT> statistics = new Statistics<>();
-      for (BackupObserver observer : observers) {
+      for (SyncObserver observer : observers) {
         observer.notifyStarted(this);
       }
 
@@ -77,12 +76,12 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
 
       Statistics.Snapshot snapshot = statistics.snapshot();
       Duration elapsed = stopwatch.elapsed();
-      for (BackupObserver observer : observers) {
+      for (SyncObserver observer : observers) {
         observer.notifyFinished(this, snapshot, elapsed);
       }
       return !snapshot.anyErrors();
     } catch (Throwable t) {
-      for (BackupObserver observer : observers) {
+      for (SyncObserver observer : observers) {
         observer.notifyFailed(this, t);
       }
       return false;
@@ -94,7 +93,7 @@ public abstract class BaseBackup<SourceFileT extends File, DestFileT extends Fil
     log.info("Scanning: {}", location);
     FileTree<T> fileTree = location.scan();
     Duration elapsed = stopwatch.elapsed();
-    for (BackupObserver observer : observers) {
+    for (SyncObserver observer : observers) {
       observer.notifyScanned(location, fileTree, elapsed);
     }
     return fileTree;

@@ -5,8 +5,8 @@ import static com.willmolloy.sync.util.EnvHelper.getOptionalEnvVariable;
 import static com.willmolloy.sync.util.EnvHelper.getRequiredEnvVariable;
 
 import com.willmolloy.sync.local.LocalStorage;
-import com.willmolloy.sync.statistics.BackupObserver;
-import com.willmolloy.sync.statistics.LoggingBackupObserver;
+import com.willmolloy.sync.statistics.LoggingSyncObserver;
+import com.willmolloy.sync.statistics.SyncObserver;
 import com.willmolloy.sync.statistics.discord.DiscordWebhook;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -44,13 +44,13 @@ final class Main {
           destPrefix.endsWith("/"), "Requires bucket prefix to end with '/': " + destPrefix);
       S3Bucket dest = new S3Bucket(s3Client, destBucket, fs.getPath(destPrefix));
 
-      List<BackupObserver> observers = new ArrayList<>();
-      observers.add(new LoggingBackupObserver());
+      List<SyncObserver> observers = new ArrayList<>();
+      observers.add(new LoggingSyncObserver());
       getOptionalEnvVariable("DISCORD_WEBHOOK")
           .ifPresent(webhookUrl -> observers.add(new DiscordWebhook(webhookUrl)));
 
-      S3Backup s3Backup = new S3Backup(s3Client, s3Waiter, source, dest, observers);
-      if (!s3Backup.run()) {
+      S3Sync s3Sync = new S3Sync(s3Client, s3Waiter, source, dest, observers);
+      if (!s3Sync.run()) {
         System.exit(1);
       }
     }
