@@ -26,7 +26,9 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private FileT file;
+  // potentially null during construction
+  @Nullable private FileT file;
+  // null for root node
   @Nullable private final FileTreeNode<FileT> parent;
   private final Map<String, FileTreeNode<FileT>> children;
 

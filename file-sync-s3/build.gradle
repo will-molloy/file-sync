@@ -13,7 +13,7 @@ jib {
     mainClass = 'com.willmolloy.sync.s3.Main'
     environment(Map.of("SOURCE_PATH", "/source", "DESTINATION_BUCKET", "", "DESTINATION_BUCKET_PREFIX", "/"))
     creationTime = getGitCommitTime()
-    jvmFlags = ['--enable-preview']
+    jvmFlags = ['--enable-preview', '--add-modules', 'jdk.incubator.concurrent']
   }
 }
 
