@@ -26,12 +26,12 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final FileT file;
+  private FileT file;
   @Nullable private final FileTreeNode<FileT> parent;
   private final Map<String, FileTreeNode<FileT>> children;
 
   private FileTreeNode(FileT file, FileTreeNode<FileT> parent) {
-    this.file = checkNotNull(file);
+    this.file = file;
     this.parent = parent;
     this.children = new LinkedHashMap<>();
   }
@@ -99,22 +99,15 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
     StringBuilder pathSoFar = new StringBuilder(this.file.relativePath().toString());
     List<String> pathToNode =
         nameComponents(this.file.relativePath().relativize(file.relativePath()));
-    for (int i = 0; i < pathToNode.size(); i++) {
-      pathSoFar.append(pathToNode.get(i));
+    for (String c : pathToNode) {
+      pathSoFar.append(c);
       FileTreeNode<FileT> currentNode = node;
-      boolean last = i == pathToNode.size() - 1;
       node =
           node.children.computeIfAbsent(
-              pathToNode.get(i),
-              k ->
-                  last
-                      ? new FileTreeNode<>(file, currentNode)
-                      : new FileTreeNode<>(
-                          directoryFiller.apply(pathSoFar.toString()), currentNode));
+              c, k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
       pathSoFar.append('/');
     }
-    // no need to set Node.file here; assuming only leaves are inserted or parent dirs are
-    // inserted first (i.e. in a pre-order manner)
+    node.file = file;
   }
 
   private Stream<FileTreeNode<FileT>> postorderNodes() {

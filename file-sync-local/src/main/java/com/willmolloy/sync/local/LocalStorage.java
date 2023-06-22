@@ -5,7 +5,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.willmolloy.sync.FileTree;
 import com.willmolloy.sync.Location;
+import com.willmolloy.sync.util.concurrent.ThreadPools;
 import com.willmolloy.sync.util.docker.DockerHelper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AccessDeniedException;
@@ -43,7 +45,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
   @Override
   public FileTree<LocalFile> scan() {
-    try (ForkJoinPool pool = new ForkJoinPool()) {
+    try (ForkJoinPool pool = ThreadPools.forkJoin("scan")) {
       FileTree.Builder<LocalFile> builder = FileTree.builder(LocalFile.fromPath(this, rootDir));
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
@@ -74,6 +76,7 @@ public final class LocalStorage implements Location<LocalFile> {
   // credit: https://gist.github.com/ryan-beckett/f298ab6fe84f3fb8025aa4cb28b8c793
   // actually it's from:
   // https://github.com/javaparser/javaparser/blob/cfc1bcdf1fbd596ac11cbf14be565ffdee8903a5/javaparser-core/src/main/java/com/github/javaparser/utils/SourceRoot.java#L568
+  @SuppressFBWarnings(value = {"SE_BAD_FIELD", "SE_NO_SERIALVERSIONID"})
   private static final class DirectoryWalker extends RecursiveAction {
     private final Path dir;
     private final BiConsumer<Path, BasicFileAttributes> consumer;
