@@ -1,4 +1,4 @@
-rootProject.name = 'file-backup'
-include 'file-backup-core'
-include 'file-backup-local'
-include 'file-backup-s3'
+rootProject.name = 'file-sync'
+include 'file-sync-core'
+include 'file-sync-local'
+include 'file-sync-s3'

@@ -7,7 +7,7 @@ jib {
     image = "amazoncorretto:19"
   }
   to {
-    image = "ghcr.io/will-molloy/file-backup-local"
+    image = "ghcr.io/will-molloy/file-sync-local"
   }
   container {
     mainClass = 'com.willmolloy.backup.local.Main'
@@ -23,5 +23,5 @@ static def getGitCommitTime() {
 }
 
 dependencies {
-  implementation project(":file-backup-core")
+  implementation project(":file-sync-core")
 }

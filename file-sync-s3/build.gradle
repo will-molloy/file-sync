@@ -7,7 +7,7 @@ jib {
     image = "amazoncorretto:19"
   }
   to {
-    image = "ghcr.io/will-molloy/file-backup-s3"
+    image = "ghcr.io/will-molloy/file-sync-s3"
   }
   container {
     mainClass = 'com.willmolloy.backup.s3.Main'
@@ -23,7 +23,7 @@ static def getGitCommitTime() {
 }
 
 dependencies {
-  implementation project(":file-backup-core")
-  implementation project(":file-backup-local")
+  implementation project(":file-sync-core")
+  implementation project(":file-sync-local")
   implementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.77'
 }
