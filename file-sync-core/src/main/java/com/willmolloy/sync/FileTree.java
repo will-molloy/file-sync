@@ -50,7 +50,11 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
    * @param root file which will be the root of the {@link FileTree}
    */
   static <FileT extends File> Builder<FileT> builder(FileT root) {
-    return builder(root, path -> null);
+    return builder(
+        root,
+        path -> {
+          throw new IllegalStateException("Directory Filler unexpected");
+        });
   }
 
   /**

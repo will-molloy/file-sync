@@ -26,14 +26,12 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
   private static final Logger log = LogManager.getLogger();
 
-  // potentially null during construction
-  @Nullable private FileT file;
-  // null for root node
-  @Nullable private final FileTreeNode<FileT> parent;
+  private FileT file;
+  @Nullable private final FileTreeNode<FileT> parent; // only null for root node
   private final Map<String, FileTreeNode<FileT>> children;
 
   private FileTreeNode(FileT file, FileTreeNode<FileT> parent) {
-    this.file = file;
+    this.file = checkNotNull(file);
     this.parent = parent;
     this.children = new LinkedHashMap<>();
   }
@@ -101,12 +99,20 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
     StringBuilder pathSoFar = new StringBuilder(this.file.relativePath().toString());
     List<String> pathToNode =
         nameComponents(this.file.relativePath().relativize(file.relativePath()));
-    for (String c : pathToNode) {
+    for (int i = 0; i < pathToNode.size(); i++) {
+      String c = pathToNode.get(i);
       pathSoFar.append(c);
       FileTreeNode<FileT> currentNode = node;
-      node =
-          node.children.computeIfAbsent(
-              c, k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
+      boolean last = i == pathToNode.size() - 1;
+      if (last) {
+        node.children.put(c, new FileTreeNode<>(file, currentNode));
+        return;
+      } else {
+        node =
+            node.children.computeIfAbsent(
+                c,
+                k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
+      }
       pathSoFar.append('/');
     }
     node.file = file;

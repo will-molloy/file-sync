@@ -41,7 +41,9 @@ public final class LocalStorage implements Location<LocalFile> {
   @Override
   public FileTree<LocalFile> scan() {
     try {
-      FileTree.Builder<LocalFile> builder = FileTree.builder(LocalFile.fromPath(this, rootDir));
+      FileTree.Builder<LocalFile> builder =
+          FileTree.builder(
+              LocalFile.fromPath(this, rootDir), path -> LocalFile.directoryFiller(this, path));
       BiConsumer<Path, BasicFileAttributes> consumer =
           (path, attributes) -> {
             if (path == rootDir) {
@@ -61,6 +63,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
       return builder.build();
     } catch (IOException e) {
+      log.error("Error scanning: [{}]", this, e);
       throw new UncheckedIOException(e);
     }
   }
@@ -88,6 +91,7 @@ public final class LocalStorage implements Location<LocalFile> {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
               if (ParallelWalk.this.dir == dir) {
+                log.debug("visit({})", dir);
                 consumer.accept(dir, attributes);
                 return FileVisitResult.CONTINUE;
               } else {
