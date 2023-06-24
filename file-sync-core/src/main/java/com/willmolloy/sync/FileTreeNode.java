@@ -26,7 +26,7 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private FileT file;
+  private final FileT file;
   @Nullable private final FileTreeNode<FileT> parent; // only null for root node
   private final Map<String, FileTreeNode<FileT>> children;
 
@@ -108,14 +108,15 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
         node.children.put(c, new FileTreeNode<>(file, currentNode));
         return;
       } else {
-        node =
-            node.children.computeIfAbsent(
-                c,
-                k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
+        FileTreeNode<FileT> child = node.children.get(c);
+        if (child == null) {
+          child = new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode);
+          node.children.put(c, child);
+        }
+        node = child;
       }
       pathSoFar.append('/');
     }
-    node.file = file;
   }
 
   private Stream<FileTreeNode<FileT>> postorderNodes() {

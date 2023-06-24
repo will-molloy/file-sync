@@ -60,7 +60,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
       try (ShutdownOnFailure scope =
           new ShutdownOnFailure(null, Thread.ofVirtual().name("scan-worker-", 1).factory())) {
-        new ParallelWalk(rootDir, consumer, scope).walk();
+        scope.fork(() -> new ParallelWalk(rootDir, consumer, scope).walk());
         scope.joinUntil(Instant.now().plus(Duration.ofHours(1)));
         scope.throwIfFailed();
       }
