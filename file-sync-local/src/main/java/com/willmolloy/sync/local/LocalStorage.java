@@ -21,7 +21,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import jdk.incubator.concurrent.StructuredTaskScope;
-import jdk.incubator.concurrent.StructuredTaskScope.ShutdownOnFailure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,8 +58,9 @@ public final class LocalStorage implements Location<LocalFile> {
             builder.insert(file);
           };
 
-      try (ShutdownOnFailure scope =
-          new ShutdownOnFailure(null, Thread.ofVirtual().name("scan-worker-", 1).factory())) {
+      try (StructuredTaskScope.ShutdownOnFailure scope =
+          new StructuredTaskScope.ShutdownOnFailure(
+              null, Thread.ofVirtual().name("scan-worker-", 1).factory())) {
         scope.fork(
             () ->
                 new ParallelWalk(
