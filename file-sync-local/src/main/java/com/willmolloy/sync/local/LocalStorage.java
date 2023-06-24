@@ -17,6 +17,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import jdk.incubator.concurrent.StructuredTaskScope;
@@ -60,7 +61,14 @@ public final class LocalStorage implements Location<LocalFile> {
 
       try (ShutdownOnFailure scope =
           new ShutdownOnFailure(null, Thread.ofVirtual().name("scan-worker-", 1).factory())) {
-        scope.fork(() -> new ParallelWalk(rootDir, consumer, scope).walk());
+        scope.fork(
+            () ->
+                new ParallelWalk(
+                        rootDir,
+                        consumer,
+                        scope,
+                        new Semaphore(Runtime.getRuntime().availableProcessors()))
+                    .walk());
         scope.joinUntil(Instant.now().plus(Duration.ofHours(1)));
         scope.throwIfFailed();
       }
@@ -87,7 +95,10 @@ public final class LocalStorage implements Location<LocalFile> {
   }
 
   private record ParallelWalk(
-      Path dir, BiConsumer<Path, BasicFileAttributes> consumer, StructuredTaskScope<Object> scope) {
+      Path dir,
+      BiConsumer<Path, BasicFileAttributes> consumer,
+      StructuredTaskScope<Object> scope,
+      Semaphore semaphore) {
 
     private Void walk() throws IOException {
       Files.walkFileTree(
@@ -101,7 +112,13 @@ public final class LocalStorage implements Location<LocalFile> {
                 return FileVisitResult.CONTINUE;
               } else {
                 // fork for each new directory discovered
-                scope.fork(() -> new ParallelWalk(dir, consumer, scope).walk());
+                scope.fork(
+                    () -> {
+                      semaphore.acquire();
+                      new ParallelWalk(dir, consumer, scope, semaphore).walk();
+                      semaphore.release();
+                      return null;
+                    });
                 return FileVisitResult.SKIP_SUBTREE;
               }
             }
