@@ -1,19 +1,17 @@
 package com.willmolloy.sync;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.willmolloy.sync.util.concurrent.StructuredTaskScopes.callable;
 
 import com.google.common.base.Stopwatch;
 import com.google.errorprone.annotations.ForOverride;
 import com.willmolloy.sync.statistics.Statistics;
 import com.willmolloy.sync.statistics.SyncObserver;
+import com.willmolloy.sync.util.concurrent.StructuredTaskScopes;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import jdk.incubator.concurrent.StructuredTaskScope;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -95,91 +93,85 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
   private void executeDeletes(
       FileTree<SourceFileT> sourceFileTree,
       FileTree<DestFileT> destFileTree,
-      Statistics<SourceFileT, DestFileT> statistics)
-      throws InterruptedException, TimeoutException, ExecutionException {
-    try (StructuredTaskScope.ShutdownOnFailure scope =
-        new StructuredTaskScope.ShutdownOnFailure(
-            "delete", Thread.ofVirtual().name("delete-worker-", 1).factory())) {
-      destFileTree
-          .postorder()
-          .filter(skipRoot(destFileTree))
-          .filter(destFile -> needDelete(sourceFileTree.correspondent(destFile), destFile))
-          // skip delete if covered by ancestor, since children are deleted too
-          .filter(
-              destFile ->
-                  destFileTree
-                      .ancestors(destFile)
-                      .filter(skipRoot(destFileTree))
-                      .noneMatch(
-                          ancestor -> needDelete(sourceFileTree.correspondent(ancestor), ancestor)))
-          .forEach(
-              destFile ->
-                  scope.fork(
-                      () -> {
-                        log.info("delete({})", destFile);
-                        FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
-                        if (delete(subtree)) {
-                          statistics.countDelete(subtree);
-                        } else {
-                          statistics.countFailedDelete(subtree);
-                        }
-                        return null;
-                      }));
-      scope.joinUntil(Instant.now().plus(Duration.ofHours(1)));
-      scope.throwIfFailed();
-    }
+      Statistics<SourceFileT, DestFileT> statistics) {
+    StructuredTaskScopes.runInScope(
+        "delete",
+        scope ->
+            destFileTree
+                .postorder()
+                .filter(skipRoot(destFileTree))
+                .filter(destFile -> needDelete(sourceFileTree.correspondent(destFile), destFile))
+                // skip delete if covered by ancestor, since children are deleted too
+                .filter(
+                    destFile ->
+                        destFileTree
+                            .ancestors(destFile)
+                            .filter(skipRoot(destFileTree))
+                            .noneMatch(
+                                ancestor ->
+                                    needDelete(sourceFileTree.correspondent(ancestor), ancestor)))
+                .forEach(
+                    destFile ->
+                        scope.fork(
+                            callable(
+                                () -> {
+                                  log.info("delete({})", destFile);
+                                  FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
+                                  if (delete(subtree)) {
+                                    statistics.countDelete(subtree);
+                                  } else {
+                                    statistics.countFailedDelete(subtree);
+                                  }
+                                }))));
   }
 
   private void executePuts(
       FileTree<SourceFileT> sourceFileTree,
       FileTree<DestFileT> destFileTree,
-      Statistics<SourceFileT, DestFileT> statistics)
-      throws InterruptedException, TimeoutException, ExecutionException {
-    try (StructuredTaskScope.ShutdownOnFailure scope =
-        new StructuredTaskScope.ShutdownOnFailure(
-            "put", Thread.ofVirtual().name("put-worker-", 1).factory())) {
-      sourceFileTree
-          // only need to put leaves, parents are created as necessary
-          .leaves()
-          .filter(skipRoot(sourceFileTree))
-          .forEach(
-              sourceFile -> {
-                Optional<DestFileT> optionalDestFile = destFileTree.correspondent(sourceFile);
-                if (needCreate(sourceFile, optionalDestFile)
-                    // if it was deleted first, count as create rather than update
-                    || needDelete(Optional.of(sourceFile), optionalDestFile.orElseThrow())) {
-                  scope.fork(
-                      () -> {
-                        log.info("create({})", sourceFile);
-                        if (put(sourceFile)) {
-                          statistics.countCreate(sourceFile);
+      Statistics<SourceFileT, DestFileT> statistics) {
+    StructuredTaskScopes.runInScope(
+        "put",
+        scope ->
+            sourceFileTree
+                // only need to put leaves, parents are created as necessary
+                .leaves()
+                .filter(skipRoot(sourceFileTree))
+                .forEach(
+                    sourceFile -> {
+                      Optional<DestFileT> optionalDestFile = destFileTree.correspondent(sourceFile);
+                      if (needCreate(sourceFile, optionalDestFile)
+                          // if it was deleted first, count as create rather than update
+                          || needDelete(Optional.of(sourceFile), optionalDestFile.orElseThrow())) {
+                        scope.fork(
+                            callable(
+                                () -> {
+                                  log.info("create({})", sourceFile);
+                                  if (put(sourceFile)) {
+                                    statistics.countCreate(sourceFile);
+                                  } else {
+                                    statistics.countFailedCreate(sourceFile);
+                                  }
+                                }));
+                      } else {
+                        DestFileT destFile = optionalDestFile.orElseThrow();
+                        if (needUpdate(sourceFile, destFile)) {
+                          scope.fork(
+                              callable(
+                                  () -> {
+                                    log.info("update({}, {})", sourceFile, destFile);
+                                    if (put(sourceFile)) {
+                                      statistics.countUpdate(sourceFile, optionalDestFile.get());
+                                    } else {
+                                      statistics.countFailedUpdate(
+                                          sourceFile, optionalDestFile.get());
+                                    }
+                                  }));
                         } else {
-                          statistics.countFailedCreate(sourceFile);
+                          log.debug("same({}, {})", sourceFile, destFile);
+                          statistics.countSame();
                         }
-                        return null;
-                      });
-                } else {
-                  DestFileT destFile = optionalDestFile.orElseThrow();
-                  if (needUpdate(sourceFile, destFile)) {
-                    scope.fork(
-                        () -> {
-                          log.info("update({}, {})", sourceFile, destFile);
-                          if (put(sourceFile)) {
-                            statistics.countUpdate(sourceFile, optionalDestFile.get());
-                          } else {
-                            statistics.countFailedUpdate(sourceFile, optionalDestFile.get());
-                          }
-                          return null;
-                        });
-                  } else {
-                    log.debug("same({}, {})", sourceFile, destFile);
-                    statistics.countSame();
-                  }
-                }
-              });
-      scope.joinUntil(Instant.now().plus(Duration.ofHours(1)));
-      scope.throwIfFailed();
-    }
+                      }
+                    }));
   }
 
   private <T extends File> Predicate<T> skipRoot(FileTree<T> fileTree) {

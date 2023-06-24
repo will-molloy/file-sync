@@ -2,10 +2,12 @@ package com.willmolloy.sync.local;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.willmolloy.sync.util.concurrent.StructuredTaskScopes.callable;
 
 import com.google.common.base.Throwables;
 import com.willmolloy.sync.FileTree;
 import com.willmolloy.sync.Location;
+import com.willmolloy.sync.util.concurrent.StructuredTaskScopes;
 import com.willmolloy.sync.util.docker.DockerHelper;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
@@ -14,11 +16,7 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import jdk.incubator.concurrent.StructuredTaskScope;
 import org.apache.logging.log4j.LogManager;
@@ -58,25 +56,19 @@ public final class LocalStorage implements Location<LocalFile> {
             builder.insert(file);
           };
 
-      try (StructuredTaskScope.ShutdownOnFailure scope =
-          new StructuredTaskScope.ShutdownOnFailure(
-              "scan", Thread.ofVirtual().name("scan-worker-", 1).factory())) {
-        // limit thread count; if I/O is slow (e.g. network drive), it creates too many threads at
-        // once and grinds to a halt
-        // alternatively could use RecursiveAction (which uses a fixed sized ForkJoinPool) but found
-        // StructuredTaskScope (virtual threads) is faster
-        Semaphore semaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
-        scope.fork(() -> new ParallelWalk(rootDir, consumer, scope, semaphore).walk());
-        scope.joinUntil(Instant.now().plus(Duration.ofHours(1)));
-        scope.throwIfFailed();
-      }
+      StructuredTaskScopes.runInScope(
+          "scan",
+          scope -> {
+            // limit thread count; if I/O is slow (e.g. network drive), it creates too many threads
+            // at once and grinds to a halt
+            // alternatively could use RecursiveAction (which uses a fixed sized ForkJoinPool) but
+            // found StructuredTaskScope (virtual threads) is faster
+            Semaphore semaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
+            new ParallelWalk(rootDir, consumer, scope, semaphore).walk();
+          });
 
       return builder.build();
-    } catch (RuntimeException
-        | IOException
-        | ExecutionException
-        | InterruptedException
-        | TimeoutException e) {
+    } catch (RuntimeException | IOException e) {
       log.error("Error scanning: [{}]", this, e);
       Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);
@@ -98,7 +90,7 @@ public final class LocalStorage implements Location<LocalFile> {
       StructuredTaskScope<Object> scope,
       Semaphore semaphore) {
 
-    private Void walk() throws IOException {
+    private void walk() throws IOException {
       Files.walkFileTree(
           dir,
           new FileVisitor<>() {
@@ -111,12 +103,12 @@ public final class LocalStorage implements Location<LocalFile> {
               } else {
                 // fork for each new directory discovered
                 scope.fork(
-                    () -> {
-                      semaphore.acquire();
-                      new ParallelWalk(dir, consumer, scope, semaphore).walk();
-                      semaphore.release();
-                      return null;
-                    });
+                    callable(
+                        () -> {
+                          semaphore.acquire();
+                          new ParallelWalk(dir, consumer, scope, semaphore).walk();
+                          semaphore.release();
+                        }));
                 return FileVisitResult.SKIP_SUBTREE;
               }
             }
@@ -150,7 +142,6 @@ public final class LocalStorage implements Location<LocalFile> {
               return FileVisitResult.CONTINUE;
             }
           });
-      return null;
     }
   }
 }
