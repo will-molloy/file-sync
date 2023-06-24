@@ -13,7 +13,7 @@ jib {
     mainClass = 'com.willmolloy.sync.local.Main'
     environment(Map.of("SOURCE_PATH", "/source", "DESTINATION_PATH", "/destination"))
     creationTime = getGitCommitTime()
-    jvmFlags = ['--enable-preview']
+    jvmFlags = ['--enable-preview', '--add-modules', 'jdk.incubator.concurrent']
   }
 }
 

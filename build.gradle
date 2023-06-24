@@ -112,12 +112,15 @@ subprojects {
   // enable preview features
   tasks.withType(JavaCompile) {
     options.compilerArgs += '--enable-preview'
+    options.compilerArgs += ['--add-modules', 'jdk.incubator.concurrent']
   }
   tasks.withType(Test) {
     jvmArgs += '--enable-preview'
+    jvmArgs += ['--add-modules', 'jdk.incubator.concurrent']
   }
   tasks.withType(JavaExec) {
     jvmArgs += '--enable-preview'
+    jvmArgs += ['--add-modules', 'jdk.incubator.concurrent']
   }
 
   // https://github.com/gradle/gradle/issues/17236
