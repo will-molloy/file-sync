@@ -95,8 +95,8 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   }
 
   // multithreaded insert is safe:
-  // really only care about leaves - they'll never be overwritten as there's only one!
-  // (non-empty) directories - may be race where they're overwritten by directory filler, but filler
+  // really only care about leaves; they'll never be overwritten as there's only one!
+  // (non-empty) directories; may be race where they're overwritten by directory filler, but filler
   // should provide the same behaviour
   private void insertNode(FileT file, DirectoryFiller<FileT> directoryFiller) {
     FileTreeNode<FileT> node = this;

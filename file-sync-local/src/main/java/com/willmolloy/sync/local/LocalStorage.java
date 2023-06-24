@@ -61,14 +61,12 @@ public final class LocalStorage implements Location<LocalFile> {
       try (StructuredTaskScope.ShutdownOnFailure scope =
           new StructuredTaskScope.ShutdownOnFailure(
               null, Thread.ofVirtual().name("scan-worker-", 1).factory())) {
-        scope.fork(
-            () ->
-                new ParallelWalk(
-                        rootDir,
-                        consumer,
-                        scope,
-                        new Semaphore(Runtime.getRuntime().availableProcessors()))
-                    .walk());
+        // limit thread count; if I/O is slow (e.g. network drive), it creates too many threads at
+        // once and grinds to a halt
+        // alternatively could use RecursiveAction (which uses a fixed sized ForkJoinPool) but found
+        // StructuredTaskScope (virtual threads) is faster
+        Semaphore semaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
+        scope.fork(() -> new ParallelWalk(rootDir, consumer, scope, semaphore).walk());
         scope.joinUntil(Instant.now().plus(Duration.ofHours(1)));
         scope.throwIfFailed();
       }
