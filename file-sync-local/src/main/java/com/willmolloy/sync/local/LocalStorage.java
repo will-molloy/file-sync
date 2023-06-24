@@ -60,7 +60,7 @@ public final class LocalStorage implements Location<LocalFile> {
 
       try (StructuredTaskScope.ShutdownOnFailure scope =
           new StructuredTaskScope.ShutdownOnFailure(
-              null, Thread.ofVirtual().name("scan-worker-", 1).factory())) {
+              "scan", Thread.ofVirtual().name("scan-worker-", 1).factory())) {
         // limit thread count; if I/O is slow (e.g. network drive), it creates too many threads at
         // once and grinds to a halt
         // alternatively could use RecursiveAction (which uses a fixed sized ForkJoinPool) but found
