@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,21 +82,26 @@ public final class LocalStorage implements Location<LocalFile> {
 
   private void walk(
       Path rootDir,
-      BiConsumer<Path, BasicFileAttributes> consumer,
+      BiConsumer<Path, BasicFileAttributes> callback,
       StructuredTaskScopeWrapper scope)
       throws IOException {
     Files.walkFileTree(
         rootDir,
         new FileVisitor<>() {
           @Override
-          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes) {
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attributes)
+              throws IOException {
             if (rootDir == dir) {
-              log.debug("visit({})", dir);
-              consumer.accept(dir, attributes);
+              // only insert leaves (empty dirs and files); dirs covered by dir filler.
+              try (Stream<Path> dirContents = Files.list(dir)) {
+                if (dirContents.findAny().isEmpty()) {
+                  callback.accept(dir, attributes);
+                }
+              }
               return FileVisitResult.CONTINUE;
             } else {
               // fork for each new directory discovered
-              scope.fork(() -> walk(dir, consumer, scope));
+              scope.fork(() -> walk(dir, callback, scope));
               return FileVisitResult.SKIP_SUBTREE;
             }
           }
@@ -107,7 +113,7 @@ public final class LocalStorage implements Location<LocalFile> {
               log.warn("Skipped file (symlink): [{}]", file);
               return FileVisitResult.CONTINUE;
             }
-            consumer.accept(file, attributes);
+            callback.accept(file, attributes);
             return FileVisitResult.CONTINUE;
           }
 
