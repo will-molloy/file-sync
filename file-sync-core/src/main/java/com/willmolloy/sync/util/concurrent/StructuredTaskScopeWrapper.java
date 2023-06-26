@@ -2,7 +2,6 @@ package com.willmolloy.sync.util.concurrent;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.Semaphore;
 import jdk.incubator.concurrent.StructuredTaskScope;
 
 /**
@@ -13,29 +12,18 @@ import jdk.incubator.concurrent.StructuredTaskScope;
 public final class StructuredTaskScopeWrapper implements AutoCloseable {
   private final StructuredTaskScope.ShutdownOnFailure delegate;
   private final Duration timeout = Duration.ofHours(1);
-  private final Semaphore semaphore;
-
-  public StructuredTaskScopeWrapper(String name, int concurrencyLimit) {
-    this.delegate =
-        new StructuredTaskScope.ShutdownOnFailure(
-            name, Thread.ofVirtual().name("%s-worker-".formatted(name), 1).factory());
-    this.semaphore = new Semaphore(concurrencyLimit);
-  }
 
   public StructuredTaskScopeWrapper(String name) {
-    this(name, Integer.MAX_VALUE);
+    this.delegate =
+        new StructuredTaskScope.ShutdownOnFailure(
+            name, Thread.ofVirtual().name("%s-worker-".formatted(name), 0).factory());
   }
 
   /** Delegates to {@link StructuredTaskScope#fork}. */
   public void fork(UncheckedRunnable runnable) {
     delegate.fork(
         () -> {
-          semaphore.acquire();
-          try {
-            runnable.run();
-          } finally {
-            semaphore.release();
-          }
+          runnable.run();
           return null;
         });
   }
