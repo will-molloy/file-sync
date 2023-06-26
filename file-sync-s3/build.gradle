@@ -25,5 +25,5 @@ static def getGitCommitTime() {
 dependencies {
   implementation project(":file-sync-core")
   implementation project(":file-sync-local")
-  implementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.77'
+  implementation group: 'software.amazon.awssdk', name: 's3', version: '2.20.93'
 }
