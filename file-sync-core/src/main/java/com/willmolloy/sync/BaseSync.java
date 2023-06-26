@@ -32,7 +32,7 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
 
   private static ExecutorService threadPool(String name) {
     return Executors.newThreadPerTaskExecutor(
-        Thread.ofVirtual().name("%s-worker-".formatted(name), 1).factory());
+        Thread.ofVirtual().name("%s-worker-".formatted(name), 0).factory());
   }
 
   private final Location<SourceFileT> source;

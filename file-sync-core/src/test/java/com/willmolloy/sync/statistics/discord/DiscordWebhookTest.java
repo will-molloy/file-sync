@@ -195,7 +195,7 @@ class DiscordWebhookTest {
   private record TestLocation(String name) implements Location<File> {
     @Override
     public FileTree<File> scan() {
-      return null;
+      throw new UnsupportedOperationException();
     }
   }
 }

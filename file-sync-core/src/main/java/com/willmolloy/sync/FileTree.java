@@ -25,7 +25,7 @@ public sealed interface FileTree<FileT extends File> permits FileTreeNode {
   /** Traverses all nodes in a post-order manner. */
   Stream<FileT> postorder();
 
-  /** Traverses all leaves, left to right. */
+  /** Traverses all leaves. */
   Stream<FileT> leaves();
 
   /** Traverses ancestors from the parent of the given {@code file} to the root. */

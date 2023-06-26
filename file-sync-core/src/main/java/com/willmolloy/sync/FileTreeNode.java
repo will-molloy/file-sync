@@ -4,11 +4,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.sync.util.PathHelper.nameComponents;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -27,13 +27,13 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
   private static final Logger log = LogManager.getLogger();
 
   private final FileT file;
-  @Nullable private final FileTreeNode<FileT> parent;
-  private final Map<String, FileTreeNode<FileT>> children;
+  @Nullable private final FileTreeNode<FileT> parent; // only null for root node
+  private final ConcurrentMap<String, FileTreeNode<FileT>> children;
 
   private FileTreeNode(FileT file, FileTreeNode<FileT> parent) {
     this.file = checkNotNull(file);
     this.parent = parent;
-    this.children = new LinkedHashMap<>();
+    this.children = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -94,27 +94,31 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
     return Optional.of(node);
   }
 
+  // multithreaded insert is safe:
+  // really only care about leaves; they'll never be overwritten as there's only one!
+  // (non-empty) directories; may be race where they're overwritten by directory filler, but filler
+  // should provide the same behaviour
   private void insertNode(FileT file, DirectoryFiller<FileT> directoryFiller) {
     FileTreeNode<FileT> node = this;
     StringBuilder pathSoFar = new StringBuilder(this.file.relativePath().toString());
     List<String> pathToNode =
         nameComponents(this.file.relativePath().relativize(file.relativePath()));
     for (int i = 0; i < pathToNode.size(); i++) {
-      pathSoFar.append(pathToNode.get(i));
+      String c = pathToNode.get(i);
+      pathSoFar.append(c);
       FileTreeNode<FileT> currentNode = node;
       boolean last = i == pathToNode.size() - 1;
-      node =
-          node.children.computeIfAbsent(
-              pathToNode.get(i),
-              k ->
-                  last
-                      ? new FileTreeNode<>(file, currentNode)
-                      : new FileTreeNode<>(
-                          directoryFiller.apply(pathSoFar.toString()), currentNode));
+      if (last) {
+        node.children.put(c, new FileTreeNode<>(file, currentNode));
+        return;
+      } else {
+        node =
+            node.children.computeIfAbsent(
+                c,
+                k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
+      }
       pathSoFar.append('/');
     }
-    // no need to set Node.file here; assuming only leaves are inserted or parent dirs are
-    // inserted first (i.e. in a pre-order manner)
   }
 
   private Stream<FileTreeNode<FileT>> postorderNodes() {

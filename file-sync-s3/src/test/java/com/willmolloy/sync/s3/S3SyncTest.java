@@ -8,11 +8,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Range;
 import com.google.common.io.MoreFiles;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -218,25 +218,8 @@ class S3SyncTest {
 
     // Then
     assertThat(result).isTrue();
-    for (Range<Integer> range :
-        List.of(Range.closed(0, 999), Range.closed(1000, 1999), Range.closed(2000, 2010))) {
-      verify(mockS3Client)
-          .deleteObjects(
-              DeleteObjectsRequest.builder()
-                  .bucket("my-bucket")
-                  .delete(
-                      Delete.builder()
-                          .objects(
-                              IntStream.rangeClosed(range.lowerEndpoint(), range.upperEndpoint())
-                                  .mapToObj(
-                                      i ->
-                                          ObjectIdentifier.builder()
-                                              .key("my/bucket/prefix/folder/" + i)
-                                              .build())
-                                  .toList())
-                          .build())
-                  .build());
-    }
+    verify(mockS3Client, times(2)).deleteObjects(argThat(deleteRequestSize(1000)));
+    verify(mockS3Client).deleteObjects(argThat(deleteRequestSize(11)));
   }
 
   @Test
@@ -305,5 +288,9 @@ class S3SyncTest {
   private ArgumentMatcher<RequestBody> emptyRequestBody() {
     return actual ->
         actual.optionalContentLength().map(contentLength -> contentLength == 0).orElse(false);
+  }
+
+  private static ArgumentMatcher<DeleteObjectsRequest> deleteRequestSize(int size) {
+    return actual -> actual.delete().objects().size() == size;
   }
 }
