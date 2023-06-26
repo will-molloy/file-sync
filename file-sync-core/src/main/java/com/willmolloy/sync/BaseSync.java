@@ -6,10 +6,12 @@ import com.google.common.base.Stopwatch;
 import com.google.errorprone.annotations.ForOverride;
 import com.willmolloy.sync.statistics.Statistics;
 import com.willmolloy.sync.statistics.SyncObserver;
-import com.willmolloy.sync.util.concurrent.StructuredTaskScopeWrapper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,9 +23,17 @@ import org.apache.logging.log4j.Logger;
  * @param <DestFileT> destination file type
  * @author <a href=https://willmolloy.com>Will Molloy</a>
  */
+@SuppressFBWarnings(
+    value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
+    justification = "Relying on default ExecutorService.close to wait for futures")
 public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
     implements Sync<SourceFileT, DestFileT> {
   private static final Logger log = LogManager.getLogger();
+
+  private static ExecutorService threadPool(String name) {
+    return Executors.newThreadPerTaskExecutor(
+        Thread.ofVirtual().name("%s-worker-".formatted(name), 0).factory());
+  }
 
   private final Location<SourceFileT> source;
   private final Location<DestFileT> destination;
@@ -92,9 +102,8 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
   private void executeDeletes(
       FileTree<SourceFileT> sourceFileTree,
       FileTree<DestFileT> destFileTree,
-      Statistics<SourceFileT, DestFileT> statistics)
-      throws Exception {
-    try (StructuredTaskScopeWrapper scope = new StructuredTaskScopeWrapper("delete")) {
+      Statistics<SourceFileT, DestFileT> statistics) {
+    try (ExecutorService threadPool = threadPool("delete")) {
       destFileTree
           .postorder()
           .filter(skipRoot(destFileTree))
@@ -109,7 +118,7 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
                           ancestor -> needDelete(sourceFileTree.correspondent(ancestor), ancestor)))
           .forEach(
               destFile ->
-                  scope.fork(
+                  threadPool.submit(
                       () -> {
                         log.info("delete({})", destFile);
                         FileTree<DestFileT> subtree = destFileTree.subtree(destFile);
@@ -125,9 +134,8 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
   private void executePuts(
       FileTree<SourceFileT> sourceFileTree,
       FileTree<DestFileT> destFileTree,
-      Statistics<SourceFileT, DestFileT> statistics)
-      throws Exception {
-    try (StructuredTaskScopeWrapper scope = new StructuredTaskScopeWrapper("put")) {
+      Statistics<SourceFileT, DestFileT> statistics) {
+    try (ExecutorService threadPool = threadPool("put")) {
       sourceFileTree
           // only need to put leaves, parents are created as necessary
           .leaves()
@@ -138,7 +146,7 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
                 if (needCreate(sourceFile, optionalDestFile)
                     // if it was deleted first, count as create rather than update
                     || needDelete(Optional.of(sourceFile), optionalDestFile.orElseThrow())) {
-                  scope.fork(
+                  threadPool.submit(
                       () -> {
                         log.info("create({})", sourceFile);
                         if (put(sourceFile)) {
@@ -150,7 +158,7 @@ public abstract class BaseSync<SourceFileT extends File, DestFileT extends File>
                 } else {
                   DestFileT destFile = optionalDestFile.orElseThrow();
                   if (needUpdate(sourceFile, destFile)) {
-                    scope.fork(
+                    threadPool.submit(
                         () -> {
                           log.info("update({}, {})", sourceFile, destFile);
                           if (put(sourceFile)) {
