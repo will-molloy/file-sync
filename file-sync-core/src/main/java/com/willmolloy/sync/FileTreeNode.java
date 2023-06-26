@@ -4,11 +4,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.willmolloy.sync.util.PathHelper.nameComponents;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -28,12 +28,12 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
 
   private final FileT file;
   @Nullable private final FileTreeNode<FileT> parent; // only null for root node
-  private final Map<String, FileTreeNode<FileT>> children;
+  private final ConcurrentMap<String, FileTreeNode<FileT>> children;
 
   private FileTreeNode(FileT file, FileTreeNode<FileT> parent) {
     this.file = checkNotNull(file);
     this.parent = parent;
-    this.children = new LinkedHashMap<>();
+    this.children = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -112,12 +112,10 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
         node.children.put(c, new FileTreeNode<>(file, currentNode));
         return;
       } else {
-        FileTreeNode<FileT> child = node.children.get(c);
-        if (child == null) {
-          child = new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode);
-          node.children.put(c, child);
-        }
-        node = child;
+        node =
+            node.children.computeIfAbsent(
+                c,
+                k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
       }
       pathSoFar.append('/');
     }

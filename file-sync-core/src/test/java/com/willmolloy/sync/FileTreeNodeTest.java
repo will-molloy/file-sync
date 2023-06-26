@@ -59,6 +59,8 @@ class FileTreeNodeTest {
             .insert(file("D"))
             .insert(file("D/E"))
             .insert(file("D/F"))
+            .insert(file("D/G"))
+            .insert(file("D/H"))
             .insert(file("X/Y/Z"))
             .build();
 
@@ -70,16 +72,19 @@ class FileTreeNodeTest {
             file("A"),
             file("D/E"),
             file("D/F"),
+            file("D/G"),
+            file("D/H"),
             file("D"),
             file("X/Y/Z"),
             directory("X/Y"),
             directory("X"),
             directory(""))
+        // child order not guaranteed, that's ok, as long as parents returned after children
         .inOrder();
   }
 
   @Test
-  void leaves_returnsLeavesLeftToRight() {
+  void leaves_returnsLeaves() {
     // Given
     FileTreeNode<File> fileTree =
         new FileTreeNode.Builder<>(directory(""), directoryFiller())
@@ -89,13 +94,15 @@ class FileTreeNodeTest {
             .insert(file("D"))
             .insert(file("D/E"))
             .insert(file("D/F"))
+            .insert(file("D/G"))
+            .insert(file("D/H"))
             .insert(file("X/Y/Z"))
             .build();
 
     // Then
     assertThat(fileTree.leaves())
-        .containsExactly(file("A/B/C"), file("D/E"), file("D/F"), file("X/Y/Z"))
-        .inOrder();
+        .containsExactly(
+            file("A/B/C"), file("D/E"), file("D/F"), file("D/G"), file("D/H"), file("X/Y/Z"));
   }
 
   @Test
