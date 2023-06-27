@@ -81,7 +81,7 @@ public final class LocalStorage implements Location<LocalFile> {
           worker.setName("scan-worker-%d".formatted(worker.getPoolIndex()));
           return worker;
         };
-    return new ForkJoinPool(Runtime.getRuntime().availableProcessors() * 2, factory, null, false);
+    return new ForkJoinPool(Runtime.getRuntime().availableProcessors(), factory, null, false);
   }
 
   public Path root() {
