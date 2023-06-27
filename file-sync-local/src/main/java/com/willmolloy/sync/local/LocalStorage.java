@@ -93,7 +93,7 @@ public final class LocalStorage implements Location<LocalFile> {
     return "%s[%s]".formatted(getClass().getSimpleName(), displayRootDir);
   }
 
-  @SuppressFBWarnings("serial")
+  @SuppressFBWarnings(value = {"SE_BAD_FIELD", "SE_NO_SERIALVERSIONID"})
   private static final class DirectoryWalker extends RecursiveAction {
     private final Path rootDir;
     private final BiConsumer<Path, BasicFileAttributes> consumer;
