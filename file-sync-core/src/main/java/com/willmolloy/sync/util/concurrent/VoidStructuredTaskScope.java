@@ -16,7 +16,7 @@ public final class VoidStructuredTaskScope extends StructuredTaskScope<Void> {
   public VoidStructuredTaskScope(String name) {
     this.delegate =
         new StructuredTaskScope.ShutdownOnFailure(
-            name, Thread.ofVirtual().name("%s-worker".formatted(name), 0).factory());
+            name, Thread.ofVirtual().name("%s-worker-".formatted(name), 0).factory());
   }
 
   public void fork(Runnable task) {
