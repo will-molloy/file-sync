@@ -106,7 +106,7 @@ subprojects {
     integrationTest
     performanceTest
   }
-  integrationTest.finalizedBy jacocoPerformanceTestReport
+  integrationTest.finalizedBy jacocoIntegrationTestReport
   performanceTest.finalizedBy jacocoPerformanceTestReport
 
   // enable preview features
