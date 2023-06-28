@@ -1,9 +1,6 @@
 # file-sync
 
 [![build](https://github.com/will-molloy/file-sync/workflows/build/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-sync/actions?query=workflow%3Abuild)
-[![integration-test](https://github.com/will-molloy/file-sync/workflows/integration-test/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-sync/actions?query=workflow%3Aintegration-test)
-[![performance-test](https://github.com/will-molloy/file-sync/workflows/performance-test/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-sync/actions?query=workflow%3Aperformance-test)
-[![release](https://github.com/will-molloy/file-sync/workflows/release/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-sync/actions?query=workflow%3Arelease)
 [![codecov](https://codecov.io/gh/will-molloy/file-sync/branch/main/graph/badge.svg)](https://codecov.io/gh/will-molloy/file-sync)
 
 ## Sync = Mirror
