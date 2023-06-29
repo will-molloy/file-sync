@@ -103,22 +103,16 @@ final class FileTreeNode<FileT extends File> implements FileTree<FileT> {
     StringBuilder pathSoFar = new StringBuilder(this.file.relativePath().toString());
     List<String> pathToNode =
         nameComponents(this.file.relativePath().relativize(file.relativePath()));
-    for (int i = 0; i < pathToNode.size(); i++) {
-      String c = pathToNode.get(i);
+    for (String c : pathToNode.subList(0, pathToNode.size() - 1)) {
       pathSoFar.append(c);
-      FileTreeNode<FileT> currentNode = node;
-      boolean last = i == pathToNode.size() - 1;
-      if (last) {
-        node.children.put(c, new FileTreeNode<>(file, currentNode));
-        return;
-      } else {
-        node =
-            node.children.computeIfAbsent(
-                c,
-                k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), currentNode));
-      }
+      FileTreeNode<FileT> parent = node;
+      node =
+          node.children.computeIfAbsent(
+              c, k -> new FileTreeNode<>(directoryFiller.apply(pathSoFar.toString()), parent));
       pathSoFar.append('/');
     }
+    // TODO SequencedCollection#getLast
+    node.children.put(pathToNode.get(pathToNode.size() - 1), new FileTreeNode<>(file, node));
   }
 
   private Stream<FileTreeNode<FileT>> postorderNodes() {
