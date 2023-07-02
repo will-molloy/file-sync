@@ -1,0 +1,4 @@
+rootProject.name = "file-sync"
+include("file-sync-core")
+include("file-sync-local")
+include("file-sync-s3")
