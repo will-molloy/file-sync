@@ -22,12 +22,12 @@ jib {
   container {
     mainClass = "com.willmolloy.sync.local.Main"
     environment = mapOf("SOURCE_PATH" to "/source", "DESTINATION_PATH" to "/destination")
-    creationTime.set(getGitCommitTime())
+    creationTime.set(gitCommitTime())
     jvmFlags = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
   }
 }
 
-fun getGitCommitTime(): String {
+fun gitCommitTime(): String {
   Grgit.open(mapOf("currentDir" to rootProject.rootDir)).use {
     return it.head().dateTime.toInstant().toString()
   }

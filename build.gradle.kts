@@ -30,7 +30,6 @@ subprojects {
     targetCompatibility = JavaVersion.VERSION_19
   }
 
-  // Spotless (code formatting/linting)
   apply(plugin = "com.diffplug.spotless")
   configure<SpotlessExtension> {
     java {
@@ -39,7 +38,6 @@ subprojects {
     }
   }
 
-  // Checkstyle (static analysis - code quality/style)
   apply(plugin = "checkstyle")
   configure<CheckstyleExtension> {
     toolVersion = "10.12.0"
@@ -49,7 +47,6 @@ subprojects {
     isIgnoreFailures = false
   }
 
-  // SpotBugs (static analysis - find possible bugs, performance issues etc.)
   apply(plugin = "com.github.spotbugs")
   configure<SpotBugsExtension> {
     effort.set(Effort.MAX)
@@ -86,7 +83,6 @@ subprojects {
     finalizedBy(tasks.withType<JacocoReport>())
   }
 
-  // JaCoCo (code coverage reporting)
   apply(plugin = "jacoco")
   tasks.withType<JacocoReport> {
     reports {

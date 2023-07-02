@@ -19,12 +19,12 @@ jib {
       "DESTINATION_BUCKET" to "",
       "DESTINATION_BUCKET_PREFIX" to "/"
     )
-    creationTime.set(getGitCommitTime())
+    creationTime.set(gitCommitTime())
     jvmFlags = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
   }
 }
 
-fun getGitCommitTime(): String {
+fun gitCommitTime(): String {
   Grgit.open(mapOf("currentDir" to rootProject.rootDir)).use {
     return it.head().dateTime.toInstant().toString()
   }
