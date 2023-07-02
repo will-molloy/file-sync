@@ -55,7 +55,6 @@ subprojects {
     excludeFilter.set(rootProject.file("./spotbugs-exclude.xml"))
   }
   tasks.withType<SpotBugsTask> {
-    reports.create("xml").required.set(true)
     reports.create("html").required.set(true)
   }
 
@@ -87,8 +86,6 @@ subprojects {
   tasks.withType<JacocoReport> {
     reports {
       xml.required.set(true)
-      html.required.set(true)
-      csv.required.set(false)
     }
   }
 
