@@ -96,19 +96,15 @@ subprojects {
     }
   }
 
+  val previewFeatures = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
   tasks.withType<JavaCompile> {
-    options.compilerArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
+    options.compilerArgs = previewFeatures
   }
   tasks.withType<Test> {
-    jvmArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
+    jvmArgs = previewFeatures
   }
   tasks.withType<JavaExec> {
-    jvmArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
-  }
-
-  // https://github.com/gradle/gradle/issues/17236
-  tasks.withType<Jar> {
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    jvmArgs = previewFeatures
   }
 
   dependencies {
