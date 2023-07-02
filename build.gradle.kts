@@ -63,20 +63,16 @@ subprojects {
   }
 
   tasks.withType<Test> {
-    // run tests in parallel, assumes they're threadsafe
     maxParallelForks = Runtime.getRuntime().availableProcessors()
-    // use JUnit 5 engine
     useJUnitPlatform()
     testLogging {
       events = setOf(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
-      // log the full failure messages
       exceptionFormat = TestExceptionFormat.FULL
       showExceptions = true
       showCauses = true
       showStackTraces = true
-      // log the overall results (based on https://stackoverflow.com/a/36130467/6122976)
       afterSuite(KotlinClosure2({ desc: TestDescriptor, result: TestResult ->
-        if (desc.parent == null) { // will match the outermost suite
+        if (desc.parent == null) {
           println(
             "Results: ${result.resultType} " +
                 "(${result.testCount} test${if (result.testCount > 1) "s" else ""}, " +
@@ -101,13 +97,13 @@ subprojects {
   }
 
   tasks.withType<JavaCompile> {
-    options.compilerArgs.addAll(listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent"))
+    options.compilerArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
   }
-  tasks.withType<Test>().configureEach {
-    jvmArgs!!.addAll(listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent"))
+  tasks.withType<Test> {
+    jvmArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
   }
-  tasks.withType<JavaExec>().configureEach {
-    jvmArgs!!.addAll(listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent"))
+  tasks.withType<JavaExec> {
+    jvmArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.concurrent")
   }
 
   // https://github.com/gradle/gradle/issues/17236
