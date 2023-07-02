@@ -4,8 +4,8 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashingInputStream;
 import com.google.common.io.BaseEncoding;
+import com.google.common.io.ByteStreams;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.logging.log4j.LogManager;
@@ -27,9 +27,9 @@ public final class Md5Helper {
 
   private static byte[] md5(Path file) throws IOException {
     log.debug("md5({})", file);
-    try (InputStream inputStream = Files.newInputStream(file);
-        HashingInputStream his = new HashingInputStream(Hashing.md5(), inputStream)) {
-      his.readAllBytes();
+    try (HashingInputStream his =
+        new HashingInputStream(Hashing.md5(), Files.newInputStream(file))) {
+      ByteStreams.copy(his, ByteStreams.nullOutputStream());
       HashCode md5Hash = his.hash();
       return md5Hash.asBytes();
     }
