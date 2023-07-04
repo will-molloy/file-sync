@@ -1,0 +1,24 @@
+name: template-sync
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+
+jobs:
+  template-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Sync with Template
+        uses: AndreasAugustin/actions-template-sync@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_repo_path: will-molloy/java-gradle-template
+          upstream_branch: main
+          pr_labels: template
