@@ -33,7 +33,7 @@ class S3FileTest {
 
   @BeforeEach
   void setUp() {
-    bucket = new S3Bucket(mockS3Client, "my-bucket", Path.of("prefix"));
+    bucket = new S3Bucket(() -> mockS3Client, "my-bucket", Path.of("prefix"));
   }
 
   @AfterEach
