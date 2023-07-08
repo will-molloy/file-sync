@@ -5,7 +5,6 @@ import static com.willmolloy.sync.util.Md5Helper.md5Base64;
 import static com.willmolloy.sync.util.PathHelper.ensureUnixSeparator;
 import static com.willmolloy.sync.util.StreamHelper.chunk;
 
-import com.google.common.collect.Lists;
 import com.willmolloy.sync.BaseSync;
 import com.willmolloy.sync.File;
 import com.willmolloy.sync.FileTree;
@@ -63,11 +62,10 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     try (S3Client s3Client = s3ClientSupplier.get();
         S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
       log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
-      String key = s3Key(sourceFile);
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(key)
+              .key(s3Key(sourceFile))
               .storageClass(StorageClass.DEEP_ARCHIVE);
       if (sourceFile.isDirectory()) {
         PutObjectRequest request = baseRequest.build();
@@ -77,7 +75,7 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
       }
-      wait(key, s3Waiter::waitUntilObjectExists);
+      wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
       log.debug("Sent put request: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
@@ -112,30 +110,31 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
   }
 
   private void deleteFolder(S3Client s3Client, S3Waiter s3Waiter, FileTree<S3File> destSubtree) {
-    List<String> keys = destSubtree.leaves().map(this::s3Key).toList();
+    // only send delete request for objects
+    chunk(destSubtree.leaves().map(this::s3Key), 1000)
+        .map(
+            chunk ->
+                chunk.stream().map(key -> ObjectIdentifier.builder().key(key).build()).toList())
+        .map(
+            objects ->
+                DeleteObjectsRequest.builder()
+                    .bucket(destination.bucketName())
+                    .delete(Delete.builder().objects(objects).build())
+                    .build())
+        .forEach(s3Client::deleteObjects);
 
-    for (List<String> chunk : Lists.partition(keys, 1000)) {
-      List<ObjectIdentifier> objects =
-          chunk.stream().map(key -> ObjectIdentifier.builder().key(key).build()).toList();
-      DeleteObjectsRequest request =
-          DeleteObjectsRequest.builder()
-              .bucket(destination.bucketName())
-              .delete(Delete.builder().objects(objects).build())
-              .build();
-      s3Client.deleteObjects(request);
-    }
-
-    for (String key : keys) {
-      wait(key, s3Waiter::waitUntilObjectNotExists);
-    }
+    // wait on objects AND folders to be sure
+    destSubtree
+        .postorder()
+        .map(this::s3Key)
+        .forEach(key -> wait(key, s3Waiter::waitUntilObjectNotExists));
   }
 
   private void deleteObject(S3Client s3Client, S3Waiter s3Waiter, S3File destFile) {
-    String key = s3Key(destFile);
     DeleteObjectRequest request =
-        DeleteObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
+        DeleteObjectRequest.builder().bucket(destination.bucketName()).key(s3Key(destFile)).build();
     s3Client.deleteObject(request);
-    wait(key, s3Waiter::waitUntilObjectNotExists);
+    wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
   }
 
   private String s3Uri(File file) {
@@ -149,12 +148,11 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     return file.isDirectory() ? key + "/" : key;
   }
 
-  private void wait(
-      String key, java.util.function.Function<HeadObjectRequest, WaiterResponse<?>> waiter) {
+  private void wait(String key, Function<HeadObjectRequest, WaiterResponse<?>> waiter) {
     HeadObjectRequest headRequest =
         HeadObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
-    // we are supposed to ignore the ResponseOrException here?
-    // only populated when successful (even the Exception e.g. 404 for waitUntilObjectNotExists)
+    // ignore the ResponseOrException here, it's only populated when successful
+    // (even the exception - e.g. 404 is expected for waitUntilObjectNotExists)
     // the method call itself will throw an exception if something went wrong.
     // https://github.com/aws/aws-sdk-java-v2/issues/2460#issuecomment-837136429
     waiter.apply(headRequest);
