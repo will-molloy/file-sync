@@ -5,6 +5,7 @@ import static com.willmolloy.sync.util.Md5Helper.md5Base64;
 import static com.willmolloy.sync.util.PathHelper.ensureUnixSeparator;
 import static com.willmolloy.sync.util.StreamHelper.chunk;
 
+import com.google.common.collect.Lists;
 import com.willmolloy.sync.BaseSync;
 import com.willmolloy.sync.File;
 import com.willmolloy.sync.FileTree;
@@ -16,7 +17,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -63,10 +63,11 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     try (S3Client s3Client = s3ClientSupplier.get();
         S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
       log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
+      String key = s3Key(sourceFile);
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
               .bucket(destination.bucketName())
-              .key(s3Key(sourceFile))
+              .key(key)
               .storageClass(StorageClass.DEEP_ARCHIVE);
       if (sourceFile.isDirectory()) {
         PutObjectRequest request = baseRequest.build();
@@ -76,7 +77,7 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
       }
-      wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
+      wait(key, s3Waiter::waitUntilObjectExists);
       log.debug("Sent put request: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
@@ -98,7 +99,7 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
         S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
       log.debug("Sending delete request: [{}]", destSubtree.root().uri());
       if (destSubtree.root().isDirectory()) {
-        deleteFolder(s3Client, destSubtree);
+        deleteFolder(s3Client, s3Waiter, destSubtree);
       } else {
         deleteObject(s3Client, s3Waiter, destSubtree.root());
       }
@@ -110,29 +111,31 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     }
   }
 
-  private void deleteFolder(S3Client s3Client, FileTree<S3File> destSubtree) {
-    Stream<S3File> filesToDelete = destSubtree.leaves();
-    Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);
-    chunks
-        .map(
-            chunk ->
-                chunk.stream()
-                    .map(s3File -> ObjectIdentifier.builder().key(s3Key(s3File)).build())
-                    .toList())
-        .map(
-            objects ->
-                DeleteObjectsRequest.builder()
-                    .bucket(destination.bucketName())
-                    .delete(Delete.builder().objects(objects).build())
-                    .build())
-        .forEach(s3Client::deleteObjects);
+  private void deleteFolder(S3Client s3Client, S3Waiter s3Waiter, FileTree<S3File> destSubtree) {
+    List<String> keys = destSubtree.leaves().map(this::s3Key).toList();
+
+    for (List<String> chunk : Lists.partition(keys, 1000)) {
+      List<ObjectIdentifier> objects =
+          chunk.stream().map(key -> ObjectIdentifier.builder().key(key).build()).toList();
+      DeleteObjectsRequest request =
+          DeleteObjectsRequest.builder()
+              .bucket(destination.bucketName())
+              .delete(Delete.builder().objects(objects).build())
+              .build();
+      s3Client.deleteObjects(request);
+    }
+
+    for (String key : keys) {
+      wait(key, s3Waiter::waitUntilObjectNotExists);
+    }
   }
 
   private void deleteObject(S3Client s3Client, S3Waiter s3Waiter, S3File destFile) {
+    String key = s3Key(destFile);
     DeleteObjectRequest request =
-        DeleteObjectRequest.builder().bucket(destination.bucketName()).key(s3Key(destFile)).build();
+        DeleteObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
     s3Client.deleteObject(request);
-    wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
+    wait(key, s3Waiter::waitUntilObjectNotExists);
   }
 
   private String s3Uri(File file) {

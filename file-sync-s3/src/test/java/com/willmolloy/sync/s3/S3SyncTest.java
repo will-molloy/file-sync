@@ -219,6 +219,36 @@ class S3SyncTest {
                             ObjectIdentifier.builder().key("my/bucket/prefix/folder/D/F/G").build())
                         .build())
                 .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/folder/A")
+                .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/folder/B")
+                .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/folder/C")
+                .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/folder/D/E")
+                .build());
+    verify(mockS3Waiter)
+        .waitUntilObjectNotExists(
+            HeadObjectRequest.builder()
+                .bucket("my-bucket")
+                .key("my/bucket/prefix/folder/D/F/G")
+                .build());
     verify(mockS3Client, times(2)).close();
     verify(mockS3Waiter).close();
   }
@@ -236,6 +266,7 @@ class S3SyncTest {
     assertThat(result).isTrue();
     verify(mockS3Client, times(2)).deleteObjects(argThat(deleteRequestSize(1000)));
     verify(mockS3Client).deleteObjects(argThat(deleteRequestSize(11)));
+    verify(mockS3Waiter, times(2011)).waitUntilObjectNotExists(any(HeadObjectRequest.class));
     verify(mockS3Client, times(2)).close();
     verify(mockS3Waiter).close();
   }
