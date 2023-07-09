@@ -2,6 +2,7 @@ package com.willmolloy.sync.s3;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -35,7 +36,7 @@ class S3BucketTest {
 
   @BeforeEach
   void setUp() {
-    sut = new S3Bucket(mockS3Client, "my-bucket", Path.of("my/bucket/prefix/"));
+    sut = new S3Bucket(() -> mockS3Client, "my-bucket", Path.of("my/bucket/prefix/"));
   }
 
   @AfterEach
@@ -79,6 +80,7 @@ class S3BucketTest {
                 .insert(S3File.directoryFiller(sut, "X/Y"))
                 .insert(S3File.fromS3Object(sut, z))
                 .build());
+    verify(mockS3Client).close();
   }
 
   @Test

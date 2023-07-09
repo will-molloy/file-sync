@@ -6,6 +6,7 @@ import static com.willmolloy.sync.util.PathHelper.ensureUnixSeparator;
 import com.willmolloy.sync.FileTree;
 import com.willmolloy.sync.Location;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -25,36 +26,39 @@ final class S3Bucket implements Location<S3File> {
 
   private static final String S3_BASE_URI = "https://s3.console.aws.amazon.com/s3/";
 
-  private final S3Client s3Client;
-
+  private final Supplier<S3Client> s3ClientFactory;
   private final String bucketName;
   private final Path prefix;
 
-  S3Bucket(S3Client s3Client, String bucketName, Path prefix) {
-    this.s3Client = checkNotNull(s3Client);
+  S3Bucket(Supplier<S3Client> s3ClientFactory, String bucketName, Path prefix) {
+    this.s3ClientFactory = checkNotNull(s3ClientFactory);
     this.bucketName = checkNotNull(bucketName);
     this.prefix = checkNotNull(prefix);
   }
 
   @Override
   public FileTree<S3File> scan() {
-    ListObjectsV2Request request =
-        ListObjectsV2Request.builder()
-            .bucket(bucketName)
-            .prefix(ensureUnixSeparator(prefix) + "/")
-            .build();
-    ListObjectsV2Iterable paginatedResponse = s3Client.listObjectsV2Paginator(request);
+    try (S3Client s3Client = s3ClientFactory.get()) {
 
-    FileTree.Builder<S3File> builder =
-        FileTree.builder(
-            S3File.directoryFiller(this, ""), path -> S3File.directoryFiller(this, path));
-    for (ListObjectsV2Response response : paginatedResponse) {
-      for (S3Object s3Object : response.contents()) {
-        S3File file = S3File.fromS3Object(this, s3Object);
-        builder.insert(file);
+      log.debug("Sending list request: [{}]", bucketUri());
+      ListObjectsV2Request request =
+          ListObjectsV2Request.builder()
+              .bucket(bucketName)
+              .prefix(ensureUnixSeparator(prefix) + "/")
+              .build();
+      ListObjectsV2Iterable paginatedResponse = s3Client.listObjectsV2Paginator(request);
+
+      FileTree.Builder<S3File> builder =
+          FileTree.builder(
+              S3File.directoryFiller(this, ""), path -> S3File.directoryFiller(this, path));
+      for (ListObjectsV2Response response : paginatedResponse) {
+        for (S3Object s3Object : response.contents()) {
+          S3File file = S3File.fromS3Object(this, s3Object);
+          builder.insert(file);
+        }
       }
+      return builder.build();
     }
-    return builder.build();
   }
 
   String bucketName() {

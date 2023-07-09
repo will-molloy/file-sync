@@ -14,8 +14,8 @@ import com.willmolloy.sync.statistics.SyncObserver;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.stream.Stream;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -39,19 +39,19 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final S3Client s3Client;
-  private final S3Waiter s3Waiter;
+  private final Supplier<S3Client> s3ClientFactory;
+  private final Function<S3Client, S3Waiter> s3WaiterFactory;
   private final S3Bucket destination;
 
   S3Sync(
-      S3Client s3Client,
-      S3Waiter s3Waiter,
+      Supplier<S3Client> s3ClientFactory,
+      Function<S3Client, S3Waiter> s3WaiterFactory,
       LocalStorage source,
       S3Bucket destination,
       List<SyncObserver> observers) {
     super(source, destination, observers);
-    this.s3Client = checkNotNull(s3Client);
-    this.s3Waiter = checkNotNull(s3Waiter);
+    this.s3ClientFactory = checkNotNull(s3ClientFactory);
+    this.s3WaiterFactory = checkNotNull(s3WaiterFactory);
     this.destination = checkNotNull(destination);
   }
 
@@ -59,7 +59,10 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
   protected boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     String destinationUri = s3Uri(sourceFile);
-    try {
+
+    try (S3Client s3Client = s3ClientFactory.get();
+        S3Waiter s3Waiter = s3WaiterFactory.apply(s3Client)) {
+
       log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
@@ -74,7 +77,9 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
       }
-      wait(s3Key(sourceFile), S3Waiter::waitUntilObjectExists);
+
+      wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
+
       log.debug("Sent put request: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
@@ -92,13 +97,16 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
 
   @Override
   protected boolean delete(FileTree<S3File> destSubtree) {
-    try {
+    try (S3Client s3Client = s3ClientFactory.get();
+        S3Waiter s3Waiter = s3WaiterFactory.apply(s3Client)) {
+
       log.debug("Sending delete request: [{}]", destSubtree.root().uri());
       if (destSubtree.root().isDirectory()) {
-        deleteFolder(destSubtree);
+        deleteFolder(s3Client, s3Waiter, destSubtree);
       } else {
-        deleteObject(destSubtree.root());
+        deleteObject(s3Client, s3Waiter, destSubtree.root());
       }
+
       log.debug("Sent delete request: [{}]", destSubtree.root().uri());
       return true;
     } catch (Exception e) {
@@ -107,15 +115,12 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     }
   }
 
-  private void deleteFolder(FileTree<S3File> destSubtree) {
-    Stream<S3File> filesToDelete = destSubtree.leaves();
-    Stream<List<S3File>> chunks = chunk(filesToDelete, 1000);
-    chunks
+  private void deleteFolder(S3Client s3Client, S3Waiter s3Waiter, FileTree<S3File> destSubtree) {
+    // only send delete request for objects
+    chunk(destSubtree.leaves().map(this::s3Key), 1000)
         .map(
             chunk ->
-                chunk.stream()
-                    .map(s3File -> ObjectIdentifier.builder().key(s3Key(s3File)).build())
-                    .toList())
+                chunk.stream().map(key -> ObjectIdentifier.builder().key(key).build()).toList())
         .map(
             objects ->
                 DeleteObjectsRequest.builder()
@@ -123,13 +128,19 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
                     .delete(Delete.builder().objects(objects).build())
                     .build())
         .forEach(s3Client::deleteObjects);
+
+    // wait on objects AND folders to be sure
+    destSubtree
+        .postorder()
+        .map(this::s3Key)
+        .forEach(key -> wait(key, s3Waiter::waitUntilObjectNotExists));
   }
 
-  private void deleteObject(S3File destFile) {
+  private void deleteObject(S3Client s3Client, S3Waiter s3Waiter, S3File destFile) {
     DeleteObjectRequest request =
         DeleteObjectRequest.builder().bucket(destination.bucketName()).key(s3Key(destFile)).build();
     s3Client.deleteObject(request);
-    wait(s3Key(destFile), S3Waiter::waitUntilObjectNotExists);
+    wait(s3Key(destFile), s3Waiter::waitUntilObjectNotExists);
   }
 
   private String s3Uri(File file) {
@@ -143,13 +154,13 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     return file.isDirectory() ? key + "/" : key;
   }
 
-  private void wait(String key, BiFunction<S3Waiter, HeadObjectRequest, WaiterResponse<?>> waiter) {
+  private void wait(String key, Function<HeadObjectRequest, WaiterResponse<?>> waiter) {
     HeadObjectRequest headRequest =
         HeadObjectRequest.builder().bucket(destination.bucketName()).key(key).build();
-    // we are supposed to ignore the ResponseOrException here?
-    // only populated when successful (even the Exception e.g. 404 for waitUntilObjectNotExists)
+    // ignore the ResponseOrException here, it's only populated when successful
+    // (even the exception - e.g. 404 is expected for waitUntilObjectNotExists)
     // the method call itself will throw an exception if something went wrong.
     // https://github.com/aws/aws-sdk-java-v2/issues/2460#issuecomment-837136429
-    waiter.apply(s3Waiter, headRequest);
+    waiter.apply(headRequest);
   }
 }
