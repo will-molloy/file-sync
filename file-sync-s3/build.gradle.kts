@@ -33,5 +33,5 @@ fun gitCommitTime(): String {
 dependencies {
   implementation(project(":file-sync-core"))
   implementation(project(":file-sync-local"))
-  implementation("software.amazon.awssdk:s3:2.20.93")
+  implementation("software.amazon.awssdk:s3:2.20.101")
 }

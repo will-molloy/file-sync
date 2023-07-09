@@ -102,14 +102,14 @@ subprojects {
 
   dependencies {
     val log4jVersion = "2.20.0"
-    val guavaVersion = "32.0.1-jre"
+    val guavaVersion = "32.1.1-jre"
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
     implementation("com.github.spotbugs:spotbugs-annotations:4.7.3")
     implementation("com.google.guava:guava:$guavaVersion")
-    implementation("io.github.openfeign:feign-core:12.3")
-    implementation("io.github.openfeign:feign-gson:12.3")
+    implementation("io.github.openfeign:feign-core:12.4")
+    implementation("io.github.openfeign:feign-gson:12.4")
     implementation("io.github.openfeign.form:feign-form:3.8.0")
 
     val junitVersion = "5.9.3"
@@ -120,7 +120,7 @@ subprojects {
     testImplementation("com.google.truth.extensions:truth-java8-extension:$truthVersion")
     testImplementation("org.mockito:mockito-core:$mockitoVersion")
     testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
-    testImplementation("com.google.jimfs:jimfs:1.2")
+    testImplementation("com.google.jimfs:jimfs:1.3.0")
     testImplementation("com.github.javafaker:javafaker:1.0.2")
 
     configurations.all {
