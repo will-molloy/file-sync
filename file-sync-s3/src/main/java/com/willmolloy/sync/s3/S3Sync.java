@@ -39,19 +39,19 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
 
   private static final Logger log = LogManager.getLogger();
 
-  private final Supplier<S3Client> s3ClientSupplier;
-  private final Function<S3Client, S3Waiter> s3WaiterSupplier;
+  private final Supplier<S3Client> s3ClientFactory;
+  private final Function<S3Client, S3Waiter> s3WaiterFactory;
   private final S3Bucket destination;
 
   S3Sync(
-      Supplier<S3Client> s3ClientSupplier,
-      Function<S3Client, S3Waiter> s3WaiterSupplier,
+      Supplier<S3Client> s3ClientFactory,
+      Function<S3Client, S3Waiter> s3WaiterFactory,
       LocalStorage source,
       S3Bucket destination,
       List<SyncObserver> observers) {
     super(source, destination, observers);
-    this.s3ClientSupplier = checkNotNull(s3ClientSupplier);
-    this.s3WaiterSupplier = checkNotNull(s3WaiterSupplier);
+    this.s3ClientFactory = checkNotNull(s3ClientFactory);
+    this.s3WaiterFactory = checkNotNull(s3WaiterFactory);
     this.destination = checkNotNull(destination);
   }
 
@@ -60,8 +60,8 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
     Path sourcePath = sourceFile.fullPath();
     String destinationUri = s3Uri(sourceFile);
 
-    try (S3Client s3Client = s3ClientSupplier.get();
-        S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
+    try (S3Client s3Client = s3ClientFactory.get();
+        S3Waiter s3Waiter = s3WaiterFactory.apply(s3Client)) {
 
       log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
       PutObjectRequest.Builder baseRequest =
@@ -97,8 +97,8 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
 
   @Override
   protected boolean delete(FileTree<S3File> destSubtree) {
-    try (S3Client s3Client = s3ClientSupplier.get();
-        S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
+    try (S3Client s3Client = s3ClientFactory.get();
+        S3Waiter s3Waiter = s3WaiterFactory.apply(s3Client)) {
 
       log.debug("Sending delete request: [{}]", destSubtree.root().uri());
       if (destSubtree.root().isDirectory()) {

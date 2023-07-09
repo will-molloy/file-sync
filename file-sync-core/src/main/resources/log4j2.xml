@@ -13,7 +13,7 @@
 
     <Logger name="com.willmolloy" level="info"/>
 
-    <Logger name="software.amazon.awssdk" level="warn" />
-    <Logger name="software.amazon.awssdk.request" level="debug" />
+    <Logger name="software.amazon.awssdk" level="warn"/>
+    <Logger name="software.amazon.awssdk.request" level="debug"/>
   </Loggers>
 </Configuration>

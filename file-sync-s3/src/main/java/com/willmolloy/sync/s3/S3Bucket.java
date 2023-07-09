@@ -26,21 +26,21 @@ final class S3Bucket implements Location<S3File> {
 
   private static final String S3_BASE_URI = "https://s3.console.aws.amazon.com/s3/";
 
-  private final Supplier<S3Client> s3ClientSupplier;
-
+  private final Supplier<S3Client> s3ClientFactory;
   private final String bucketName;
   private final Path prefix;
 
-  S3Bucket(Supplier<S3Client> s3ClientSupplier, String bucketName, Path prefix) {
-    this.s3ClientSupplier = checkNotNull(s3ClientSupplier);
+  S3Bucket(Supplier<S3Client> s3ClientFactory, String bucketName, Path prefix) {
+    this.s3ClientFactory = checkNotNull(s3ClientFactory);
     this.bucketName = checkNotNull(bucketName);
     this.prefix = checkNotNull(prefix);
   }
 
   @Override
   public FileTree<S3File> scan() {
-    try (S3Client s3Client = s3ClientSupplier.get()) {
+    try (S3Client s3Client = s3ClientFactory.get()) {
 
+      log.debug("Sending list request: [{}]", bucketUri());
       ListObjectsV2Request request =
           ListObjectsV2Request.builder()
               .bucket(bucketName)

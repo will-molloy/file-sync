@@ -48,6 +48,8 @@ public final class LocalStorage implements Location<LocalFile> {
   @Override
   public FileTree<LocalFile> scan() {
     try {
+      log.debug("Scanning root dir: [{}]", rootDir);
+
       FileTree.Builder<LocalFile> builder =
           FileTree.builder(
               LocalFile.fromPath(this, rootDir), path -> LocalFile.directoryFiller(this, path));
