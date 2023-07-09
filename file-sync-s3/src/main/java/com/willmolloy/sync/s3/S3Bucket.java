@@ -40,6 +40,7 @@ final class S3Bucket implements Location<S3File> {
   @Override
   public FileTree<S3File> scan() {
     try (S3Client s3Client = s3ClientSupplier.get()) {
+
       ListObjectsV2Request request =
           ListObjectsV2Request.builder()
               .bucket(bucketName)

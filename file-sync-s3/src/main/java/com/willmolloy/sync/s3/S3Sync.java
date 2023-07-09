@@ -59,8 +59,10 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
   protected boolean put(LocalFile sourceFile) {
     Path sourcePath = sourceFile.fullPath();
     String destinationUri = s3Uri(sourceFile);
+
     try (S3Client s3Client = s3ClientSupplier.get();
         S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
+
       log.debug("Sending put request: [{}] -> [{}]", sourceFile, destinationUri);
       PutObjectRequest.Builder baseRequest =
           PutObjectRequest.builder()
@@ -75,7 +77,9 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
         PutObjectRequest request = baseRequest.contentMD5(md5Base64(sourcePath)).build();
         s3Client.putObject(request, sourcePath);
       }
+
       wait(s3Key(sourceFile), s3Waiter::waitUntilObjectExists);
+
       log.debug("Sent put request: [{}] -> [{}]", sourceFile, destinationUri);
       return true;
     } catch (NoSuchFileException e) {
@@ -95,12 +99,14 @@ final class S3Sync extends BaseSync<LocalFile, S3File> {
   protected boolean delete(FileTree<S3File> destSubtree) {
     try (S3Client s3Client = s3ClientSupplier.get();
         S3Waiter s3Waiter = s3WaiterSupplier.apply(s3Client)) {
+
       log.debug("Sending delete request: [{}]", destSubtree.root().uri());
       if (destSubtree.root().isDirectory()) {
         deleteFolder(s3Client, s3Waiter, destSubtree);
       } else {
         deleteObject(s3Client, s3Waiter, destSubtree.root());
       }
+
       log.debug("Sent delete request: [{}]", destSubtree.root().uri());
       return true;
     } catch (Exception e) {
