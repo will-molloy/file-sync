@@ -1,5 +1,8 @@
 # file-sync
 
+> [!CAUTION]
+> This project is deprecated. For backup and synchronization needs, consider using [rustic-rs](https://github.com/rustic-rs/rustic) instead, which offers better performance, deduplication, compression, and proper backup features.
+
 [![build](https://github.com/will-molloy/file-sync/workflows/build/badge.svg?branch=main&event=push)](https://github.com/will-molloy/file-sync/actions?query=workflow%3Abuild)
 [![codecov](https://codecov.io/gh/will-molloy/file-sync/branch/main/graph/badge.svg)](https://codecov.io/gh/will-molloy/file-sync)
 
@@ -9,7 +12,8 @@
 - if file on source AND destination, updates file on destination
 - if file only on destination, deletes file on destination
 
-**⚠ This is not backup software ⚠**
+> [!WARNING]
+> This is not backup software
 
 ## Build and test
 
